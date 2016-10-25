@@ -375,33 +375,12 @@ static NSMutableDictionary *callFlags;
     _state = GRXWriterStateStarted;
   }
 
-  // TODO(jcanizales): Extract this logic somewhere common.
-  NSString *host = [NSURL URLWithString:[@"https://" stringByAppendingString:_host]].host;
-  if (!host) {
-    // TODO(jcanizales): Check this on init.
-    [NSException raise:NSInvalidArgumentException format:@"host of %@ is nil", _host];
-  }
-  __weak typeof(self) weakSelf = self;
-    _connectivityMonitor = [GRPCConnectivityMonitor monitorWithHost:host];
-  void (^handler)() = ^{
-    typeof(self) strongSelf = weakSelf;
-    if (strongSelf) {
-      [strongSelf finishWithError:[NSError errorWithDomain:kGRPCErrorDomain
-                                                      code:GRPCErrorCodeUnavailable
-                                                  userInfo:@{NSLocalizedDescriptionKey: @"Connectivity lost."}]];
-    }
-  };
-  [_connectivityMonitor handleLossWithHandler:handler
-                      wifiStatusChangeHandler:^{}];
-
   // Create a retain cycle so that this instance lives until the RPC finishes
-  // (or is cancelled).
-  // This makes RPCs in which the call isn't externally retained possible (as
-  // long as it is started
-  // before being autoreleased).
+  // (or is cancelled). This makes RPCs in which the call isn't externally
+  // retained possible (as long as it is started before being autoreleased).
   // Care is taken not to retain self strongly in any of the blocks used in this
-  // implementation, so
-  // that the life of the instance is determined by this retain cycle.
+  // implementation, so that the life of the instance is determined by this
+  // retain cycle.
   _retainSelf = self;
 
   _responseWriteable =
@@ -412,6 +391,31 @@ static NSMutableDictionary *callFlags;
 
   [self sendHeaders:_requestHeaders];
   [self invokeCall];
+
+  // TODO(jcanizales): Extract this logic somewhere common.
+  NSString *host =
+  [NSURL URLWithString:[@"https://" stringByAppendingString:_host]].host;
+  if (!host) {
+    // TODO(jcanizales): Check this on init.
+    [NSException raise:NSInvalidArgumentException format:@"host of %@ is nil", _host];
+  }
+  __weak typeof(self) weakSelf = self;
+    _connectivityMonitor = [GRPCConnectivityMonitor monitorWithHost:host];
+  void (^handler)() = ^{
+    typeof(self) strongSelf = weakSelf;
+    if (strongSelf) {
+      [strongSelf
+       finishWithError:[NSError errorWithDomain:kGRPCErrorDomain
+                                           code:GRPCErrorCodeUnavailable
+                                       userInfo:@{
+                                                  NSLocalizedDescriptionKey :
+                                                    @"Connectivity lost."
+                                                  }]];
+    }
+  };
+  [_connectivityMonitor handleLossWithHandler:handler
+                      wifiStatusChangeHandler:^{
+                      }];
 }
 
 - (void)setState:(GRXWriterState)newState {
