@@ -73,5 +73,6 @@
  * Only one handler is active at a time, so if this method is called again before the previous
  * handler has been called, it might never be called at all (or yes, if it has already been queued).
  */
-- (void)handleLossWithHandler:(nonnull void (^)())handler;
+- (void)handleLossWithHandler:(nonnull void (^)())handler
+      wifiStatusChangeHandler:(nonnull void (^)())wifiStatusChangeHandler;
 @end
