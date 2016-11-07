@@ -40,6 +40,7 @@
 #include <grpc++/client_context.h>
 #include <grpc++/security/credentials.h>
 #include <grpc/grpc.h>
+#include <grpc/support/alloc.h>
 #include <grpc/support/log.h>
 #include <grpc/support/string_util.h>
 #include <grpc/support/useful.h>
@@ -842,6 +843,50 @@ bool InteropClient::DoStatusWithMessage() {
 
   GPR_ASSERT(s.error_message() == test_msg);
   gpr_log(GPR_DEBUG, "Done testing Status and Message");
+  return true;
+}
+
+bool InteropClient::DoCacheableUnary() {
+  gpr_log(GPR_DEBUG, "Sending RPC with cacheable response");
+
+  // Create request with current timestamp
+  gpr_timespec ts = gpr_now(GPR_CLOCK_PRECISE);
+  std::string timestamp = std::to_string((long long unsigned)ts.tv_nsec);
+  SimpleRequest request;
+  request.mutable_payload()->set_body(timestamp.c_str(), timestamp.size());
+
+  // Request 1
+  ClientContext context1;
+  SimpleResponse response1;
+  context1.set_cacheable(true);
+  // Add fake user IP since some proxy's (GFE) won't cache requests from
+  // localhost.
+  context1.AddMetadata("x-user-ip", "1.2.3.4");
+  Status s1 =
+      serviceStub_.Get()->CacheableUnaryCall(&context1, request, &response1);
+  if (!AssertStatusOk(s1)) {
+    return false;
+  }
+  gpr_log(GPR_DEBUG, "response 1 payload: %s",
+          response1.payload().body().c_str());
+
+  // Request 2
+  ClientContext context2;
+  SimpleResponse response2;
+  context2.set_cacheable(true);
+  context2.AddMetadata("x-user-ip", "1.2.3.4");
+  Status s2 =
+      serviceStub_.Get()->CacheableUnaryCall(&context2, request, &response2);
+  if (!AssertStatusOk(s2)) {
+    return false;
+  }
+  gpr_log(GPR_DEBUG, "response 2 payload: %s",
+          response2.payload().body().c_str());
+
+  // Check that the body is same for both requests. It will be the same if the
+  // second response is a cached copy of the first response
+  GPR_ASSERT(response2.payload().body() == response1.payload().body());
+
   return true;
 }
 
