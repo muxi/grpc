@@ -127,8 +127,10 @@ static void cronet_init_client_simple_ssl_secure_fullstack(
   cronet_engine *cronetEngine = [Cronet getGlobalEngine];
 
   grpc_channel_args *new_client_args = grpc_channel_args_copy(client_args);
+  grpc_exec_ctx ctx = GRPC_EXEC_CTX_INIT;
   cronet_init_client_secure_fullstack(f, new_client_args, cronetEngine);
-  grpc_channel_args_destroy(new_client_args);
+  grpc_channel_args_destroy(&ctx, new_client_args);
+  grpc_exec_ctx_finish(&ctx);
 }
 
 static int fail_server_auth_check(grpc_channel_args *server_args) {
