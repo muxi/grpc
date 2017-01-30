@@ -38,8 +38,8 @@ Pod::Spec.new do |s|
   s.authors  = { 'The gRPC contributors' => 'grpc-packages@google.com' }
 
   s.source = {
-    :git => 'https://github.com/grpc/grpc.git',
-    :tag => "v#{version}",
+    :git => 'https://github.com/muxi/grpc.git',
+    :branch => "fix-grpc-v1.1.0-pre1-release",
   }
 
   s.ios.deployment_target = '7.1'
