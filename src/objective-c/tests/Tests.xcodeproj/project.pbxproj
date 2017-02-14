@@ -16,6 +16,7 @@
 		3D7C85F6AA68C4A205E3BA16 /* libPods-Tests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 20DFF2F3C97EF098FE5A3171 /* libPods-Tests.a */; };
 		5E8A5DA71D3840B4000F8BC4 /* CoreCronetEnd2EndTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 5E8A5DA61D3840B4000F8BC4 /* CoreCronetEnd2EndTests.m */; };
 		5E8A5DA91D3840B4000F8BC4 /* libTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 635697C71B14FC11007A7283 /* libTests.a */; };
+		5E986DEC1E53A897009CAD30 /* CronetUnitTestsWithQuic.m in Sources */ = {isa = PBXBuildFile; fileRef = 5E986DEB1E53A897009CAD30 /* CronetUnitTestsWithQuic.m */; };
 		5EAD6D271E27047400002378 /* CronetUnitTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 5EAD6D261E27047400002378 /* CronetUnitTests.m */; };
 		5EAD6D291E27047400002378 /* libTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 635697C71B14FC11007A7283 /* libTests.a */; };
 		5EE84BF41D4717E40050C6CC /* InteropTestsRemoteWithCronet.m in Sources */ = {isa = PBXBuildFile; fileRef = 5EE84BF31D4717E40050C6CC /* InteropTestsRemoteWithCronet.m */; };
@@ -45,6 +46,7 @@
 		63E240CE1B6C4E2B005F3B0E /* InteropTestsLocalSSL.m in Sources */ = {isa = PBXBuildFile; fileRef = 63E240CD1B6C4E2B005F3B0E /* InteropTestsLocalSSL.m */; };
 		63E240D01B6C63DC005F3B0E /* TestCertificates.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 63E240CF1B6C63DC005F3B0E /* TestCertificates.bundle */; };
 		F15EF7852DC70770EFDB1D2C /* libPods-AllTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = CAE086D5B470DA367D415AB0 /* libPods-AllTests.a */; };
+		F41FEDE3C89BC498C695AE00 /* libPods-CronetUnitTestsWithQuic.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 100AAF6F47BFD5E45AE024FE /* libPods-CronetUnitTestsWithQuic.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -123,9 +125,12 @@
 		060EF32D7EC0DF67ED617507 /* Pods-Tests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Tests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-Tests/Pods-Tests.debug.xcconfig"; sourceTree = "<group>"; };
 		07D10A965323BEA7FE59A74B /* Pods-RxLibraryUnitTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RxLibraryUnitTests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-RxLibraryUnitTests/Pods-RxLibraryUnitTests.debug.xcconfig"; sourceTree = "<group>"; };
 		0A4F89D9C90E9C30990218F0 /* Pods.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.release.xcconfig; path = "Pods/Target Support Files/Pods/Pods.release.xcconfig"; sourceTree = "<group>"; };
+		0C2ABF3A55EDA94AE8689296 /* Pods-CronetUnitTestsWithQuic.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CronetUnitTestsWithQuic.release.xcconfig"; path = "Pods/Target Support Files/Pods-CronetUnitTestsWithQuic/Pods-CronetUnitTestsWithQuic.release.xcconfig"; sourceTree = "<group>"; };
 		0D2284C3DF7E57F0ED504E39 /* Pods-CoreCronetEnd2EndTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CoreCronetEnd2EndTests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-CoreCronetEnd2EndTests/Pods-CoreCronetEnd2EndTests.debug.xcconfig"; sourceTree = "<group>"; };
+		100AAF6F47BFD5E45AE024FE /* libPods-CronetUnitTestsWithQuic.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-CronetUnitTestsWithQuic.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		14B09A58FEE53A7A6B838920 /* Pods-InteropTestsLocalSSL.cronet.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-InteropTestsLocalSSL.cronet.xcconfig"; path = "Pods/Target Support Files/Pods-InteropTestsLocalSSL/Pods-InteropTestsLocalSSL.cronet.xcconfig"; sourceTree = "<group>"; };
 		17F60BF2871F6AF85FB3FA12 /* Pods-InteropTestsRemoteWithCronet.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-InteropTestsRemoteWithCronet.debug.xcconfig"; path = "Pods/Target Support Files/Pods-InteropTestsRemoteWithCronet/Pods-InteropTestsRemoteWithCronet.debug.xcconfig"; sourceTree = "<group>"; };
+		1F664DE32CAAB5B139147AF3 /* Pods-CronetUnitTestsWithQuic.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CronetUnitTestsWithQuic.debug.xcconfig"; path = "Pods/Target Support Files/Pods-CronetUnitTestsWithQuic/Pods-CronetUnitTestsWithQuic.debug.xcconfig"; sourceTree = "<group>"; };
 		20DFF2F3C97EF098FE5A3171 /* libPods-Tests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Tests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		35F2B6BF3BAE8F0DC4AFD76E /* libPods.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libPods.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		386712AEACF7C2190C4B8B3F /* Pods-CronetUnitTests.cronet.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CronetUnitTests.cronet.xcconfig"; path = "Pods/Target Support Files/Pods-CronetUnitTests/Pods-CronetUnitTests.cronet.xcconfig"; sourceTree = "<group>"; };
@@ -139,6 +144,9 @@
 		5761E98978DDDF136A58CB7E /* Pods-AllTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AllTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-AllTests/Pods-AllTests.release.xcconfig"; sourceTree = "<group>"; };
 		5E8A5DA41D3840B4000F8BC4 /* CoreCronetEnd2EndTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CoreCronetEnd2EndTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5E8A5DA61D3840B4000F8BC4 /* CoreCronetEnd2EndTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CoreCronetEnd2EndTests.m; sourceTree = "<group>"; };
+		5E986DE91E53A897009CAD30 /* CronetUnitTestsWithQuic.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CronetUnitTestsWithQuic.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		5E986DEB1E53A897009CAD30 /* CronetUnitTestsWithQuic.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CronetUnitTestsWithQuic.m; sourceTree = "<group>"; };
+		5E986DED1E53A897009CAD30 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		5EAD6D241E27047400002378 /* CronetUnitTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CronetUnitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5EAD6D261E27047400002378 /* CronetUnitTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CronetUnitTests.m; sourceTree = "<group>"; };
 		5EAD6D281E27047400002378 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -168,6 +176,7 @@
 		A58BE6DF1C62D1739EBB2C78 /* libPods-RxLibraryUnitTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-RxLibraryUnitTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA7CB64B4DD9915AE7C03163 /* Pods-InteropTestsLocalCleartext.cronet.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-InteropTestsLocalCleartext.cronet.xcconfig"; path = "Pods/Target Support Files/Pods-InteropTestsLocalCleartext/Pods-InteropTestsLocalCleartext.cronet.xcconfig"; sourceTree = "<group>"; };
 		AC414EF7A6BF76ED02B6E480 /* Pods-InteropTestsRemoteWithCronet.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-InteropTestsRemoteWithCronet.release.xcconfig"; path = "Pods/Target Support Files/Pods-InteropTestsRemoteWithCronet/Pods-InteropTestsRemoteWithCronet.release.xcconfig"; sourceTree = "<group>"; };
+		B8D3892CBE79EB4F5EBF1A44 /* Pods-CronetUnitTestsWithQuic.cronet.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CronetUnitTestsWithQuic.cronet.xcconfig"; path = "Pods/Target Support Files/Pods-CronetUnitTestsWithQuic/Pods-CronetUnitTestsWithQuic.cronet.xcconfig"; sourceTree = "<group>"; };
 		B94C27C06733CF98CE1B2757 /* Pods-AllTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AllTests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-AllTests/Pods-AllTests.debug.xcconfig"; sourceTree = "<group>"; };
 		C6134277D2EB8B380862A03F /* libPods-CronetUnitTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-CronetUnitTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		CAE086D5B470DA367D415AB0 /* libPods-AllTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-AllTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -191,6 +200,14 @@
 			files = (
 				5E8A5DA91D3840B4000F8BC4 /* libTests.a in Frameworks */,
 				60D2A57ED559F34428C2EEC5 /* libPods-CoreCronetEnd2EndTests.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5E986DE61E53A897009CAD30 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F41FEDE3C89BC498C695AE00 /* libPods-CronetUnitTestsWithQuic.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -281,6 +298,7 @@
 				FBD98AC417B9882D32B19F28 /* libPods-CoreCronetEnd2EndTests.a */,
 				9E9444C764F0FFF64A7EB58E /* libPods-InteropTestsRemoteWithCronet.a */,
 				C6134277D2EB8B380862A03F /* libPods-CronetUnitTests.a */,
+				100AAF6F47BFD5E45AE024FE /* libPods-CronetUnitTestsWithQuic.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -317,6 +335,9 @@
 				64F68A9A6A63CC930DD30A6E /* Pods-CronetUnitTests.debug.xcconfig */,
 				386712AEACF7C2190C4B8B3F /* Pods-CronetUnitTests.cronet.xcconfig */,
 				02192CF1FF9534E3D18C65FC /* Pods-CronetUnitTests.release.xcconfig */,
+				1F664DE32CAAB5B139147AF3 /* Pods-CronetUnitTestsWithQuic.debug.xcconfig */,
+				B8D3892CBE79EB4F5EBF1A44 /* Pods-CronetUnitTestsWithQuic.cronet.xcconfig */,
+				0C2ABF3A55EDA94AE8689296 /* Pods-CronetUnitTestsWithQuic.release.xcconfig */,
 			);
 			name = Pods;
 			sourceTree = "<group>";
@@ -327,6 +348,15 @@
 				5E8A5DA61D3840B4000F8BC4 /* CoreCronetEnd2EndTests.m */,
 			);
 			path = CoreCronetEnd2EndTests;
+			sourceTree = "<group>";
+		};
+		5E986DEA1E53A897009CAD30 /* CronetUnitTestsWithQuic */ = {
+			isa = PBXGroup;
+			children = (
+				5E986DEB1E53A897009CAD30 /* CronetUnitTestsWithQuic.m */,
+				5E986DED1E53A897009CAD30 /* Info.plist */,
+			);
+			path = CronetUnitTestsWithQuic;
 			sourceTree = "<group>";
 		};
 		5EAD6D251E27047400002378 /* CronetUnitTests */ = {
@@ -355,6 +385,7 @@
 				5E8A5DA51D3840B4000F8BC4 /* CoreCronetEnd2EndTests */,
 				5EE84BF21D4717E40050C6CC /* InteropTestsRemoteWithCronet */,
 				5EAD6D251E27047400002378 /* CronetUnitTests */,
+				5E986DEA1E53A897009CAD30 /* CronetUnitTestsWithQuic */,
 				635697C81B14FC11007A7283 /* Products */,
 				51E4650F34F854F41FF053B3 /* Pods */,
 				136D535E19727099B941D7B1 /* Frameworks */,
@@ -373,6 +404,7 @@
 				5E8A5DA41D3840B4000F8BC4 /* CoreCronetEnd2EndTests.xctest */,
 				5EE84BF11D4717E40050C6CC /* InteropTestsRemoteWithCronet.xctest */,
 				5EAD6D241E27047400002378 /* CronetUnitTests.xctest */,
+				5E986DE91E53A897009CAD30 /* CronetUnitTestsWithQuic.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -423,6 +455,26 @@
 			name = CoreCronetEnd2EndTests;
 			productName = CoreCronetEnd2EndTests;
 			productReference = 5E8A5DA41D3840B4000F8BC4 /* CoreCronetEnd2EndTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		5E986DE81E53A897009CAD30 /* CronetUnitTestsWithQuic */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5E986DF11E53A897009CAD30 /* Build configuration list for PBXNativeTarget "CronetUnitTestsWithQuic" */;
+			buildPhases = (
+				DFA025FD90BA9066356C2354 /* [CP] Check Pods Manifest.lock */,
+				5E986DE51E53A897009CAD30 /* Sources */,
+				5E986DE61E53A897009CAD30 /* Frameworks */,
+				5E986DE71E53A897009CAD30 /* Resources */,
+				5A4F6B9E572B2AB9A1F69144 /* [CP] Embed Pods Frameworks */,
+				CF206413F391D22641F1456E /* [CP] Copy Pods Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CronetUnitTestsWithQuic;
+			productName = CronetUnitTestsWithQuic;
+			productReference = 5E986DE91E53A897009CAD30 /* CronetUnitTestsWithQuic.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
 		5EAD6D231E27047400002378 /* CronetUnitTests */ = {
@@ -603,6 +655,9 @@
 					5E8A5DA31D3840B4000F8BC4 = {
 						CreatedOnToolsVersion = 7.3.1;
 					};
+					5E986DE81E53A897009CAD30 = {
+						CreatedOnToolsVersion = 7.3.1;
+					};
 					5EAD6D231E27047400002378 = {
 						CreatedOnToolsVersion = 7.3.1;
 					};
@@ -650,12 +705,20 @@
 				5E8A5DA31D3840B4000F8BC4 /* CoreCronetEnd2EndTests */,
 				5EE84BF01D4717E40050C6CC /* InteropTestsRemoteWithCronet */,
 				5EAD6D231E27047400002378 /* CronetUnitTests */,
+				5E986DE81E53A897009CAD30 /* CronetUnitTestsWithQuic */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		5E8A5DA21D3840B4000F8BC4 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5E986DE71E53A897009CAD30 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -774,6 +837,21 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-RxLibraryUnitTests/Pods-RxLibraryUnitTests-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		5A4F6B9E572B2AB9A1F69144 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-CronetUnitTestsWithQuic/Pods-CronetUnitTestsWithQuic-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		5C20DCCB71C3991E6FE78C22 /* [CP] Check Pods Manifest.lock */ = {
@@ -1061,6 +1139,21 @@
 			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-RxLibraryUnitTests/Pods-RxLibraryUnitTests-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
+		CF206413F391D22641F1456E /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Copy Pods Resources";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-CronetUnitTestsWithQuic/Pods-CronetUnitTestsWithQuic-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
 		DB4D0E73C229F2FF3B364AB3 /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -1074,6 +1167,21 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-InteropTestsRemoteWithCronet/Pods-InteropTestsRemoteWithCronet-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		DFA025FD90BA9066356C2354 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_ROOT}/../Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n";
 			showEnvVarsInLog = 0;
 		};
 		E63468C760D0724F18861822 /* [CP] Embed Pods Frameworks */ = {
@@ -1114,6 +1222,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				5E8A5DA71D3840B4000F8BC4 /* CoreCronetEnd2EndTests.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5E986DE51E53A897009CAD30 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5E986DEC1E53A897009CAD30 /* CronetUnitTestsWithQuic.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1264,6 +1380,53 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 9.3;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = io.grpc.CoreCronetEnd2EndTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				USER_HEADER_SEARCH_PATHS = "$(inherited) \"${PODS_ROOT}/../../../..\"";
+			};
+			name = Release;
+		};
+		5E986DEE1E53A897009CAD30 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 1F664DE32CAAB5B139147AF3 /* Pods-CronetUnitTestsWithQuic.debug.xcconfig */;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_TESTABILITY = YES;
+				INFOPLIST_FILE = CronetUnitTestsWithQuic/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 9.3;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = io.grpc.CronetUnitTestsWithQuic;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				USER_HEADER_SEARCH_PATHS = "$(inherited) \"${PODS_ROOT}/../../../..\"";
+			};
+			name = Debug;
+		};
+		5E986DEF1E53A897009CAD30 /* Cronet */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = B8D3892CBE79EB4F5EBF1A44 /* Pods-CronetUnitTestsWithQuic.cronet.xcconfig */;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				INFOPLIST_FILE = CronetUnitTestsWithQuic/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 9.3;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = io.grpc.CronetUnitTestsWithQuic;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				USER_HEADER_SEARCH_PATHS = "$(inherited) \"${PODS_ROOT}/../../../..\"";
+			};
+			name = Cronet;
+		};
+		5E986DF01E53A897009CAD30 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 0C2ABF3A55EDA94AE8689296 /* Pods-CronetUnitTestsWithQuic.release.xcconfig */;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				INFOPLIST_FILE = CronetUnitTestsWithQuic/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 9.3;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = io.grpc.CronetUnitTestsWithQuic;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				USER_HEADER_SEARCH_PATHS = "$(inherited) \"${PODS_ROOT}/../../../..\"";
 			};
@@ -1772,6 +1935,16 @@
 				5E8A5DAC1D3840B4000F8BC4 /* Debug */,
 				5EC3C7A71D4FC18C000330E2 /* Cronet */,
 				5E8A5DAD1D3840B4000F8BC4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		5E986DF11E53A897009CAD30 /* Build configuration list for PBXNativeTarget "CronetUnitTestsWithQuic" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5E986DEE1E53A897009CAD30 /* Debug */,
+				5E986DEF1E53A897009CAD30 /* Cronet */,
+				5E986DF01E53A897009CAD30 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

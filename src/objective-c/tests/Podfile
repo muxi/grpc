@@ -40,6 +40,7 @@ end
 %w(
   CoreCronetEnd2EndTests
   CronetUnitTests
+  CronetUnitTestsWithQuic
 ).each do |target_name|
   target target_name do
     pod 'BoringSSL', :podspec => "#{GRPC_LOCAL_SRC}/src/objective-c", :inhibit_warnings => true
