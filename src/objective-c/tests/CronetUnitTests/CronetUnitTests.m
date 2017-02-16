@@ -446,7 +446,7 @@ unsigned int parse_h2_length(const char *field) {
   drain_cq(cq);
   grpc_completion_queue_destroy(cq);
   
-  [self waitForExpectationsWithTimeout:4 handler:nil];
+  [self waitForExpectationsWithTimeout:32 handler:nil];
 }
 
 - (void)testPacketCoalescing {
