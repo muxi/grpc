@@ -2266,6 +2266,7 @@ static void reset_byte_stream(grpc_exec_ctx *exec_ctx, void *arg,
     grpc_closure_sched(exec_ctx, s->on_next, GRPC_ERROR_REF(error));
     s->on_next = NULL;
     GRPC_ERROR_UNREF(s->byte_stream_error);
+    s->byte_stream_error = GRPC_ERROR_NONE;
     grpc_chttp2_cancel_stream(exec_ctx, s->t, s, GRPC_ERROR_REF(error));
     s->byte_stream_error = error;
   }
@@ -2634,6 +2635,7 @@ static void incoming_byte_stream_publish_error(
   grpc_closure_sched(exec_ctx, s->on_next, GRPC_ERROR_REF(error));
   s->on_next = NULL;
   GRPC_ERROR_UNREF(s->byte_stream_error);
+  s->byte_stream_error = GRPC_ERROR_NONE;
   grpc_chttp2_cancel_stream(exec_ctx, bs->transport, bs->stream,
                             GRPC_ERROR_REF(error));
   s->byte_stream_error = GRPC_ERROR_REF(error);
