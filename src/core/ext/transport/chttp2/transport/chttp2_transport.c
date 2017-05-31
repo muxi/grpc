@@ -677,8 +677,10 @@ static int init_stream(grpc_exec_ctx *exec_ctx, grpc_transport *gt,
   GRPC_CLOSURE_INIT(&s->reset_byte_stream, reset_byte_stream, s,
                     grpc_combiner_scheduler(t->combiner));
   grpc_slice_buffer_init(&s->plain_outgoing_frames_buffer);
-  s->stream_compression_ctx =
-      grpc_stream_compression_context_create(GRPC_STREAM_COMPRESSION_COMPRESS);
+  if (s->stream_compression_send_enabled) {
+    s->stream_compression_ctx = grpc_stream_compression_context_create(
+        GRPC_STREAM_COMPRESSION_COMPRESS);
+  }
 
   GRPC_CHTTP2_REF_TRANSPORT(t, "stream");
 
@@ -759,7 +761,10 @@ static void destroy_stream(grpc_exec_ctx *exec_ctx, grpc_transport *gt,
   grpc_chttp2_transport *t = (grpc_chttp2_transport *)gt;
   grpc_chttp2_stream *s = (grpc_chttp2_stream *)gs;
 
-  grpc_stream_compression_context_destroy(s->stream_compression_ctx);
+  if (s->stream_compression_send_enabled) {
+    grpc_stream_compression_context_destroy(s->stream_compression_ctx);
+    s->stream_compression_ctx = NULL;
+  }
 
   s->destroy_stream_arg = then_schedule_closure;
   GRPC_CLOSURE_SCHED(
@@ -1708,6 +1713,7 @@ void grpc_chttp2_maybe_complete_recv_message(grpc_exec_ctx *exec_ctx,
           if (end_of_context) {
             grpc_stream_compression_context_destroy(
                 s->stream_decompression_ctx);
+            s->stream_decompression_ctx = NULL;
           }
         } else {
           error = grpc_deframe_unprocessed_incoming_frames(
@@ -2702,6 +2708,7 @@ static grpc_error *incoming_byte_stream_pull(grpc_exec_ctx *exec_ctx,
       s->unprocessed_incoming_frames_decompressed = true;
       if (end_of_context) {
         grpc_stream_compression_context_destroy(s->stream_decompression_ctx);
+        s->stream_decompression_ctx = NULL;
       }
     }
     error = grpc_deframe_unprocessed_incoming_frames(
