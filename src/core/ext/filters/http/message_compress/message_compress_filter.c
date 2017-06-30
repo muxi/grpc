@@ -89,7 +89,8 @@ static bool skip_compression(grpc_call_element *elem, uint32_t flags,
     return 1;
   }
   if (has_compression_algorithm) {
-    if (calld->compression_algorithm == GRPC_COMPRESS_NONE) {
+    if (calld->compression_algorithm == GRPC_COMPRESS_NONE ||
+        IS_STREAM_COMPRESSION_ALGORITHM(calld->compression_algorithm)) {
       return 1;
     }
     return 0; /* we have an actual call-specific algorithm */
@@ -133,10 +134,6 @@ static grpc_error *process_send_initial_metadata(
       calld->compression_algorithm = GRPC_COMPRESS_NONE;
     }
     *has_compression_algorithm = true;
-
-    grpc_metadata_batch_remove(
-        exec_ctx, initial_metadata,
-        initial_metadata->idx.named.grpc_internal_encoding_request);
   } else {
     /* If no algorithm was found in the metadata and we aren't
      * exceptionally skipping compression, fall back to the channel

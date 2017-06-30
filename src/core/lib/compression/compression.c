@@ -41,6 +41,9 @@ int grpc_compression_algorithm_parse(grpc_slice name,
   } else if (grpc_slice_eq(name, GRPC_MDSTR_DEFLATE)) {
     *algorithm = GRPC_COMPRESS_DEFLATE;
     return 1;
+  } else if (grpc_slice_eq(name, GRPC_MDSTR_STREAM_GZIP)) {
+    *algorithm = GRPC_STREAM_COMPRESS_GZIP;
+    return 1;
   } else {
     return 0;
   }
@@ -59,6 +62,9 @@ int grpc_compression_algorithm_name(grpc_compression_algorithm algorithm,
       return 1;
     case GRPC_COMPRESS_GZIP:
       *name = "gzip";
+      return 1;
+    case GRPC_STREAM_COMPRESS_GZIP:
+      *name = "stream-gzip";
       return 1;
     case GRPC_COMPRESS_ALGORITHMS_COUNT:
       return 0;
@@ -83,6 +89,8 @@ grpc_slice grpc_compression_algorithm_slice(
       return GRPC_MDSTR_DEFLATE;
     case GRPC_COMPRESS_GZIP:
       return GRPC_MDSTR_GZIP;
+    case GRPC_STREAM_COMPRESS_GZIP:
+      return GRPC_MDSTR_STREAM_GZIP;
     case GRPC_COMPRESS_ALGORITHMS_COUNT:
       return grpc_empty_slice();
   }
@@ -98,6 +106,8 @@ grpc_mdelem grpc_compression_encoding_mdelem(
       return GRPC_MDELEM_GRPC_ENCODING_DEFLATE;
     case GRPC_COMPRESS_GZIP:
       return GRPC_MDELEM_GRPC_ENCODING_GZIP;
+    case GRPC_STREAM_COMPRESS_GZIP:
+      return GRPC_MDELEM_CONTENT_ENCODING_GZIP;
     default:
       break;
   }
@@ -132,52 +142,61 @@ grpc_compression_algorithm grpc_compression_algorithm_for_level(
     grpc_compression_level level, uint32_t accepted_encodings) {
   GRPC_API_TRACE("grpc_compression_algorithm_for_level(level=%d)", 1,
                  ((int)level));
-  if (level > GRPC_COMPRESS_LEVEL_HIGH) {
+  if (level >= GRPC_COMPRESS_LEVEL_NONE &&
+      level < GRPC_STREAM_COMPRESS_LEVEL_LOW) {
+    /* Message-wise compression */
+    const size_t num_supported =
+        GPR_BITCOUNT(accepted_encodings) - 1; /* discard NONE */
+    if (level == GRPC_COMPRESS_LEVEL_NONE || num_supported == 0) {
+      return GRPC_COMPRESS_NONE;
+    }
+
+    GPR_ASSERT(level > 0);
+
+    /* Establish a "ranking" or compression algorithms in increasing order of
+     * compression.
+     * This is simplistic and we will probably want to introduce other
+     * dimensions
+     * in the future (cpu/memory cost, etc). */
+    const grpc_compression_algorithm algos_ranking[] = {GRPC_COMPRESS_GZIP,
+                                                        GRPC_COMPRESS_DEFLATE};
+
+    /* intersect algos_ranking with the supported ones keeping the ranked order
+     */
+    grpc_compression_algorithm
+        sorted_supported_algos[GRPC_COMPRESS_ALGORITHMS_COUNT];
+    size_t algos_supported_idx = 0;
+    for (size_t i = 0; i < GPR_ARRAY_SIZE(algos_ranking); i++) {
+      const grpc_compression_algorithm alg = algos_ranking[i];
+      for (size_t j = 0; j < num_supported; j++) {
+        if (GPR_BITGET(accepted_encodings, alg) == 1) {
+          /* if \a alg in supported */
+          sorted_supported_algos[algos_supported_idx++] = alg;
+          break;
+        }
+      }
+      if (algos_supported_idx == num_supported) break;
+    }
+
+    switch (level) {
+      case GRPC_COMPRESS_LEVEL_NONE:
+        abort(); /* should have been handled already */
+      case GRPC_COMPRESS_LEVEL_LOW:
+        return sorted_supported_algos[0];
+      case GRPC_COMPRESS_LEVEL_MED:
+        return sorted_supported_algos[num_supported / 2];
+      case GRPC_COMPRESS_LEVEL_HIGH:
+        return sorted_supported_algos[num_supported - 1];
+      default:
+        abort();
+    };
+  } else if (level >= GRPC_STREAM_COMPRESS_LEVEL_LOW &&
+             level < GRPC_STREAM_COMPRESS_LEVEL_HIGH) {
+    /* Stream compression */
+    /* Only supports gzip at this time. */
+    return GRPC_STREAM_COMPRESS_GZIP;
+  } else {
     gpr_log(GPR_ERROR, "Unknown compression level %d.", (int)level);
     abort();
   }
-
-  const size_t num_supported =
-      GPR_BITCOUNT(accepted_encodings) - 1; /* discard NONE */
-  if (level == GRPC_COMPRESS_LEVEL_NONE || num_supported == 0) {
-    return GRPC_COMPRESS_NONE;
-  }
-
-  GPR_ASSERT(level > 0);
-
-  /* Establish a "ranking" or compression algorithms in increasing order of
-   * compression.
-   * This is simplistic and we will probably want to introduce other dimensions
-   * in the future (cpu/memory cost, etc). */
-  const grpc_compression_algorithm algos_ranking[] = {GRPC_COMPRESS_GZIP,
-                                                      GRPC_COMPRESS_DEFLATE};
-
-  /* intersect algos_ranking with the supported ones keeping the ranked order */
-  grpc_compression_algorithm
-      sorted_supported_algos[GRPC_COMPRESS_ALGORITHMS_COUNT];
-  size_t algos_supported_idx = 0;
-  for (size_t i = 0; i < GPR_ARRAY_SIZE(algos_ranking); i++) {
-    const grpc_compression_algorithm alg = algos_ranking[i];
-    for (size_t j = 0; j < num_supported; j++) {
-      if (GPR_BITGET(accepted_encodings, alg) == 1) {
-        /* if \a alg in supported */
-        sorted_supported_algos[algos_supported_idx++] = alg;
-        break;
-      }
-    }
-    if (algos_supported_idx == num_supported) break;
-  }
-
-  switch (level) {
-    case GRPC_COMPRESS_LEVEL_NONE:
-      abort(); /* should have been handled already */
-    case GRPC_COMPRESS_LEVEL_LOW:
-      return sorted_supported_algos[0];
-    case GRPC_COMPRESS_LEVEL_MED:
-      return sorted_supported_algos[num_supported / 2];
-    case GRPC_COMPRESS_LEVEL_HIGH:
-      return sorted_supported_algos[num_supported - 1];
-    default:
-      abort();
-  };
 }

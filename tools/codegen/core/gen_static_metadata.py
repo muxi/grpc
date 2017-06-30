@@ -52,6 +52,8 @@ CONFIG = [
     'grpc.max_response_message_bytes',
     # well known method names
     '/grpc.lb.v1.LoadBalancer/BalanceLoad',
+    # stream compression identifier
+    'stream-gzip',
     # metadata elements
     ('grpc-status', '0'),
     ('grpc-status', '1'),
@@ -89,7 +91,7 @@ CONFIG = [
     ('authorization', ''),
     ('cache-control', ''),
     ('content-disposition', ''),
-    ('content-encoding', ''),
+    ('content-encoding', 'gzip'),
     ('content-language', ''),
     ('content-length', ''),
     ('content-location', ''),
@@ -145,6 +147,7 @@ METADATA_BATCH_CALLOUTS = [
     'grpc-tags-bin',
     'grpc-trace-bin',
     'content-type',
+    'content-encoding',
     'grpc-internal-encoding-request',
     'user-agent',
     'host',

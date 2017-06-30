@@ -58,8 +58,12 @@ typedef enum {
   GRPC_COMPRESS_DEFLATE,
   GRPC_COMPRESS_GZIP,
   /* TODO(ctiller): snappy */
+  GRPC_STREAM_COMPRESS_GZIP,
   GRPC_COMPRESS_ALGORITHMS_COUNT
 } grpc_compression_algorithm;
+
+#define IS_STREAM_COMPRESSION_ALGORITHM(x) \
+    ((x) > GRPC_COMPRESS_GZIP && (x) < GRPC_COMPRESS_ALGORITHMS_COUNT)
 
 /** Compression levels allow a party with knowledge of its peer's accepted
  * encodings to request compression in an abstract way. The level-algorithm
@@ -70,6 +74,9 @@ typedef enum {
   GRPC_COMPRESS_LEVEL_LOW,
   GRPC_COMPRESS_LEVEL_MED,
   GRPC_COMPRESS_LEVEL_HIGH,
+  GRPC_STREAM_COMPRESS_LEVEL_LOW,
+  GRPC_STREAM_COMPRESS_LEVEL_MED,
+  GRPC_STREAM_COMPRESS_LEVEL_HIGH,
   GRPC_COMPRESS_LEVEL_COUNT
 } grpc_compression_level;
 
