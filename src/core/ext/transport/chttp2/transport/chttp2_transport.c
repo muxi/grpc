@@ -677,10 +677,6 @@ static int init_stream(grpc_exec_ctx *exec_ctx, grpc_transport *gt,
   GRPC_CLOSURE_INIT(&s->reset_byte_stream, reset_byte_stream, s,
                     grpc_combiner_scheduler(t->combiner));
   grpc_slice_buffer_init(&s->plain_outgoing_frames_buffer);
-  if (s->stream_compression_send_enabled) {
-    s->stream_compression_ctx = grpc_stream_compression_context_create(
-        GRPC_STREAM_COMPRESSION_COMPRESS);
-  }
 
   GRPC_CHTTP2_REF_TRANSPORT(t, "stream");
 
@@ -761,7 +757,7 @@ static void destroy_stream(grpc_exec_ctx *exec_ctx, grpc_transport *gt,
   grpc_chttp2_transport *t = (grpc_chttp2_transport *)gt;
   grpc_chttp2_stream *s = (grpc_chttp2_stream *)gs;
 
-  if (s->stream_compression_send_enabled) {
+  if (s->stream_compression_ctx != NULL) {
     grpc_stream_compression_context_destroy(s->stream_compression_ctx);
     s->stream_compression_ctx = NULL;
   }
@@ -1148,6 +1144,10 @@ static void add_fetched_slice_locked(grpc_exec_ctx *exec_ctx,
   if (s->stream_compression_send_enabled) {
     grpc_slice_buffer_add(&s->plain_outgoing_frames_buffer, s->fetching_slice);
     size_t output_len;
+    if (s->stream_compression_ctx == NULL) {
+      s->stream_compression_ctx = grpc_stream_compression_context_create(
+          GRPC_STREAM_COMPRESSION_COMPRESS);
+    }
     grpc_stream_compress(s->stream_compression_ctx,
                          &s->plain_outgoing_frames_buffer,
                          &s->flow_controlled_buffer, &output_len, ~(size_t)0,
@@ -1171,6 +1171,10 @@ static void continue_fetching_send_locked(grpc_exec_ctx *exec_ctx,
     if (s->fetched_send_message_length == s->fetching_send_message->length) {
       if (s->stream_compression_send_enabled) {
         size_t output_len;
+        if (s->stream_compression_ctx == NULL) {
+          s->stream_compression_ctx = grpc_stream_compression_context_create(
+              GRPC_STREAM_COMPRESSION_COMPRESS);
+        }
         grpc_stream_compress(s->stream_compression_ctx,
                              &s->plain_outgoing_frames_buffer,
                              &s->flow_controlled_buffer, &output_len,
@@ -1292,7 +1296,8 @@ static void perform_stream_op_locked(grpc_exec_ctx *exec_ctx, void *stream_op,
 
     /* Identify stream compression */
     s->stream_compression_send_enabled =
-        (op_payload->send_initial_metadata.send_initial_metadata->idx.named.content_encoding != NULL);
+        (op_payload->send_initial_metadata.send_initial_metadata->idx.named
+             .content_encoding != NULL);
 
     s->send_initial_metadata_finished = add_closure_barrier(on_complete);
     s->send_initial_metadata =
