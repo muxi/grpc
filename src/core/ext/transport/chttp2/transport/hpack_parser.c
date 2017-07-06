@@ -1656,9 +1656,9 @@ static void force_client_rst_stream(grpc_exec_ctx *exec_ctx, void *sp,
 }
 
 static void parse_stream_compression_md(grpc_exec_ctx *exec_ctx,
-                                   grpc_chttp2_transport *t,
-                                   grpc_chttp2_stream *s,
-                                   grpc_metadata_batch *initial_metadata) {
+                                        grpc_chttp2_transport *t,
+                                        grpc_chttp2_stream *s,
+                                        grpc_metadata_batch *initial_metadata) {
   if (initial_metadata->idx.named.content_encoding != NULL) {
     grpc_slice content_encoding =
         GRPC_MDVALUE(initial_metadata->idx.named.content_encoding->md);
@@ -1699,8 +1699,10 @@ grpc_error *grpc_chttp2_header_parser_parse(grpc_exec_ctx *exec_ctx,
               "Too many trailer frames");
         }
         /* Process stream compression md element if it exists */
-        if (s->header_frames_received == 0) { /* Only acts on initial metadata */
-          parse_stream_compression_md(exec_ctx, t, s, &s->metadata_buffer[0].batch);
+        if (s->header_frames_received ==
+            0) { /* Only acts on initial metadata */
+          parse_stream_compression_md(exec_ctx, t, s,
+                                      &s->metadata_buffer[0].batch);
         }
         s->published_metadata[s->header_frames_received] =
             GRPC_METADATA_PUBLISHED_FROM_WIRE;
