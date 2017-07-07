@@ -160,7 +160,7 @@ grpc_compression_algorithm grpc_compression_algorithm_for_level(
       GRPC_IS_MESSAGE_COMPRESSION_LEVEL(level)) {
     /* Message-wise compression */
     const size_t num_supported =
-        GPR_BITCOUNT(accepted_encodings) - 1; /* discard NONE */
+        GPR_BITCOUNT(accepted_encodings & GRPC_MESSAGE_COMPRESSION_ALGORITHM_MASK); /* discard NONE */
     if (level == GRPC_COMPRESS_LEVEL_NONE || num_supported == 0) {
       return GRPC_COMPRESS_NONE;
     }
