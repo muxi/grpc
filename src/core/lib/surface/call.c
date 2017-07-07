@@ -996,6 +996,7 @@ static void recv_initial_filter(grpc_exec_ctx *exec_ctx, grpc_call *call,
   }
 
   uint32_t encodings_accepted_by_peer = 0;
+  GPR_BITSET(&encodings_accepted_by_peer, GRPC_COMPRESS_NONE);
   if (b->idx.named.grpc_accept_encoding != NULL) {
     GPR_TIMER_BEGIN("encodings_accepted_by_peer", 0);
     parse_encodings_accepted_by_peer(exec_ctx,
