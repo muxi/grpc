@@ -761,6 +761,10 @@ static void destroy_stream(grpc_exec_ctx *exec_ctx, grpc_transport *gt,
     grpc_stream_compression_context_destroy(s->stream_compression_ctx);
     s->stream_compression_ctx = NULL;
   }
+  if (s->stream_decompression_ctx != NULL) {
+    grpc_stream_compression_context_destroy(s->stream_decompression_ctx);
+    s->stream_decompression_ctx = NULL;
+  }
 
   s->destroy_stream_arg = then_schedule_closure;
   GRPC_CLOSURE_SCHED(
