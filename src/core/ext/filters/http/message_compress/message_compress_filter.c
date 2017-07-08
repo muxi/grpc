@@ -144,6 +144,11 @@ static grpc_error *process_send_initial_metadata(
       calld->compression_algorithm = GRPC_COMPRESS_NONE;
     }
     *has_compression_algorithm = true;
+    grpc_metadata_batch_remove(
+        exec_ctx, initial_metadata,
+        initial_metadata->idx.named.grpc_internal_encoding_request != NULL ? 
+        initial_metadata->idx.named.grpc_internal_encoding_request :
+        initial_metadata->idx.named.grpc_internal_stream_encoding_request);
   } else {
     /* If no algorithm was found in the metadata and we aren't
      * exceptionally skipping compression, fall back to the channel
