@@ -635,11 +635,11 @@ static void test_invoke_request_with_disabled_algorithm(
 }
 
 void compressed_payload(grpc_end2end_test_config config) {
-  test_invoke_request_with_server_level(config);
   test_invoke_request_with_exceptionally_uncompressed_payload(config);
   test_invoke_request_with_uncompressed_payload(config);
   test_invoke_request_with_compressed_payload(config);
   test_invoke_request_with_send_message_before_initial_metadata(config);
+  test_invoke_request_with_server_level(config);
   test_invoke_request_with_compressed_payload_md_override(config);
   test_invoke_request_with_disabled_algorithm(config);
 }
