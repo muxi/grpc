@@ -4336,6 +4336,7 @@ add_library(end2end_tests
   test/core/end2end/tests/simple_delayed_request.c
   test/core/end2end/tests/simple_metadata.c
   test/core/end2end/tests/simple_request.c
+  test/core/end2end/tests/stream_compressed_payload.c
   test/core/end2end/tests/stream_compression.c
   test/core/end2end/tests/streaming_error_response.c
   test/core/end2end/tests/trailing_metadata.c
@@ -4435,6 +4436,7 @@ add_library(end2end_nosec_tests
   test/core/end2end/tests/simple_delayed_request.c
   test/core/end2end/tests/simple_metadata.c
   test/core/end2end/tests/simple_request.c
+  test/core/end2end/tests/stream_compressed_payload.c
   test/core/end2end/tests/stream_compression.c
   test/core/end2end/tests/streaming_error_response.c
   test/core/end2end/tests/trailing_metadata.c
