@@ -271,8 +271,6 @@ static void request_with_payload_template(
     uint32_t client_send_flags_bitmask,
     grpc_compression_algorithm default_client_channel_compression_algorithm,
     grpc_compression_algorithm default_server_channel_compression_algorithm,
-    grpc_compression_algorithm expected_algorithm_from_client,
-    grpc_compression_algorithm expected_algorithm_from_server,
     grpc_metadata *client_init_metadata, bool set_server_level,
     grpc_compression_level server_compression_level,
     bool send_message_before_initial_metadata) {
@@ -440,8 +438,6 @@ static void request_with_payload_template(
 
     GPR_ASSERT(request_payload_recv->type == GRPC_BB_RAW);
     GPR_ASSERT(byte_buffer_eq_string(request_payload_recv, request_str));
-    GPR_ASSERT(request_payload_recv->data.raw.compression ==
-               expected_algorithm_from_client);
 
     memset(ops, 0, sizeof(ops));
     op = ops;
@@ -469,15 +465,6 @@ static void request_with_payload_template(
 
     GPR_ASSERT(response_payload_recv->type == GRPC_BB_RAW);
     GPR_ASSERT(byte_buffer_eq_string(response_payload_recv, response_str));
-    if (server_compression_level > GRPC_COMPRESS_LEVEL_NONE) {
-      const grpc_compression_algorithm algo_for_server_level =
-          grpc_call_compression_for_level(s, server_compression_level);
-      GPR_ASSERT(response_payload_recv->data.raw.compression ==
-                 algo_for_server_level);
-    } else {
-      GPR_ASSERT(response_payload_recv->data.raw.compression ==
-                 expected_algorithm_from_server);
-    }
 
     grpc_byte_buffer_destroy(request_payload);
     grpc_byte_buffer_destroy(response_payload);
@@ -549,35 +536,32 @@ static void test_invoke_request_with_exceptionally_uncompressed_payload(
     grpc_end2end_test_config config) {
   request_with_payload_template(
       config, "test_invoke_request_with_exceptionally_uncompressed_payload",
-      GRPC_WRITE_NO_COMPRESS, GRPC_COMPRESS_GZIP, GRPC_COMPRESS_GZIP,
-      GRPC_COMPRESS_NONE, GRPC_COMPRESS_GZIP, NULL, false,
-      /* ignored */ GRPC_COMPRESS_LEVEL_NONE, false);
+      GRPC_WRITE_NO_COMPRESS, GRPC_COMPRESS_GZIP, GRPC_COMPRESS_GZIP, NULL,
+      false, /* ignored */ GRPC_COMPRESS_LEVEL_NONE, false);
 }
 
 static void test_invoke_request_with_compressed_payload(
     grpc_end2end_test_config config) {
   request_with_payload_template(
       config, "test_invoke_request_with_compressed_payload", 0,
-      GRPC_COMPRESS_GZIP, GRPC_COMPRESS_GZIP, GRPC_COMPRESS_GZIP,
-      GRPC_COMPRESS_GZIP, NULL, false, /* ignored */ GRPC_COMPRESS_LEVEL_NONE,
-      false);
+      GRPC_STREAM_COMPRESS_GZIP, GRPC_STREAM_COMPRESS_GZIP, NULL, false, /* ignored */
+      GRPC_COMPRESS_LEVEL_NONE, false);
 }
 
 static void test_invoke_request_with_send_message_before_initial_metadata(
     grpc_end2end_test_config config) {
   request_with_payload_template(
-      config, "test_invoke_request_with_compressed_payload", 0,
-      GRPC_COMPRESS_GZIP, GRPC_COMPRESS_GZIP, GRPC_COMPRESS_GZIP,
-      GRPC_COMPRESS_GZIP, NULL, false, /* ignored */ GRPC_COMPRESS_LEVEL_NONE,
-      true);
+      config, "test_invoke_request_with_send_message_before_initial_metadata", 0,
+      GRPC_STREAM_COMPRESS_GZIP, GRPC_STREAM_COMPRESS_GZIP, NULL, false, /* ignored */
+      GRPC_COMPRESS_LEVEL_NONE, true);
 }
 
 static void test_invoke_request_with_server_level(
     grpc_end2end_test_config config) {
   request_with_payload_template(
       config, "test_invoke_request_with_server_level", 0, GRPC_COMPRESS_NONE,
-      GRPC_COMPRESS_NONE, GRPC_COMPRESS_NONE, GRPC_COMPRESS_NONE /* ignored */,
-      NULL, true, GRPC_COMPRESS_LEVEL_HIGH, false);
+      GRPC_COMPRESS_NONE, /* ignored */ NULL, true, GRPC_COMPRESS_LEVEL_HIGH,
+      false);
 }
 
 static void test_invoke_request_with_compressed_payload_md_override(
@@ -599,22 +583,19 @@ static void test_invoke_request_with_compressed_payload_md_override(
   /* Channel default NONE (aka IDENTITY), call override to GZIP */
   request_with_payload_template(
       config, "test_invoke_request_with_compressed_payload_md_override_1", 0,
-      GRPC_COMPRESS_NONE, GRPC_COMPRESS_NONE, GRPC_COMPRESS_GZIP,
-      GRPC_COMPRESS_NONE, &gzip_compression_override, false,
+      GRPC_COMPRESS_NONE, GRPC_COMPRESS_NONE, &gzip_compression_override, false,
       /*ignored*/ GRPC_COMPRESS_LEVEL_NONE, false);
 
   /* Channel default DEFLATE, call override to GZIP */
   request_with_payload_template(
       config, "test_invoke_request_with_compressed_payload_md_override_2", 0,
-      GRPC_COMPRESS_DEFLATE, GRPC_COMPRESS_NONE, GRPC_COMPRESS_GZIP,
-      GRPC_COMPRESS_NONE, &gzip_compression_override, false,
+      GRPC_COMPRESS_DEFLATE, GRPC_COMPRESS_NONE, &gzip_compression_override, false,
       /*ignored*/ GRPC_COMPRESS_LEVEL_NONE, false);
 
   /* Channel default DEFLATE, call override to NONE (aka IDENTITY) */
   request_with_payload_template(
       config, "test_invoke_request_with_compressed_payload_md_override_3", 0,
-      GRPC_COMPRESS_DEFLATE, GRPC_COMPRESS_NONE, GRPC_COMPRESS_NONE,
-      GRPC_COMPRESS_NONE, &identity_compression_override, false,
+      GRPC_COMPRESS_DEFLATE, GRPC_COMPRESS_NONE, &identity_compression_override, false,
       /*ignored*/ GRPC_COMPRESS_LEVEL_NONE, false);
 }
 
@@ -625,13 +606,17 @@ static void test_invoke_request_with_disabled_algorithm(
       GRPC_COMPRESS_GZIP, GRPC_COMPRESS_GZIP, GRPC_STATUS_UNIMPLEMENTED, NULL);
 }
 
-void compressed_payload(grpc_end2end_test_config config) {
-  test_invoke_request_with_compressed_payload(config);
+void stream_compressed_payload(grpc_end2end_test_config config) {
   test_invoke_request_with_send_message_before_initial_metadata(config);
+  if (false) {
   test_invoke_request_with_server_level(config);
   test_invoke_request_with_compressed_payload_md_override(config);
   test_invoke_request_with_disabled_algorithm(config);
   test_invoke_request_with_exceptionally_uncompressed_payload(config);
+  }
+  if (false) {
+  test_invoke_request_with_compressed_payload(config);
+  }
 }
 
-void compressed_payload_pre_init(void) {}
+void stream_compressed_payload_pre_init(void) {}
