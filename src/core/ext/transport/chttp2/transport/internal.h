@@ -531,8 +531,6 @@ struct grpc_chttp2_stream {
   grpc_stream_compression_context *stream_decompression_ctx;
   /** Stream compression compress context */
   grpc_stream_compression_context *stream_compression_ctx;
-  /** Buffer for plain data before compressed by stream compression */
-  grpc_slice_buffer plain_outgoing_frames_buffer;
 };
 
 /** Transport writing call flow:
