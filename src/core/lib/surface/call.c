@@ -769,10 +769,9 @@ uint32_t grpc_call_test_only_get_message_flags(grpc_call *call) {
 
 static void destroy_encodings_accepted_by_peer(void *p) { return; }
 
-static void parse_encodings_accepted_by_peer(grpc_exec_ctx *exec_ctx,
-                                           grpc_mdelem mdel,
-                                           uint32_t *encodings_accepted_by_peer,
-                                           bool stream_compression) {
+static void parse_encodings_accepted_by_peer(
+    grpc_exec_ctx *exec_ctx, grpc_mdelem mdel,
+    uint32_t *encodings_accepted_by_peer, bool stream_compression) {
   size_t i;
   grpc_compression_algorithm algorithm;
   grpc_slice_buffer accept_encoding_parts;
@@ -785,8 +784,8 @@ static void parse_encodings_accepted_by_peer(grpc_exec_ctx *exec_ctx,
     uint32_t flag = (uint32_t)(((uintptr_t)accepted_user_data) - 1);
     if (stream_compression) {
       *encodings_accepted_by_peer |= flag & 1u;
-      *encodings_accepted_by_peer |= 
-          (flag & ~(uint32_t)1) << GRPC_STREAM_COMPRESS_FLAG_OFFSET;
+      *encodings_accepted_by_peer |= (flag & ~(uint32_t)1)
+                                     << GRPC_STREAM_COMPRESS_FLAG_OFFSET;
     } else {
       *encodings_accepted_by_peer |= flag;
     }
@@ -805,15 +804,15 @@ static void parse_encodings_accepted_by_peer(grpc_exec_ctx *exec_ctx,
     grpc_slice accept_encoding_entry_slice = accept_encoding_parts.slices[i];
     int result;
     if (stream_compression) {
-      result = grpc_stream_compression_algorithm_parse(accept_encoding_entry_slice,
-                                                       &algorithm);
+      result = grpc_stream_compression_algorithm_parse(
+          accept_encoding_entry_slice, &algorithm);
       if (result) {
-        user_data |= (1u << (algorithm == GRPC_COMPRESS_NONE ? 0 :
-                                         algorithm -
-                                         (GRPC_STREAM_COMPRESS_FLAG_OFFSET)));
+        user_data |=
+            (1u << (algorithm == GRPC_COMPRESS_NONE
+                        ? 0
+                        : algorithm - (GRPC_STREAM_COMPRESS_FLAG_OFFSET)));
       }
-    }
-    else {
+    } else {
       result = grpc_compression_algorithm_parse(accept_encoding_entry_slice,
                                                 &algorithm);
       if (result) {
@@ -938,7 +937,8 @@ static uint32_t decode_status(grpc_mdelem md) {
   return status;
 }
 
-static grpc_compression_algorithm decode_compression(grpc_mdelem md, bool stream_compression) {
+static grpc_compression_algorithm decode_compression(grpc_mdelem md,
+                                                     bool stream_compression) {
   grpc_compression_algorithm algorithm;
   if (stream_compression) {
     algorithm = grpc_stream_compression_algorithm_from_slice(GRPC_MDVALUE(md));
@@ -1007,8 +1007,7 @@ static void recv_initial_filter(grpc_exec_ctx *exec_ctx, grpc_call *call,
   }
   if (b->idx.named.accept_encoding != NULL) {
     GPR_TIMER_BEGIN("encodings_accepted_by_peer", 0);
-    parse_encodings_accepted_by_peer(exec_ctx,
-                                     b->idx.named.accept_encoding->md,
+    parse_encodings_accepted_by_peer(exec_ctx, b->idx.named.accept_encoding->md,
                                      &encodings_accepted_by_peer, true);
     grpc_metadata_batch_remove(exec_ctx, b, b->idx.named.accept_encoding);
     GPR_TIMER_END("encodings_accepted_by_peer", 0);
@@ -1306,7 +1305,8 @@ static void process_data_after_md(grpc_exec_ctx *exec_ctx,
   } else {
     call->test_only_last_message_flags = call->receiving_stream->flags;
     if ((call->receiving_stream->flags & GRPC_WRITE_INTERNAL_COMPRESS) &&
-        (GRPC_IS_MESSAGE_COMPRESSION_ALGORITHM(call->incoming_compression_algorithm))) {
+        (GRPC_IS_MESSAGE_COMPRESSION_ALGORITHM(
+            call->incoming_compression_algorithm))) {
       *call->receiving_buffer = grpc_raw_compressed_byte_buffer_create(
           NULL, 0, call->incoming_compression_algorithm);
     } else {
@@ -1532,11 +1532,11 @@ static grpc_call_error call_start_batch(grpc_exec_ctx *exec_ctx,
                   call, effective_compression_level);
           // the following will be picked up by the compress filter and used as
           // the call's compression algorithm.
-          compression_md.key = GRPC_IS_STREAM_COMPRESSION_ALGORITHM(calgo) ?
-              GRPC_MDSTR_GRPC_INTERNAL_STREAM_ENCODING_REQUEST :
-              GRPC_MDSTR_GRPC_INTERNAL_ENCODING_REQUEST;
-          compression_md.value =
-              grpc_compression_algorithm_slice(calgo);
+          compression_md.key =
+              GRPC_IS_STREAM_COMPRESSION_ALGORITHM(calgo)
+                  ? GRPC_MDSTR_GRPC_INTERNAL_STREAM_ENCODING_REQUEST
+                  : GRPC_MDSTR_GRPC_INTERNAL_ENCODING_REQUEST;
+          compression_md.value = grpc_compression_algorithm_slice(calgo);
           additional_metadata_count++;
         }
 

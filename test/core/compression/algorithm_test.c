@@ -62,7 +62,8 @@ static void test_algorithm_mesh(void) {
     if (GRPC_IS_MESSAGE_COMPRESSION_ALGORITHM(i) || i == GRPC_COMPRESS_NONE) {
       GPR_ASSERT(grpc_slice_eq(GRPC_MDKEY(mdelem), GRPC_MDSTR_GRPC_ENCODING));
     } else {
-      GPR_ASSERT(grpc_slice_eq(GRPC_MDKEY(mdelem), GRPC_MDSTR_CONTENT_ENCODING));
+      GPR_ASSERT(
+          grpc_slice_eq(GRPC_MDKEY(mdelem), GRPC_MDSTR_CONTENT_ENCODING));
     }
     grpc_slice_unref_internal(&exec_ctx, mdstr);
     GRPC_MDELEM_UNREF(&exec_ctx, mdelem);

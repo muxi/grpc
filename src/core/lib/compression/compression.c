@@ -46,8 +46,8 @@ int grpc_compression_algorithm_parse(grpc_slice name,
   }
 }
 
-int grpc_stream_compression_algorithm_parse(grpc_slice name,
-                                            grpc_compression_algorithm *algorithm) {
+int grpc_stream_compression_algorithm_parse(
+    grpc_slice name, grpc_compression_algorithm *algorithm) {
   if (grpc_slice_eq(name, GRPC_MDSTR_IDENTITY)) {
     *algorithm = GRPC_COMPRESS_NONE;
     return 1;
@@ -159,8 +159,9 @@ grpc_compression_algorithm grpc_compression_algorithm_for_level(
   if (level == GRPC_COMPRESS_LEVEL_NONE ||
       GRPC_IS_MESSAGE_COMPRESSION_LEVEL(level)) {
     /* Message-wise compression */
-    const size_t num_supported =
-        GPR_BITCOUNT(accepted_encodings & GRPC_MESSAGE_COMPRESSION_ALGORITHM_MASK); /* discard NONE */
+    const size_t num_supported = GPR_BITCOUNT(
+        accepted_encodings &
+        GRPC_MESSAGE_COMPRESSION_ALGORITHM_MASK); /* discard NONE */
     if (level == GRPC_COMPRESS_LEVEL_NONE || num_supported == 0) {
       return GRPC_COMPRESS_NONE;
     }

@@ -1684,9 +1684,12 @@ void grpc_chttp2_maybe_complete_recv_message(grpc_exec_ctx *exec_ctx,
           }
           if (!grpc_stream_decompress(s->stream_decompression_ctx,
                                       &s->unprocessed_incoming_frames_buffer,
-                                      &decompressed_data, NULL, 5, &end_of_context)) {
-            grpc_slice_buffer_reset_and_unref_internal(exec_ctx, &s->frame_storage);
-            grpc_slice_buffer_reset_and_unref_internal(exec_ctx, &s->unprocessed_incoming_frames_buffer);
+                                      &decompressed_data, NULL, 5,
+                                      &end_of_context)) {
+            grpc_slice_buffer_reset_and_unref_internal(exec_ctx,
+                                                       &s->frame_storage);
+            grpc_slice_buffer_reset_and_unref_internal(
+                exec_ctx, &s->unprocessed_incoming_frames_buffer);
             s->seen_error = true;
           } else {
             error = grpc_deframe_unprocessed_incoming_frames(
@@ -2682,10 +2685,12 @@ static grpc_error *incoming_byte_stream_pull(grpc_exec_ctx *exec_ctx,
         s->stream_decompression_ctx = grpc_stream_compression_context_create(
             GRPC_STREAM_COMPRESSION_DECOMPRESS);
       }
-      if (!grpc_stream_decompress(
-              s->stream_decompression_ctx, &s->unprocessed_incoming_frames_buffer,
-              &decompressed_data, NULL, ~(size_t)0, &end_of_context)) {
-        error = GRPC_ERROR_CREATE_FROM_STATIC_STRING("Stream decompression error.");
+      if (!grpc_stream_decompress(s->stream_decompression_ctx,
+                                  &s->unprocessed_incoming_frames_buffer,
+                                  &decompressed_data, NULL, ~(size_t)0,
+                                  &end_of_context)) {
+        error =
+            GRPC_ERROR_CREATE_FROM_STATIC_STRING("Stream decompression error.");
         return error;
       }
       GPR_ASSERT(s->unprocessed_incoming_frames_buffer.length == 0);

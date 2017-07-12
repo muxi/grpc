@@ -318,20 +318,24 @@ grpc_chttp2_begin_write_result grpc_chttp2_begin_write(
           bool is_last_data_frame;
           bool is_last_frame;
           if (s->stream_compression_send_enabled) {
-            while ((s->flow_controlled_buffer.length > 0 || s->compressed_data_buffer.length > 0) && max_outgoing > 0) {
+            while ((s->flow_controlled_buffer.length > 0 ||
+                    s->compressed_data_buffer.length > 0) &&
+                   max_outgoing > 0) {
               if (s->compressed_data_buffer.length > 0) {
-                uint32_t send_bytes = (uint32_t)GPR_MIN(max_outgoing, s->compressed_data_buffer.length);
+                uint32_t send_bytes = (uint32_t)GPR_MIN(
+                    max_outgoing, s->compressed_data_buffer.length);
                 is_last_data_frame =
                     (send_bytes == s->compressed_data_buffer.length &&
-                    s->flow_controlled_buffer.length == 0 &&
-                    s->fetching_send_message == NULL);
+                     s->flow_controlled_buffer.length == 0 &&
+                     s->fetching_send_message == NULL);
                 is_last_frame =
                     is_last_data_frame && s->send_trailing_metadata != NULL &&
                     grpc_metadata_batch_is_empty(s->send_trailing_metadata);
-                grpc_chttp2_encode_data(s->id, &s->compressed_data_buffer, send_bytes,
-                                        is_last_frame, &s->stats.outgoing, &t->outbuf);
-                GRPC_CHTTP2_FLOW_DEBIT_STREAM("write", t, s, outgoing_window_delta,
-                                              send_bytes);
+                grpc_chttp2_encode_data(s->id, &s->compressed_data_buffer,
+                                        send_bytes, is_last_frame,
+                                        &s->stats.outgoing, &t->outbuf);
+                GRPC_CHTTP2_FLOW_DEBIT_STREAM(
+                    "write", t, s, outgoing_window_delta, send_bytes);
                 GRPC_CHTTP2_FLOW_DEBIT_TRANSPORT("write", t, outgoing_window,
                                                  send_bytes);
                 max_outgoing -= send_bytes;
@@ -340,30 +344,28 @@ grpc_chttp2_begin_write_result grpc_chttp2_begin_write(
                 }
               } else {
                 if (s->stream_compression_ctx == NULL) {
-                  s->stream_compression_ctx = grpc_stream_compression_context_create(
-                      GRPC_STREAM_COMPRESSION_COMPRESS);
+                  s->stream_compression_ctx =
+                      grpc_stream_compression_context_create(
+                          GRPC_STREAM_COMPRESSION_COMPRESS);
                 }
                 s->uncompressed_data_size = s->flow_controlled_buffer.length;
-                GPR_ASSERT(grpc_stream_compress(s->stream_compression_ctx,
-                                                &s->flow_controlled_buffer,
-                                                &s->compressed_data_buffer,
-                                                NULL,
-                                                ~(size_t)0,
-                                                GRPC_STREAM_COMPRESSION_FLUSH_SYNC));
+                GPR_ASSERT(grpc_stream_compress(
+                    s->stream_compression_ctx, &s->flow_controlled_buffer,
+                    &s->compressed_data_buffer, NULL, ~(size_t)0,
+                    GRPC_STREAM_COMPRESSION_FLUSH_SYNC));
               }
             }
           } else {
-            uint32_t send_bytes =
-                (uint32_t)GPR_MIN(max_outgoing, s->flow_controlled_buffer.length);
-            is_last_data_frame =
-              s->fetching_send_message == NULL &&
-              send_bytes == s->flow_controlled_buffer.length;
+            uint32_t send_bytes = (uint32_t)GPR_MIN(
+                max_outgoing, s->flow_controlled_buffer.length);
+            is_last_data_frame = s->fetching_send_message == NULL &&
+                                 send_bytes == s->flow_controlled_buffer.length;
             is_last_frame =
-              is_last_data_frame && s->send_trailing_metadata != NULL &&
-              grpc_metadata_batch_is_empty(s->send_trailing_metadata);
-            grpc_chttp2_encode_data(s->id, &s->flow_controlled_buffer, send_bytes,
-                                    is_last_frame, &s->stats.outgoing,
-                                    &t->outbuf);
+                is_last_data_frame && s->send_trailing_metadata != NULL &&
+                grpc_metadata_batch_is_empty(s->send_trailing_metadata);
+            grpc_chttp2_encode_data(s->id, &s->flow_controlled_buffer,
+                                    send_bytes, is_last_frame,
+                                    &s->stats.outgoing, &t->outbuf);
             GRPC_CHTTP2_FLOW_DEBIT_STREAM("write", t, s, outgoing_window_delta,
                                           send_bytes);
             GRPC_CHTTP2_FLOW_DEBIT_TRANSPORT("write", t, outgoing_window,
@@ -387,7 +389,8 @@ grpc_chttp2_begin_write_result grpc_chttp2_begin_write(
             }
           }
           now_writing = true;
-          if (s->flow_controlled_buffer.length > 0 || s->compressed_data_buffer.length > 0) {
+          if (s->flow_controlled_buffer.length > 0 ||
+              s->compressed_data_buffer.length > 0) {
             GRPC_CHTTP2_STREAM_REF(s, "chttp2_writing:fork");
             grpc_chttp2_list_add_writable_stream(t, s);
           }

@@ -114,17 +114,19 @@ static grpc_error *process_send_initial_metadata(
   /* Parse incoming request for compression. If any, it'll be available
    * at calld->compression_algorithm */
   if (initial_metadata->idx.named.grpc_internal_encoding_request != NULL ||
-      initial_metadata->idx.named.grpc_internal_stream_encoding_request != NULL) {
+      initial_metadata->idx.named.grpc_internal_stream_encoding_request !=
+          NULL) {
     int result;
     grpc_mdelem md;
     if (initial_metadata->idx.named.grpc_internal_encoding_request != NULL) {
       md = initial_metadata->idx.named.grpc_internal_encoding_request->md;
       result = grpc_compression_algorithm_parse(GRPC_MDVALUE(md),
-                                          &calld->compression_algorithm);
+                                                &calld->compression_algorithm);
     } else {
-      md = initial_metadata->idx.named.grpc_internal_stream_encoding_request->md;
-      result = grpc_stream_compression_algorithm_parse(GRPC_MDVALUE(md),
-                                          &calld->compression_algorithm);
+      md =
+          initial_metadata->idx.named.grpc_internal_stream_encoding_request->md;
+      result = grpc_stream_compression_algorithm_parse(
+          GRPC_MDVALUE(md), &calld->compression_algorithm);
     }
     if (!result) {
       char *val = grpc_slice_to_c_string(GRPC_MDVALUE(md));
@@ -146,9 +148,10 @@ static grpc_error *process_send_initial_metadata(
     *has_compression_algorithm = true;
     grpc_metadata_batch_remove(
         exec_ctx, initial_metadata,
-        initial_metadata->idx.named.grpc_internal_encoding_request != NULL ? 
-        initial_metadata->idx.named.grpc_internal_encoding_request :
-        initial_metadata->idx.named.grpc_internal_stream_encoding_request);
+        initial_metadata->idx.named.grpc_internal_encoding_request != NULL
+            ? initial_metadata->idx.named.grpc_internal_encoding_request
+            : initial_metadata->idx.named
+                  .grpc_internal_stream_encoding_request);
   } else {
     /* If no algorithm was found in the metadata and we aren't
      * exceptionally skipping compression, fall back to the channel
@@ -180,7 +183,8 @@ static grpc_error *process_send_initial_metadata(
       exec_ctx, initial_metadata, &calld->accept_stream_encoding_storage,
       GRPC_MDELEM_ACCEPT_STREAM_ENCODING_FOR_ALGORITHMS(
           (channeld->supported_compression_algorithms &
-          GRPC_STREAM_COMPRESSION_ALGORITHM_MASK) >> GRPC_STREAM_COMPRESS_FLAG_OFFSET));
+           GRPC_STREAM_COMPRESSION_ALGORITHM_MASK) >>
+          GRPC_STREAM_COMPRESS_FLAG_OFFSET));
 
   return error;
 }
