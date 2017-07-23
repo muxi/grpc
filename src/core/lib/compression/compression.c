@@ -154,6 +154,19 @@ grpc_mdelem grpc_compression_encoding_mdelem(
   return GRPC_MDNULL;
 }
 
+grpc_mdelem grpc_stream_compression_encoding_mdelem(
+    grpc_stream_compression_algorithm algorithm) {
+  switch (algorithm) {
+    case GRPC_COMPRESS_NONE:
+      return GRPC_MDELEM_GRPC_ENCODING_IDENTITY;
+    case GRPC_STREAM_COMPRESS_GZIP:
+      return GRPC_MDELEM_CONTENT_ENCODING_GZIP;
+    default:
+      break;
+  }
+  return GRPC_MDNULL;
+}
+
 void grpc_compression_options_init(grpc_compression_options *opts) {
   memset(opts, 0, sizeof(*opts));
   /* all enabled by default */

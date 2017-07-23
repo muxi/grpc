@@ -221,6 +221,20 @@ grpc_compression_algorithm grpc_channel_args_get_compression_algorithm(
   return GRPC_COMPRESS_NONE;
 }
 
+grpc_stream_compression_algorithm grpc_channel_args_get_stream_compression_algorithm(
+    const grpc_channel_args *a) {
+  size_t i;
+  if (a == NULL) return 0;
+  for (i = 0; i < a->num_args; ++i) {
+    if (a->args[i].type == GRPC_ARG_INTEGER &&
+        !strcmp(GRPC_STREAM_COMPRESSION_CHANNEL_DEFAULT_ALGORITHM, a->args[i].key)) {
+      return (grpc_stream_compression_algorithm)a->args[i].value.integer;
+      break;
+    }
+  }
+  return GRPC_STREAM_COMPRESS_NONE;
+}
+
 grpc_channel_args *grpc_channel_args_set_compression_algorithm(
     grpc_channel_args *a, grpc_compression_algorithm algorithm) {
   GPR_ASSERT(algorithm < GRPC_COMPRESS_ALGORITHMS_COUNT);
@@ -241,6 +255,26 @@ static int find_compression_algorithm_states_bitset(const grpc_channel_args *a,
     for (i = 0; i < a->num_args; ++i) {
       if (a->args[i].type == GRPC_ARG_INTEGER &&
           !strcmp(GRPC_COMPRESSION_CHANNEL_ENABLED_ALGORITHMS_BITSET,
+                  a->args[i].key)) {
+        *states_arg = &a->args[i].value.integer;
+        **states_arg |= 0x1; /* forcefully enable support for no compression */
+        return 1;
+      }
+    }
+  }
+  return 0; /* GPR_FALSE */
+}
+
+/** Returns 1 if the argument for compression algorithm's enabled states bitset
+ * was found in \a a, returning the arg's value in \a states. Otherwise, returns
+ * 0. */
+static int find_stream_compression_algorithm_states_bitset(const grpc_channel_args *a,
+                                                    int **states_arg) {
+  if (a != NULL) {
+    size_t i;
+    for (i = 0; i < a->num_args; ++i) {
+      if (a->args[i].type == GRPC_ARG_INTEGER &&
+          !strcmp(GRPC_STREAM_COMPRESSION_CHANNEL_ENABLED_ALGORITHMS_BITSET,
                   a->args[i].key)) {
         *states_arg = &a->args[i].value.integer;
         **states_arg |= 0x1; /* forcefully enable support for no compression */
@@ -299,6 +333,16 @@ uint32_t grpc_channel_args_compression_algorithm_get_states(
     return (uint32_t)*states_arg;
   } else {
     return (1u << GRPC_COMPRESS_ALGORITHMS_COUNT) - 1; /* All algs. enabled */
+  }
+}
+
+uint32_t grpc_channel_args_stream_compression_algorithm_get_states(
+    const grpc_channel_args *a) {
+  int *states_arg;
+  if (find_stream_compression_algorithm_states_bitset(a, &states_arg)) {
+    return (uint32_t)*states_arg;
+  } else {
+    return (1u << GRPC_STREAM_COMPRESS_ALGORITHMS_COUNT) - 1; /* All algs. enabled */
   }
 }
 

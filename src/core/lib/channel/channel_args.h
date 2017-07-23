@@ -59,6 +59,10 @@ void grpc_channel_args_destroy(grpc_exec_ctx *exec_ctx, grpc_channel_args *a);
 grpc_compression_algorithm grpc_channel_args_get_compression_algorithm(
     const grpc_channel_args *a);
 
+/** Returns the stream compression algorithm set in \a a. */
+grpc_stream_compression_algorithm grpc_channel_args_get_stream_compression_algorithm(
+    const grpc_channel_args *a);
+
 /** Returns a channel arg instance with compression enabled. If \a a is
  * non-NULL, its args are copied. N.B. GRPC_COMPRESS_NONE disables compression
  * for the channel. */
@@ -82,6 +86,14 @@ grpc_channel_args *grpc_channel_args_compression_algorithm_set_state(
  * The i-th bit of the returned bitset corresponds to the i-th entry in the
  * grpc_compression_algorithm enum. */
 uint32_t grpc_channel_args_compression_algorithm_get_states(
+    const grpc_channel_args *a);
+
+/** Returns the bitset representing the support state (true for enabled, false
+ * for disabled) for stream compression algorithms.
+ *
+ * The i-th bit of the returned bitset corresponds to the i-th entry in the
+ * grpc_stream_compression_algorithm enum. */
+uint32_t grpc_channel_args_stream_compression_algorithm_get_states(
     const grpc_channel_args *a);
 
 int grpc_channel_args_compare(const grpc_channel_args *a,

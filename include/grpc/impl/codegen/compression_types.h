@@ -38,6 +38,10 @@ extern "C" {
  * Its value is an int from the \a grpc_compression_algorithm enum. */
 #define GRPC_COMPRESSION_CHANNEL_DEFAULT_ALGORITHM \
   "grpc.default_compression_algorithm"
+/** Default stream compression algorithm for the channel.
+ * Its value is an int from the \a grpc_stream_compression_algorithm enum. */
+#define GRPC_STREAM_COMPRESSION_CHANNEL_DEFAULT_ALGORITHM \
+  "grpc.default_compression_algorithm"
 /** Default compression level for the channel.
  * Its value is an int from the \a grpc_compression_level enum. */
 #define GRPC_COMPRESSION_CHANNEL_DEFAULT_LEVEL "grpc.default_compression_level"
@@ -50,6 +54,15 @@ extern "C" {
  * be ignored). */
 #define GRPC_COMPRESSION_CHANNEL_ENABLED_ALGORITHMS_BITSET \
   "grpc.compression_enabled_algorithms_bitset"
+/** Stream compression algorithms supported by the channel.
+ * Its value is a bitset (an int). Bits correspond to algorithms in \a
+ * grpc_stream_compression_algorithm. For example, its LSB corresponds to
+ * GRPC_STREAM_COMPRESS_NONE, the next bit to GRPC_STREAM_COMPRESS_DEFLATE, etc.
+ * Unset bits disable support for the algorithm. By default all algorithms are
+ * supported. It's not possible to disable GRPC_STREAM_COMPRESS_NONE (the
+ * attempt will be ignored). */
+#define GRPC_STREAM_COMPRESSION_CHANNEL_ENABLED_ALGORITHMS_BITSET \
+  "grpc.stream_compression_enabled_algorithms_bitset"
 /** \} */
 
 /** The various compression algorithms supported by gRPC */
@@ -94,7 +107,7 @@ typedef struct grpc_compression_options {
    * argument key behind \a GRPC_COMPRESSION_CHANNEL_ENABLED_ALGORITHMS_BITSET
    */
   uint32_t enabled_algorithms_bitset;
-  uint32_t enabled_stream_compression_alrogithms_bitset;
+  uint32_t enabled_stream_compression_algorithms_bitset;
 
   /** The default message-wise compression level. It'll be used in the absence
    * of * call specific settings. This option corresponds to the channel
@@ -125,7 +138,8 @@ typedef struct grpc_compression_options {
 
   /** The default stream compression algorithm. It'll be used in the absence of
    * call specific settings. If present, takes precedence over \a
-   * default_algorithm. */
+   * default_algorithm. This option corresponds to the channel
+   * argument key behind \a GRPC_STREAM_COMPRESSION_CHANNEL_DEFAULT_ALGORITHM. */
   struct {
     int is_set;
     grpc_stream_compression_algorithm algorithm;

@@ -34,6 +34,10 @@ grpc_slice grpc_stream_compression_algorithm_slice(
 grpc_mdelem grpc_compression_encoding_mdelem(
     grpc_compression_algorithm algorithm);
 
+/** Return stream compression algorithm based metadata element (content-encoding: xxx) */
+grpc_mdelem grpc_stream_compression_encoding_mdelem(
+    grpc_stream_compression_algorithm algorithm);
+
 /** Find compression algorithm based on passed in mdstr - returns
  * GRPC_COMPRESS_ALGORITHM_COUNT on failure */
 grpc_compression_algorithm grpc_compression_algorithm_from_slice(
