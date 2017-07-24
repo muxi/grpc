@@ -881,6 +881,16 @@ uint32_t grpc_call_test_only_get_encodings_accepted_by_peer(grpc_call *call) {
   return encodings_accepted_by_peer;
 }
 
+uint32_t grpc_call_test_only_get_stream_encodings_accepted_by_peer(grpc_call *call) {
+  uint32_t stream_encodings_accepted_by_peer;
+  stream_encodings_accepted_by_peer = call->stream_encodings_accepted_by_peer;
+  return stream_encodings_accepted_by_peer;
+}
+
+grpc_stream_compression_algorithm grpc_call_test_only_get_incoming_stream_encodings(grpc_call *call) {
+  return call->incoming_stream_compression_algorithm;
+}
+
 static grpc_linked_mdelem *linked_from_md(grpc_metadata *md) {
   return (grpc_linked_mdelem *)&md->internal_data;
 }

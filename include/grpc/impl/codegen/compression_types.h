@@ -41,7 +41,7 @@ extern "C" {
 /** Default stream compression algorithm for the channel.
  * Its value is an int from the \a grpc_stream_compression_algorithm enum. */
 #define GRPC_STREAM_COMPRESSION_CHANNEL_DEFAULT_ALGORITHM \
-  "grpc.default_compression_algorithm"
+  "grpc.default_stream_compression_algorithm"
 /** Default compression level for the channel.
  * Its value is an int from the \a grpc_compression_level enum. */
 #define GRPC_COMPRESSION_CHANNEL_DEFAULT_LEVEL "grpc.default_compression_level"
