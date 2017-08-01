@@ -38,5 +38,5 @@ rm -f RemoteTestClient/*.{h,m}
 echo "TIME:  $(date)"
 pod trunk info gRPC
 pod trunk info nanopb
-pod install
+pod install --verbose
 
