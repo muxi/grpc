@@ -36,7 +36,7 @@ rm -f Podfile.lock
 rm -f RemoteTestClient/*.{h,m}
 
 echo "TIME:  $(date)"
-pod search gRPC
-pod search nanopb
+pod trunk info gRPC
+pod trunk info nanopb
 pod install
 
