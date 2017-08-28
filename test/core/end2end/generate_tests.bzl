@@ -89,6 +89,7 @@ END2END_TESTS = {
     'bad_ping': test_options(needs_fullstack=True,proxyable=False),
     'binary_metadata': test_options(),
     'resource_quota_server': test_options(proxyable=False),
+    'call_and_unref': test_options(),
     'call_creds': test_options(secure=True),
     'cancel_after_accept': test_options(),
     'cancel_after_client_done': test_options(),

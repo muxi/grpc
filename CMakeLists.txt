@@ -4827,6 +4827,7 @@ add_library(end2end_tests
   test/core/end2end/tests/bad_hostname.c
   test/core/end2end/tests/bad_ping.c
   test/core/end2end/tests/binary_metadata.c
+  test/core/end2end/tests/call_and_unref.c
   test/core/end2end/tests/call_creds.c
   test/core/end2end/tests/cancel_after_accept.c
   test/core/end2end/tests/cancel_after_client_done.c
@@ -4931,6 +4932,7 @@ add_library(end2end_nosec_tests
   test/core/end2end/tests/bad_hostname.c
   test/core/end2end/tests/bad_ping.c
   test/core/end2end/tests/binary_metadata.c
+  test/core/end2end/tests/call_and_unref.c
   test/core/end2end/tests/cancel_after_accept.c
   test/core/end2end/tests/cancel_after_client_done.c
   test/core/end2end/tests/cancel_after_invoke.c

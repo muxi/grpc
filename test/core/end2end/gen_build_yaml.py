@@ -84,6 +84,7 @@ END2END_TESTS = {
     'resource_quota_server': default_test_options._replace(large_writes=True,
                                                            proxyable=False,
                                                            allows_compression=False),
+    'call_and_unref': default_test_options,
     'call_creds': default_test_options._replace(secure=True),
     'cancel_after_accept': default_test_options._replace(cpu_cost=LOWCPU),
     'cancel_after_client_done': default_test_options._replace(cpu_cost=LOWCPU),
