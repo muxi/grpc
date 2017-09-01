@@ -1457,6 +1457,8 @@ static void validate_filtered_metadata(grpc_exec_ctx *exec_ctx,
       gpr_log(GPR_ERROR, "%s", error_msg);
       cancel_with_status(exec_ctx, call, STATUS_FROM_SURFACE,
                          GRPC_STATUS_UNIMPLEMENTED, error_msg);
+    } else {
+      call->incoming_stream_compression_algorithm = algo;
     }
     gpr_free(error_msg);
 
