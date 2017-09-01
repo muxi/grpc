@@ -1068,18 +1068,13 @@ static void publish_app_metadata(grpc_call *call, grpc_metadata_batch *b,
 static void recv_initial_filter(grpc_exec_ctx *exec_ctx, grpc_call *call,
                                 grpc_metadata_batch *b) {
   if (b->idx.named.content_encoding != NULL) {
-    if (b->idx.named.grpc_encoding != NULL) {
-      gpr_log(GPR_ERROR,
-              "Received both content-encoding and grpc-encoding header. "
-              "Ignoring grpc-encoding.");
-      grpc_metadata_batch_remove(exec_ctx, b, b->idx.named.grpc_encoding);
-    }
     GPR_TIMER_BEGIN("incoming_stream_compression_algorithm", 0);
     set_incoming_stream_compression_algorithm(
         call, decode_stream_compression(b->idx.named.content_encoding->md));
     GPR_TIMER_END("incoming_stream_compression_algorithm", 0);
     grpc_metadata_batch_remove(exec_ctx, b, b->idx.named.content_encoding);
-  } else if (b->idx.named.grpc_encoding != NULL) {
+  }
+  if (b->idx.named.grpc_encoding != NULL) {
     GPR_TIMER_BEGIN("incoming_compression_algorithm", 0);
     set_incoming_compression_algorithm(
         call, decode_compression(b->idx.named.grpc_encoding->md));
@@ -1428,6 +1423,16 @@ static void receiving_stream_ready(grpc_exec_ctx *exec_ctx, void *bctlp,
 static void validate_filtered_metadata(grpc_exec_ctx *exec_ctx,
                                        batch_control *bctl) {
   grpc_call *call = bctl->call;
+  if (call->incoming_stream_compression_algorithm != GRPC_STREAM_COMPRESS_NONE &&
+      call->incoming_compression_algorithm != GRPC_COMPRESS_NONE) {
+    char *error_msg = NULL;
+    gpr_asprintf(&error_msg, "Incoming stream has both stream compression (%d) and message compression (%d).", call->incoming_stream_compression_algorithm, call->incoming_compression_algorithm);
+    gpr_log(GPR_ERROR, "%s", error_msg);
+    cancel_with_status(exec_ctx, call, STATUS_FROM_SURFACE,
+                       GRPC_STATUS_INTERNAL, error_msg);
+    gpr_free(error_msg);
+    return;
+  }
   /* validate compression algorithms */
   if (call->incoming_stream_compression_algorithm !=
       GRPC_STREAM_COMPRESS_NONE) {
