@@ -203,6 +203,7 @@ static NSString * const kBearerPrefix = @"Bearer ";
   } else {
     [_responseWriteable enqueueSuccessfulCompletion];
   }
+  _responseWriteable = nil;
 }
 
 - (void)cancelCall {
