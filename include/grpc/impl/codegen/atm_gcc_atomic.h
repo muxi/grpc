@@ -19,6 +19,8 @@
 #ifndef GRPC_IMPL_CODEGEN_ATM_GCC_ATOMIC_H
 #define GRPC_IMPL_CODEGEN_ATM_GCC_ATOMIC_H
 
+#if defined(GPR_GCC_ATOMIC)
+
 /* atm_platform.h for gcc and gcc-like compilers with the
    __atomic_* interface.  */
 #include <grpc/impl/codegen/port_platform.h>
@@ -78,5 +80,7 @@ static __inline int gpr_atm_full_cas(gpr_atm *p, gpr_atm o, gpr_atm n) {
 
 #define gpr_atm_full_xchg(p, n) \
   GPR_ATM_INC_CAS_THEN(__atomic_exchange_n((p), (n), __ATOMIC_ACQ_REL))
+
+#endif /* defined(GPR_GCC_ATOMIC) */
 
 #endif /* GRPC_IMPL_CODEGEN_ATM_GCC_ATOMIC_H */

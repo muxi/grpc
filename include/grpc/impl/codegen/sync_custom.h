@@ -19,6 +19,8 @@
 #ifndef GRPC_IMPL_CODEGEN_SYNC_CUSTOM_H
 #define GRPC_IMPL_CODEGEN_SYNC_CUSTOM_H
 
+#if defined(GPR_CUSTOM_SYNC)
+
 #include <grpc/impl/codegen/sync_generic.h>
 
 /* Users defining GPR_CUSTOM_SYNC need to define the following macros. */
@@ -32,5 +34,7 @@ typedef GPR_CUSTOM_ONCE_TYPE gpr_once;
 #define GPR_ONCE_INIT GPR_CUSTOM_ONCE_INIT
 
 #endif
+
+#endif /* defined(GPR_CUSTOM_SYNC) */
 
 #endif /* GRPC_IMPL_CODEGEN_SYNC_CUSTOM_H */

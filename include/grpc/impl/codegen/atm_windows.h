@@ -19,6 +19,8 @@
 #ifndef GRPC_IMPL_CODEGEN_ATM_WINDOWS_H
 #define GRPC_IMPL_CODEGEN_ATM_WINDOWS_H
 
+#if defined(GPR_WINDOWS_ATOMIC)
+
 /** Win32 variant of atm_platform.h */
 #include <grpc/impl/codegen/port_platform.h>
 
@@ -121,5 +123,7 @@ static __inline gpr_atm gpr_atm_full_fetch_add(gpr_atm *p, gpr_atm delta) {
 static __inline gpr_atm gpr_atm_full_xchg(gpr_atm *p, gpr_atm n) {
   return (gpr_atm)InterlockedExchangePointer((PVOID *)p, (PVOID)n);
 }
+
+#endif /* defined(GPR_WINDOWS_ATOMIC) */
 
 #endif /* GRPC_IMPL_CODEGEN_ATM_WINDOWS_H */

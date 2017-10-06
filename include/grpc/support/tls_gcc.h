@@ -19,6 +19,8 @@
 #ifndef GRPC_SUPPORT_TLS_GCC_H
 #define GRPC_SUPPORT_TLS_GCC_H
 
+#ifdef GPR_GCC_TLS
+
 #include <stdbool.h>
 
 #include <grpc/support/log.h>
@@ -81,5 +83,7 @@ struct gpr_gcc_thread_local {
 #define gpr_tls_get(tls) ((tls)->value)
 
 #endif /* NDEBUG */
+
+#endif /* GPR_GCC_TLS */
 
 #endif /* GRPC_SUPPORT_TLS_GCC_H */
