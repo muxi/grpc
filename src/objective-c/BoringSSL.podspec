@@ -120,11 +120,7 @@ Pod::Spec.new do |s|
                       '*.{h,c}',
                       'crypto/*.{h,c}',
                       'crypto/**/*.{h,c}'
-    ss.private_header_files = 'ssl/*.h',
-                              'ssl/**/*.h',
-                              '*.h',
-                              'crypto/*.h',
-                              'crypto/**/*.h'
+    ss.public_header_files = 'include/openssl/*.h'
     ss.exclude_files = '**/*_test.*',
                        '**/test_*.*',
                        '**/test/*.*'
