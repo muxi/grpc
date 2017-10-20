@@ -11,4 +11,5 @@ target 'HelloWorld' do
   pod 'gRPC-ProtoRPC', :podspec => '../../..'
   pod 'gRPC-RxLibrary', :podspec => '../../..'
   pod '!ProtoCompiler-gRPCPlugin', :podspec => '../../../src/objective-c'
+  pod 'BoringSSL', :podspec => '../../../src/objective-c'
 end
