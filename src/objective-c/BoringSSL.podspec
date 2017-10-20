@@ -102,31 +102,17 @@ Pod::Spec.new do |s|
   s.compiler_flags = '-DOPENSSL_NO_ASM', '-GCC_WARN_INHIBIT_ALL_WARNINGS', '-w'
   s.requires_arc = false
 
-  # Like many other C libraries, BoringSSL has its public headers under `include/<libname>/` and its
-  # sources and private headers in other directories outside `include/`. Cocoapods' linter doesn't
-  # allow any header to be listed outside the `header_mappings_dir` (even though doing so works in
-  # practice). Because we need our `header_mappings_dir` to be `include/openssl/` for the reason
-  # mentioned above, we work around the linter limitation by dividing the pod into two subspecs, one
-  # for public headers and the other for implementation. Each gets its own `header_mappings_dir`,
-  # making the linter happy.
-  s.subspec 'Interface' do |ss|
-    ss.header_mappings_dir = 'include/openssl'
-    ss.source_files = 'include/openssl/*.h'
-  end
-  s.subspec 'Implementation' do |ss|
-    ss.header_mappings_dir = '.'
-    ss.source_files = 'ssl/*.{h,c}',
-                      'ssl/**/*.{h,c}',
-                      '*.{h,c}',
-                      'crypto/*.{h,c}',
-                      'crypto/**/*.{h,c}'
-    ss.public_header_files = 'include/openssl/*.h'
-    ss.exclude_files = '**/*_test.*',
-                       '**/test_*.*',
-                       '**/test/*.*'
-
-    ss.dependency "#{s.name}/Interface", version
-  end
+  s.header_mappings_dir = 'include/openssl'
+  s.public_header_files = 'include/openssl/*.h'
+  s.source_files = 'include/openssl/*.h',
+                    'ssl/*.{h,c}',
+                    'ssl/**/*.{h,c}',
+                    '*.{h,c}',
+                    'crypto/*.{h,c}',
+                    'crypto/**/*.{h,c}'
+  s.exclude_files = '**/*_test.*',
+                    '**/test_*.*',
+                    '**/test/*.*'
 
   s.prepare_command = <<-END_OF_COMMAND
     # Replace "const BIGNUM *I" in rsa.h with a lowercase i, as the former fails when including
