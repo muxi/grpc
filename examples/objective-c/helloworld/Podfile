@@ -6,4 +6,9 @@ install! 'cocoapods', :deterministic_uuids => false
 target 'HelloWorld' do
   # Depend on the generated HelloWorld library.
   pod 'HelloWorld', :path => '.'
+  pod 'gRPC', :podspec => '../../..'
+  pod 'gRPC-Core', :podspec => '../../..'
+  pod 'gRPC-ProtoRPC', :podspec => '../../..'
+  pod 'gRPC-RxLibrary', :podspec => '../../..'
+  pod '!ProtoCompiler-gRPCPlugin', :podspec => '../../../src/objective-c'
 end
