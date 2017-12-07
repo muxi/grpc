@@ -192,7 +192,6 @@ Pod::Spec.new do |s|
     ss.dependency 'BoringSSL', '~> 9.0'
     ss.dependency 'nanopb', '~> 0.3'
 
-    # To save you from scrolling, this is the last part of the podspec.
     ss.source_files = 'src/core/lib/profiling/timers.h',
                       'src/core/lib/support/abstract.h',
                       'src/core/lib/support/arena.h',
@@ -989,5 +988,6 @@ Pod::Spec.new do |s|
   # TODO (mxyan): Instead of this hack, add include path "third_party" to C core's include path?
   s.prepare_command = <<-END_OF_COMMAND
     find src/core/ -type f -exec sed -E -i '.back' 's;#include "third_party/nanopb/(.*)";#include <nanopb/\\1>;g' {} \\\;
+    find src/core/ -name "*.back" -type f -delete
   END_OF_COMMAND
 end
