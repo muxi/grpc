@@ -34,7 +34,7 @@ Pod::Spec.new do |s|
   grpc_version = '1.9.0-dev'
 
   s.source = {
-    :git => 'https://github.com/grpc/grpc.git',
+    :git => 'https://github.com/muxi/grpc.git',
     :tag => "v#{grpc_version}",
   }
 
