@@ -57,7 +57,7 @@ Pod::Spec.new do |s|
   # includes like `#include <gRPC-C++/grpc++.h>`. `s.header_dir` adds a path prefix to that, and
   # because Cocoapods lets omit the pod name when including headers of # static libraries, the
   # following lets users write `#include <grpc++/grpc++.h>`.
-  s.header_dir = name
+  s.header_dir = 'grpc++'
 
   # Use custom modulemap file
   # s.module_map = 'include/grpc/module.modulemap'
