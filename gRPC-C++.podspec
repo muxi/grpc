@@ -78,6 +78,8 @@ Pod::Spec.new do |s|
 
   s.libraries = 'c++'
 
+  s.default_subspecs = 'Interface', 'Implementation'
+
   s.subspec 'Interface' do |ss|
     ss.header_mappings_dir = 'include/grpc++'
 
@@ -155,9 +157,7 @@ Pod::Spec.new do |s|
                       'include/grpc++/impl/codegen/string_ref.h',
                       'include/grpc++/impl/codegen/stub_options.h',
                       'include/grpc++/impl/codegen/sync_stream.h',
-                      'include/grpc++/impl/codegen/time.h',
-                      'include/grpc++/impl/codegen/proto_utils.h',
-                      'include/grpc++/impl/codegen/config_protobuf.h'
+                      'include/grpc++/impl/codegen/time.h'
   end
 
   s.subspec 'Implementation' do |ss|
@@ -604,6 +604,87 @@ Pod::Spec.new do |s|
                               'src/core/lib/transport/transport_impl.h',
                               'src/core/lib/debug/trace.h',
                               'src/core/ext/transport/inproc/inproc_transport.h'
+  end
+
+  s.subspec 'Tests' do |ss|
+    ss.header_mappings_dir = '.'
+
+    ss.dependency "#{s.name}/Interface", version
+    ss.dependency "#{s.name}/Implementation", version
+    ss.dependency "gRPC-Core/Tests", grpc_version
+
+    ss.source_files = 'test/cpp/util/create_test_channel.cc',
+                      'test/cpp/util/string_ref_helper.cc',
+                      'test/cpp/util/subprocess.cc',
+                      'test/cpp/util/test_credentials_provider.cc',
+                      'test/cpp/util/create_test_channel.h',
+                      'test/cpp/util/string_ref_helper.h',
+                      'test/cpp/util/subprocess.h',
+                      'test/cpp/util/test_credentials_provider.h',
+                      'test/core/util/test_config.h',
+                      'test/core/end2end/data/ssl_test_data.h',
+                      'test/core/security/oauth2_utils.h',
+                      'src/core/ext/filters/client_channel/resolver/fake/fake_resolver.h',
+                      'test/core/end2end/cq_verifier.h',
+                      'test/core/end2end/fixtures/http_proxy_fixture.h',
+                      'test/core/end2end/fixtures/proxy.h',
+                      'test/core/iomgr/endpoint_tests.h',
+                      'test/core/util/debugger_macros.h',
+                      'test/core/util/grpc_profiler.h',
+                      'test/core/util/histogram.h',
+                      'test/core/util/memory_counters.h',
+                      'test/core/util/mock_endpoint.h',
+                      'test/core/util/parse_hexstring.h',
+                      'test/core/util/passthru_endpoint.h',
+                      'test/core/util/port.h',
+                      'test/core/util/port_server_client.h',
+                      'test/core/util/slice_splitter.h',
+                      'test/core/util/tracer_util.h',
+                      'test/core/util/trickle_endpoint.h',
+                      'src/core/ext/filters/client_channel/backup_poller.h',
+                      'src/core/ext/filters/client_channel/client_channel.h',
+                      'src/core/ext/filters/client_channel/client_channel_factory.h',
+                      'src/core/ext/filters/client_channel/connector.h',
+                      'src/core/ext/filters/client_channel/http_connect_handshaker.h',
+                      'src/core/ext/filters/client_channel/http_proxy.h',
+                      'src/core/ext/filters/client_channel/lb_policy.h',
+                      'src/core/ext/filters/client_channel/lb_policy_factory.h',
+                      'src/core/ext/filters/client_channel/lb_policy_registry.h',
+                      'src/core/ext/filters/client_channel/parse_address.h',
+                      'src/core/ext/filters/client_channel/proxy_mapper.h',
+                      'src/core/ext/filters/client_channel/proxy_mapper_registry.h',
+                      'src/core/ext/filters/client_channel/resolver.h',
+                      'src/core/ext/filters/client_channel/resolver_factory.h',
+                      'src/core/ext/filters/client_channel/resolver_registry.h',
+                      'src/core/ext/filters/client_channel/retry_throttle.h',
+                      'src/core/ext/filters/client_channel/subchannel.h',
+                      'src/core/ext/filters/client_channel/subchannel_index.h',
+                      'src/core/ext/filters/client_channel/uri_parser.h',
+                      'src/core/ext/filters/deadline/deadline_filter.h',
+                      'src/core/ext/transport/chttp2/transport/bin_decoder.h',
+                      'src/core/ext/transport/chttp2/transport/bin_encoder.h',
+                      'src/core/ext/transport/chttp2/transport/chttp2_transport.h',
+                      'src/core/ext/transport/chttp2/transport/flow_control.h',
+                      'src/core/ext/transport/chttp2/transport/frame.h',
+                      'src/core/ext/transport/chttp2/transport/frame_data.h',
+                      'src/core/ext/transport/chttp2/transport/frame_goaway.h',
+                      'src/core/ext/transport/chttp2/transport/frame_ping.h',
+                      'src/core/ext/transport/chttp2/transport/frame_rst_stream.h',
+                      'src/core/ext/transport/chttp2/transport/frame_settings.h',
+                      'src/core/ext/transport/chttp2/transport/frame_window_update.h',
+                      'src/core/ext/transport/chttp2/transport/hpack_encoder.h',
+                      'src/core/ext/transport/chttp2/transport/hpack_parser.h',
+                      'src/core/ext/transport/chttp2/transport/hpack_table.h',
+                      'src/core/ext/transport/chttp2/transport/http2_settings.h',
+                      'src/core/ext/transport/chttp2/transport/huffsyms.h',
+                      'src/core/ext/transport/chttp2/transport/incoming_metadata.h',
+                      'src/core/ext/transport/chttp2/transport/internal.h',
+                      'src/core/ext/transport/chttp2/transport/stream_map.h',
+                      'src/core/ext/transport/chttp2/transport/varint.h',
+                      'src/core/ext/transport/chttp2/alpn/alpn.h',
+                      'src/core/ext/filters/http/client/http_client_filter.h',
+                      'src/core/ext/filters/http/message_compress/message_compress_filter.h',
+                      'src/core/ext/filters/http/server/http_server_filter.h'
   end
 
   s.prepare_command = <<-END_OF_COMMAND

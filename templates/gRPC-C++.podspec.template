@@ -22,58 +22,93 @@
   # limitations under the License.
 
   <%!
-  def grpc_private_files(libs):
+  def grpc_lib_files(libs, expect_libs, groups):
     out = []
     for lib in libs:
-      if lib.name in ("grpc", "gpr"):
-        out += lib.get('headers', [])
-        out += lib.get('src', [])
+      if lib.name in expect_libs:
+        for group in groups:
+          out += lib.get(group, [])
+    return out
+
+  def grpc_private_files(libs):
+    out = grpc_lib_files(libs, ("grpc", "gpr"), ("headers", "src"))
     return out
 
   def grpc_private_headers(libs):
-    out = []
-    for lib in libs:
-      if lib.name in ("grpc", "gpr"):
-        out += lib.get('headers', [])
+    out = grpc_lib_files(libs, ("grpc", "gpr"), ("headers",))
     return out
 
   def grpc_public_headers(libs):
-    out = []
-    for lib in libs:
-      if lib.name in ("grpc", "gpr"):
-        out += lib.get('public_headers', [])
+    out = grpc_lib_files(libs, ("grpc", "gpr"), ("public_headers",))
     return out
 
-  def grpcpp_private_files(libs):
-    out = []
-    for lib in libs:
-      if lib.name == "grpc++":
-        out += lib.get('headers', [])
-        out += lib.get('src', [])
-    excl_files = grpc_private_files(libs)
+  def grpcpp_proto_files(filegroups):
+    out = grpc_lib_files(filegroups, ("grpc++_codegen_proto", "grpc++_config_proto"), ("headers", "src", "public_headers"))
+    excl_files = grpc_lib_files(filegroups, ("grpc++_codegen_base",), ("headers", "src", "public_headers"))
     out = [file for file in out if file not in excl_files]
+    return out
+
+  def grpcpp_private_files(libs, filegroups):
+    out = grpc_lib_files(libs, ("grpc++",), ("headers", "src"))
+    excl_files = grpc_private_files(libs)
+
+    # We exclude proto related files in this particular podspec so that we can provide a protobuf-independent lib
+    excl_files += grpcpp_proto_files(filegroups)
+    out = [file for file in out if file not in excl_files]
+
     # Since some C++ source files directly included private headers in C core, we include all the
     # C core headers in C++ Implementation subspec as well.
     out += [file for file in grpc_private_headers(libs) if not file.startswith("third_party/nanopb/")]
     return out
 
-  def grpcpp_private_headers(libs):
-    out = []
-    for lib in libs:
-      if lib.name == "grpc++":
-        out += lib.get('headers', [])
+  def grpcpp_private_headers(libs, filegroups):
+    out = grpc_lib_files(libs, ("grpc++",), ("headers",))
+
+    # We exclude proto related files in this particular podspec so that we can provide a protobuf-independent lib
+    excl_files = grpcpp_proto_files(filegroups)
+    out = [file for file in out if file not in excl_files]
+
     # Since some C++ source files directly included private headers in C core, we intentionally
-    # keep the C core headers. But we should exclude nanopb headers.
+    # keep the C core headers in \a out. But we should exclude nanopb headers.
     out = [file for file in out if not file.startswith("third_party/nanopb/")]
     return out
 
-  def grpcpp_public_headers(libs):
-    out = []
-    for lib in libs:
-      if lib.name == "grpc++":
-        out += lib.get('public_headers', [])
+  def grpcpp_public_headers(libs, filegroups):
+    out = grpc_lib_files(libs, ("grpc++",), ("public_headers",))
     excl_files = grpc_public_headers(libs)
+
+    # We exclude proto related files in this particular podspec so that we can provide a protobuf-independent lib
+    excl_files += grpcpp_proto_files(filegroups)
+
     out = [file for file in out if file not in excl_files]
+    return out
+
+  def grpc_test_util_files(libs):
+    out = grpc_lib_files(libs, ("grpc_test_util", "gpr_test_util"), ("src", "headers"))
+    return out
+
+  def grpc_test_util_headers(libs):
+    out = grpc_lib_files(libs, ("grpc_test_util", "gpr_test_util"), ("headers",))
+    return out
+
+  def grpcpp_test_util_files(libs, filegroups):
+    out = grpc_lib_files(libs, ("grpc++_test_util",), ("src", "headers"))
+    excl_files = grpc_test_util_files(libs) + grpcpp_private_files(libs, filegroups)
+
+    # We exclude proto related files in this particular podspec so that we can provide a protobuf-independent lib
+    excl_files += grpc_lib_files(filegroups, ("grpc++_codegen_proto", "grpc++_config_proto"), ("headers", "src"))
+    excl_files += ["test/cpp/util/byte_buffer_proto_helper.cc",
+                   "test/cpp/util/byte_buffer_proto_helper.h",
+                   "test/cpp/end2end/test_service_impl.cc",
+                   "test/cpp/end2end/test_service_impl.h"]
+    excl_files += [file for file in out if file.endswith(".proto")]
+
+    out = [file for file in out if not file in excl_files]
+
+    # Since some C++ test files directly included private headers in C core, we intentionally add these header
+    # files to this subspec
+    out += grpc_test_util_headers(libs)
+
     return out
 
   def ruby_multiline_list(files, indent):
@@ -137,10 +172,12 @@
 
     s.libraries = 'c++'
 
+    s.default_subspecs = 'Interface', 'Implementation'
+
     s.subspec 'Interface' do |ss|
       ss.header_mappings_dir = 'include/grpc++'
 
-      ss.source_files = ${ruby_multiline_list(grpcpp_public_headers(libs), 22)}
+      ss.source_files = ${ruby_multiline_list(grpcpp_public_headers(libs, filegroups), 22)}
     end
 
     s.subspec 'Implementation' do |ss|
@@ -149,9 +186,19 @@
       ss.dependency 'gRPC-Core', grpc_version
       ss.dependency 'nanopb', '~> 0.3'
 
-      ss.source_files = ${ruby_multiline_list(grpcpp_private_files(libs), 22)}
+      ss.source_files = ${ruby_multiline_list(grpcpp_private_files(libs, filegroups), 22)}
 
-      ss.private_header_files = ${ruby_multiline_list(grpcpp_private_headers(libs), 30)}
+      ss.private_header_files = ${ruby_multiline_list(grpcpp_private_headers(libs, filegroups), 30)}
+    end
+
+    s.subspec 'Tests' do |ss|
+      ss.header_mappings_dir = '.'
+
+      ss.dependency "#{s.name}/Interface", version
+      ss.dependency "#{s.name}/Implementation", version
+      ss.dependency "gRPC-Core/Tests", grpc_version
+
+      ss.source_files = ${ruby_multiline_list(grpcpp_test_util_files(libs, filegroups), 22)}
     end
 
     s.prepare_command = <<-END_OF_COMMAND
