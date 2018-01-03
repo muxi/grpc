@@ -60,7 +60,7 @@ Pod::Spec.new do |s|
   s.header_dir = 'grpc++'
 
   # Use custom modulemap file
-  # s.module_map = 'include/grpc/module.modulemap'
+  s.module_map = 'include/grpc/module.modulemap'
 
   s.pod_target_xcconfig = {
     'HEADER_SEARCH_PATHS' => '"$(inherited)" "$(PODS_TARGET_SRCROOT)/include"',

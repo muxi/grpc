@@ -1,0 +1,7 @@
+
+framework module grpcpp {
+  umbrella header "grpc++.h"
+
+  export *
+  module * { export * }
+}
