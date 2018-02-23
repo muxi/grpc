@@ -16,12 +16,12 @@
  *
  */
 
-#ifndef GRPC_CORE_LIB_IOMGR_MACOS_CFSTREAM_INTERFACE_H
-#define GRPC_CORE_LIB_IOMGR_MACOS_CFSTREAM_INTERFACE_H
+#ifndef GRPC_CORE_LIB_IOMGR_MACOS_CFSTREAM_H
+#define GRPC_CORE_LIB_IOMGR_MACOS_CFSTREAM_H
 
 #if defined(GRPC_USE_CFSTREAM) && GRPC_USE_CFSTREAM
 
-#include <Foundation/Foundation.h>
+#import <Foundation/Foundation.h>
 
 struct CFStream_impl {
   void (*CFStreamCreatePairWithSocketToHost)(CFAllocatorRef alloc, CFStringRef host, UInt32 port, CFReadStreamRef *readStream, CFWriteStreamRef *writeStream);
@@ -64,4 +64,4 @@ CFIndex CFReadStreamRead(CFReadStreamRef stream, UInt8 *buffer, CFIndex bufferLe
 
 #endif
 
-#endif /* GRPC_CORE_LIB_IOMGR_MACOS_CFSTREAM_INTERFACE_H */
+#endif /* GRPC_CORE_LIB_IOMGR_MACOS_CFSTREAM_H */

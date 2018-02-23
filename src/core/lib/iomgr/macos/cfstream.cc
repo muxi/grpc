@@ -18,7 +18,7 @@
 
 #if defined(GRPC_USE_CFSTREAM) && GRPC_USE_CFSTREAM
 
-#include "src/core/lib/iomgr/macos/cfstream.h"
+#import "src/core/lib/iomgr/macos/cfstream.h"
 
 struct CFStream_impl {
   void (*CFStreamCreatePairWithSocketToHost)(CFAllocatorRef alloc, CFStringRef host, UInt32 port, CFReadStreamRef *readStream, CFWriteStreamRef *writeStream);

@@ -16,8 +16,13 @@
  *
  */
 
-// Fake CFStream interface for unit testing. Single threaded.
-#include "src/core/lib/iomgr/macos/cfstream.h"
+// Fake CFStream interface for unit testing. Single threaded. Supports only one
+// pending read and one pending write.
+
+#if defined(GRPC_USE_CFSTREAM) && GRPC_USE_CFSTREAM
+
+#import "src/core/lib/iomgr/macos/cfstream.h"
+#import "src/core/lib/iomgr/macos/cfstream_fake.h"
 
 #define MAX_WRITE_BYTES (4096)
 
@@ -31,14 +36,14 @@ struct FakeStream {
   UInt32 port;
   CFReadStreamClientCallBack read_client_cb;
   CFWriteStreamClientCallBack write_client_cb;
-  
+
   int read_open = 0;
   int write_open = 0;
   int read_closed = 0;
   int write_closed = 0;
   const UInt8* read_start;
   int read_bytes = 0;
-  UInt8* write_start[MAX_WRITE_BYTES];
+  UInt8 write_start[MAX_WRITE_BYTES];
   int write_bytes = 0;
   int write_window = 0;
   int error = 0;
@@ -52,18 +57,18 @@ static void FakeCFStreamCreatePairWithSocketToHost(CFAllocatorRef alloc, CFStrin
   @synchronized(fakeStreams) {
     [fakeStreams addObject:[NSValue valueWithPointer:fake_stream]];
   }
-  *readStream = static_cast<CFReadStreamRef>(fake_stream);
-  *writeStream = static_cast<CFWriteStreamRef>(fake_stream);
+  *readStream = reinterpret_cast<CFReadStreamRef>(fake_stream);
+  *writeStream = reinterpret_cast<CFWriteStreamRef>(fake_stream);
   fake_stream.host = host;
   fake_stream.port = port;
 }
 
 static Boolean FakeCFReadStreamSetClient(CFReadStreamRef stream, CFOptionFlags streamEvents, CFReadStreamClientCallBack clientCB, CFStreamClientContext *clientContext) {
-  FakeStream* fake_stream = static_cast<FakeStream*>(stream);
+  FakeStream* fake_stream = reinterpret_cast<FakeStream*>(stream);
   fake_stream.read_client_cb = clientCB;
 }
 static Boolean FakeCFWriteStreamSetClient(CFWriteStreamRef stream, CFOptionFlags streamEvents, CFWriteStreamClientCallBack clientCB, CFStreamClientContext *clientContext) {
-  FakeStream* fake_stream = static_cast<FakeStream*>(stream);
+  FakeStream* fake_stream = reinterpret_cast<FakeStream*>(stream);
   fake_stream.write_client_cb = clientCB;
 }
 
@@ -78,29 +83,29 @@ static void FakeCFWriteStreamUnscheduleFromRunLoop(CFWriteStreamRef stream, CFRu
 }
 
 static Boolean FakeCFReadStreamOpen(CFReadStreamRef stream) {
-  FakeStream* fake_stream = static_cast<FakeStream*>(stream);
+  FakeStream* fake_stream = reinterpret_cast<FakeStream*>(stream);
   fake_stream->read_open++;
   dispatch_async(dispatch_get_main_queue(), ^{
     fake_stream.read_client_cb(stream, kCFStreamEventOpenCompleted, nullptr);
   });
 }
 static Boolean FakeCFWriteStreamOpen(CFWriteStreamRef stream) {
-  FakeStream* fake_stream = static_cast<FakeStream*>(stream);
+  FakeStream* fake_stream = reinterpret_cast<FakeStream*>(stream);
   fake_stream->write_open++;
 }
 
 static void FakeCFReadStreamClose(CFReadStreamRef stream) {
-  FakeStream* fake_stream = static_cast<FakeStream*>(stream);
+  FakeStream* fake_stream = reinterpret_cast<FakeStream*>(stream);
   fake_stream->read_closed++;
 }
 
 static void FakeCFWriteStreamClose(CFWriteStreamRef stream) {
-  FakeStream* fake_stream = static_cast<FakeStream*>(stream);
+  FakeStream* fake_stream = reinterpret_cast<FakeStream*>(stream);
   fake_stream->write_closed++;
 }
 
 static CFIndex CFReadStreamRead(CFReadStreamRef stream, UInt8 *buffer, CFIndex bufferLength) {
-  FakeStream* fake_stream = static_cast<FakeStream*>(stream);
+  FakeStream* fake_stream = reinterpret_cast<FakeStream*>(stream);
   if (fake_stream->read_open > 0) {
     if (fake_stream->read_bytes > 0) {
       int actual_read = bufferLength < fake_stream->read_bytes ? bufferLength : fake_stream->read_bytes;
@@ -119,7 +124,7 @@ static CFIndex CFReadStreamRead(CFReadStreamRef stream, UInt8 *buffer, CFIndex b
   }
 }
 static CFIndex CFWriteStreamWrite(CFWriteStreamRef stream, const UInt8 *buffer, CFIndex bufferLength) {
-  FakeStream* fake_stream = static_cast<FakeStream*>(stream);
+  FakeStream* fake_stream = reinterpret_cast<FakeStream*>(stream);
   if (fake_stream->write_open > 0) {
     int actual_write = bufferLength < fake_stream->write_window ? bufferLength : fake_stream->write_window;
     [stream->write_log addObject:[NSData dataWithBytes:buffer length:actual_write]];
@@ -133,13 +138,20 @@ static CFIndex CFWriteStreamWrite(CFWriteStreamRef stream, const UInt8 *buffer, 
 }
 
 void FakeCFStreamRecvData(CFReadStreamRef stream, const UInt8* buffer, int buffer_length) {
-  FakeStream* fake_stream = static_cast<FakeStream*>(stream);
+  FakeStream* fake_stream = reinterpret_cast<FakeStream*>(stream);
+  fake_stream->read_start = buffer;
+  fake_stream->read_bytes = buffer_length;
 }
-void FakeCFStreamCreditWindow(CFWriteStreamRef stream, int length) {
-  FakeStream* fake_stream = static_cast<FakeStream*>(stream);
+void FakeCFStreamCreditWindow(CFWriteStreamRef stream, int size) {
+  FakeStream* fake_stream = reinterpret_cast<FakeStream*>(stream);
+  fake_stream->write_window += size;
 }
 
 void FakeCFStreamRemoveAllFakeStreams() {
+  for (FakeStream* fake_stream in fakeStreams) {
+    gpr_free(fake_stream);
+  }
+  fakeStreams = nil;
 }
 
 CFStream_impl grpc_cfstream_fake_impl = {
@@ -158,5 +170,4 @@ CFStream_impl grpc_cfstream_fake_impl = {
   FakeCFWriteStreamWrite
 };
 
-#endif
-
+#endif // GRPC_USE_CFSTREAM
