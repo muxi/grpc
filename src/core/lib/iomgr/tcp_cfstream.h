@@ -31,20 +31,20 @@
 
 #include <grpc/support/port_platform.h>
 
+#ifdef GRPC_CFSTREAM
+
+#import <Foundation/Foundation.h>
+
 #include "src/core/lib/debug/trace.h"
 #include "src/core/lib/iomgr/endpoint.h"
 
-#ifdef GRPC_CFSTREAM
 
 extern grpc_core::TraceFlag grpc_tcp_trace;
 
 struct cfstream_tcp_connect;
 
 grpc_endpoint* grpc_tcp_create(CFReadStreamRef readStream,
-                               CFWriteStreamRef writeStream,
-                               const grpc_channel_args* channel_args,
-                               void (*on_connected)(cfstream_tcp_connect* connect, CFStreamEventType type),
-                               cfstream_tcp_connect* connect);
+                               CFWriteStreamRef writeStream);
 
 #endif /* GRPC_CFSTREAM */
 
