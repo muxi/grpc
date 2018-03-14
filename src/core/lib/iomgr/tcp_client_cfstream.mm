@@ -83,7 +83,10 @@ static void on_alarm(void* arg, grpc_error* error) {
 }
 
 static void maybe_on_connected(cfstream_tcp_connect* connect, bool set_read_open, bool set_write_open) {
+  NSLog(@"maybe_on_connected, %p, %d, %d (%d, %d)", connect, set_read_open, set_write_open, connect->read_stream_open, connect->write_stream_open);
+  NSLog(@"lock");
   gpr_mu_lock(&connect->mu);
+  NSLog(@"maybe_on_connected_locked, %p, %d, %d (%d, %d)", connect, set_read_open, set_write_open, connect->read_stream_open, connect->write_stream_open);
   if (set_read_open) {
     connect->read_stream_open = true;
   }
@@ -91,7 +94,9 @@ static void maybe_on_connected(cfstream_tcp_connect* connect, bool set_read_open
     connect->write_stream_open = true;
   }
   const bool connected_or_failed = (connect->read_stream_open && connect->write_stream_open);
+
   if (connected_or_failed) {
+    NSLog(@"Connected or failed");
     grpc_timer_cancel(&connect->alarm);
 
     grpc_closure* closure = connect->closure;
@@ -113,21 +118,24 @@ static void maybe_on_connected(cfstream_tcp_connect* connect, bool set_read_open
 }
 
 static void readCallback(CFReadStreamRef stream, CFStreamEventType type, void *clientCallBackInfo) {
+  NSLog(@"readCallback, type:%lu", type);
   cfstream_tcp_connect* connect = static_cast<cfstream_tcp_connect*>(clientCallBackInfo);
   // Assume that error is impossible just for now
   GPR_ASSERT(type == kCFStreamEventOpenCompleted);
   dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-    connect->read_stream_open = true;
+    grpc_core::ExecCtx exec_ctx;
+    NSLog(@"readCallback, type:%lu", type);
     maybe_on_connected(connect, true, false);
   });
 }
 
 static void writeCallback(CFWriteStreamRef stream, CFStreamEventType type, void *clientCallBackInfo) {
+  NSLog(@"writeCallback, type:%lu", type);
   cfstream_tcp_connect* connect = static_cast<cfstream_tcp_connect*>(clientCallBackInfo);
   GPR_ASSERT(type == kCFStreamEventOpenCompleted);
   dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-    gpr_mu_lock(&connect->mu);
-    connect->write_stream_open = true;
+    grpc_core::ExecCtx exec_ctx;
+    NSLog(@"writeCallback, type:%lu", type);
     maybe_on_connected(connect, false, true);
   });
 }
@@ -167,6 +175,7 @@ static void tcp_client_connect_impl(grpc_closure* closure, grpc_endpoint** ep,
   CFWriteStreamScheduleWithRunLoop(writeStream, CFRunLoopGetMain(), kCFRunLoopCommonModes);
   GRPC_CLOSURE_INIT(&connect->on_alarm, on_alarm, connect, grpc_schedule_on_exec_ctx);
   gpr_mu_lock(&connect->mu);
+  NSLog(@"Open stream");
   CFReadStreamOpen(readStream);
   CFWriteStreamOpen(writeStream);
   grpc_timer_init(&connect->alarm, deadline, &connect->on_alarm);
