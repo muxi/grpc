@@ -23,6 +23,8 @@
 #import <Foundation/Foundation.h>
 
 #include <grpc/slice_buffer.h>
+#include <grpc/support/alloc.h>
+#include <grpc/support/string_util.h>
 
 #include "src/core/lib/iomgr/lockfree_event.h"
 #include "src/core/lib/iomgr/endpoint.h"
@@ -50,12 +52,19 @@ typedef struct {
   grpc_closure read_action;
   grpc_closure write_action;
   CFStreamEventType readType;
+
+  char* peer_string;
+  grpc_resource_user* resource_user;
+  grpc_resource_user_slice_allocator slice_allocator;
 } grpc_tcp;
 
 static void tcp_free(grpc_tcp* tcp) {
+  grpc_resource_user_unref(tcp->resource_user);
   CFRelease(tcp->readStream);
   CFRelease(tcp->writeStream);
   tcp->read_event.DestroyEvent();
+  gpr_free(tcp->peer_string);
+  gpr_free(tcp);
 }
 
 #define TCP_REF(tcp) tcp_ref((tcp))
@@ -87,10 +96,8 @@ static void call_write_cb(grpc_tcp* tcp, grpc_error* error) {
 
 static void read_action(void* arg, grpc_error* error) {
   NSLog(@"read_action");
-  const size_t read_length = 4096;
   grpc_tcp* tcp = static_cast<grpc_tcp*>(arg);
   GPR_ASSERT(tcp->read_cb != nullptr);
-  grpc_slice slice = grpc_slice_malloc(read_length);
   CFStreamStatus status = CFReadStreamGetStatus(tcp->readStream);
   if (status == kCFStreamStatusAtEnd) {
     NSLog(@"read closed");
@@ -101,7 +108,7 @@ static void read_action(void* arg, grpc_error* error) {
     // No need to specify an error because it is impossible to have a pending notify in
     // tcp->read_event at this time.
     tcp->read_event.SetShutdown(GRPC_ERROR_NONE);
-  } else if (status == kCFStreamStatusError) {
+  } else if (status == kCFStreamStatusError || error != GRPC_ERROR_NONE) {
     CFReadStreamClose(tcp->readStream);
     grpc_slice_buffer_reset_and_unref_internal(tcp->read_slices);
     call_read_cb(tcp, GRPC_ERROR_CREATE_FROM_STATIC_STRING("Stream error"));
@@ -109,11 +116,12 @@ static void read_action(void* arg, grpc_error* error) {
     // tcp->read_event at this time.
     tcp->read_event.SetShutdown(GRPC_ERROR_NONE);
   } else {
+    grpc_slice *slice = &tcp->read_slices->slices[0];
     GPR_ASSERT(CFReadStreamHasBytesAvailable(tcp->readStream));
-    CFIndex readSize = CFReadStreamRead(tcp->readStream, GRPC_SLICE_START_PTR(slice), read_length);
+    CFIndex readSize = CFReadStreamRead(tcp->readStream, GRPC_SLICE_START_PTR(*slice), GRPC_TCP_DEFAULT_READ_SLICE_SIZE);
     NSLog(@"read! %lu", readSize);
-    if (readSize < read_length) {
-      slice.data.refcounted.length = readSize;
+    if (readSize < GRPC_TCP_DEFAULT_READ_SLICE_SIZE) {
+      grpc_slice_buffer_trim_end(tcp->read_slices, GRPC_TCP_DEFAULT_READ_SLICE_SIZE - readSize, nullptr);
     }
     call_read_cb(tcp, GRPC_ERROR_NONE);
   }
@@ -132,25 +140,25 @@ static void write_action(void* arg, grpc_error* error) {
     call_write_cb(tcp, GRPC_ERROR_CREATE_FROM_STATIC_STRING("Stream closed"));
     tcp->write_event.SetShutdown(GRPC_ERROR_NONE);
     TCP_UNREF(tcp);
-  } else if (status == kCFStreamStatusError) {
+  } else if (status == kCFStreamStatusError || error != GRPC_ERROR_NONE) {
     CFWriteStreamClose(tcp->writeStream);
     grpc_slice_buffer_reset_and_unref_internal(tcp->write_slices);
     call_write_cb(tcp, GRPC_ERROR_CREATE_FROM_STATIC_STRING("Stream error"));
     tcp->write_event.SetShutdown(GRPC_ERROR_NONE);
     TCP_UNREF(tcp);
   } else {
-    NSLog(@"write!");
     GPR_ASSERT(CFWriteStreamCanAcceptBytes(tcp->writeStream));
     grpc_slice slice = grpc_slice_buffer_take_first(tcp->write_slices);
     size_t slice_len = GRPC_SLICE_LENGTH(slice);
     CFIndex writeSize = CFWriteStreamWrite(tcp->writeStream, GRPC_SLICE_START_PTR(slice), slice_len);
+    NSLog(@"write!, %zu -> %lu", slice_len, writeSize);
     GPR_ASSERT(writeSize >= 0);
     if (writeSize < GRPC_SLICE_LENGTH(slice)) {
-      grpc_slice_buffer_undo_take_first(tcp->write_slices, grpc_slice_sub(slice, writeSize, slice_len - writeSize));
+      grpc_slice_buffer_undo_take_first(tcp->write_slices, grpc_slice_sub(slice, writeSize, slice_len));
     }
     grpc_slice_unref(slice);
     if (tcp->write_slices->length > 0) {
-      tcp->read_event.NotifyOn(&tcp->write_action);
+      tcp->write_event.NotifyOn(&tcp->write_action);
     } else {
       call_write_cb(tcp, GRPC_ERROR_NONE);
       TCP_UNREF(tcp);
@@ -160,7 +168,7 @@ static void write_action(void* arg, grpc_error* error) {
 
 static void readCallback(CFReadStreamRef stream, CFStreamEventType type, void *clientCallBackInfo) {
   dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-    NSLog(@"readCallback, type:%lu", type);
+    NSLog(@"tcp readCallback, type:%lu", type);
     grpc_core::ExecCtx exec_ctx;
     grpc_tcp* tcp = static_cast<grpc_tcp*>(clientCallBackInfo);
     GPR_ASSERT(stream == tcp->readStream);
@@ -178,6 +186,12 @@ static void writeCallback(CFWriteStreamRef stream, CFStreamEventType type, void 
   });
 }
 
+static void tcp_read_allocation_done(void* arg, grpc_error* error) {
+  grpc_tcp* tcp = static_cast<grpc_tcp*>(arg);
+  NSLog(@"NotifyOn, hasbytesavailable: %d", CFReadStreamHasBytesAvailable(tcp->readStream));
+  tcp->read_event.NotifyOn(&tcp->read_action);
+}
+
 static void tcp_read(grpc_endpoint* ep, grpc_slice_buffer* slices, grpc_closure* cb) {
   NSLog(@"Endpoint read");
   grpc_tcp* tcp = reinterpret_cast<grpc_tcp*>(ep);
@@ -185,11 +199,13 @@ static void tcp_read(grpc_endpoint* ep, grpc_slice_buffer* slices, grpc_closure*
   tcp->read_cb = cb;
   tcp->read_slices = slices;
   TCP_REF(tcp);
-  tcp->read_event.NotifyOn(&tcp->read_action);
+  grpc_resource_user_alloc_slices(&tcp->slice_allocator,
+                                  GRPC_TCP_DEFAULT_READ_SLICE_SIZE, 1,
+                                  tcp->read_slices);
 }
 
 static void tcp_write(grpc_endpoint* ep, grpc_slice_buffer* slices, grpc_closure* cb) {
-  NSLog(@"Endpoint write");
+  NSLog(@"Endpoint write, %zu, count:%zu", slices->length, slices->count);
   grpc_tcp* tcp = reinterpret_cast<grpc_tcp*>(ep);
   GPR_ASSERT(tcp->write_cb == nullptr);
   tcp->write_cb = cb;
@@ -200,7 +216,9 @@ static void tcp_write(grpc_endpoint* ep, grpc_slice_buffer* slices, grpc_closure
 
 void tcp_shutdown(grpc_endpoint* ep, grpc_error* why) {
   grpc_tcp* tcp = reinterpret_cast<grpc_tcp*>(ep);
-  (void)tcp;
+  tcp->read_event.SetShutdown(why);
+  tcp->write_event.SetShutdown(why);
+  grpc_resource_user_shutdown(tcp->resource_user);
 }
 
 void tcp_destroy(grpc_endpoint* ep) {
@@ -209,11 +227,13 @@ void tcp_destroy(grpc_endpoint* ep) {
 }
 
 grpc_resource_user* tcp_get_resource_user(grpc_endpoint* ep) {
-  GPR_ASSERT(false);
+  grpc_tcp* tcp = reinterpret_cast<grpc_tcp*>(ep);
+  return tcp->resource_user;
 }
 
 char* tcp_get_peer(grpc_endpoint* ep) {
-  GPR_ASSERT(false);
+  grpc_tcp* tcp = reinterpret_cast<grpc_tcp*>(ep);
+  return gpr_strdup(tcp->peer_string);
 }
 
 int tcp_get_fd (grpc_endpoint* ep) {
@@ -236,7 +256,8 @@ static const grpc_endpoint_vtable vtable = {tcp_read,
                                             tcp_get_fd};
 
 grpc_endpoint* grpc_tcp_create(CFReadStreamRef readStream,
-                               CFWriteStreamRef writeStream) {
+                               CFWriteStreamRef writeStream, const char* peer_string,
+                               grpc_resource_quota* resource_quota) {
   grpc_tcp* tcp = static_cast<grpc_tcp*>(gpr_malloc(sizeof(grpc_tcp)));
   NSLog(@"tcp: %p", tcp);
   tcp->base.vtable = &vtable;
@@ -246,6 +267,7 @@ grpc_endpoint* grpc_tcp_create(CFReadStreamRef readStream,
   CFRetain(readStream);
   CFRetain(writeStream);
 
+  tcp->peer_string = gpr_strdup(peer_string);
   tcp->read_cb = nil;
   tcp->write_cb = nil;
   tcp->read_slices = nil;
@@ -254,6 +276,8 @@ grpc_endpoint* grpc_tcp_create(CFReadStreamRef readStream,
   tcp->write_event.InitEvent();
   GRPC_CLOSURE_INIT(&tcp->read_action, read_action, static_cast<void*>(tcp), grpc_schedule_on_exec_ctx);
   GRPC_CLOSURE_INIT(&tcp->write_action, write_action, static_cast<void*>(tcp), grpc_schedule_on_exec_ctx);
+  tcp->resource_user = grpc_resource_user_create(resource_quota, peer_string);
+  grpc_resource_user_slice_allocator_init(&tcp->slice_allocator, tcp->resource_user, tcp_read_allocation_done, tcp);
 
   CFStreamClientContext ctx = {0, static_cast<void*>(tcp), nil, nil, nil};
 
@@ -267,6 +291,7 @@ grpc_endpoint* grpc_tcp_create(CFReadStreamRef readStream,
       kCFStreamEventEndEncountered,
       writeCallback, &ctx);
   if (CFReadStreamHasBytesAvailable(readStream)) {
+    NSLog(@"Early read event");
     tcp->read_event.SetReady();
   }
   if (CFWriteStreamCanAcceptBytes(writeStream)) {

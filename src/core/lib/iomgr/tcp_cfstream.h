@@ -44,7 +44,9 @@ extern grpc_core::TraceFlag grpc_tcp_trace;
 struct cfstream_tcp_connect;
 
 grpc_endpoint* grpc_tcp_create(CFReadStreamRef readStream,
-                               CFWriteStreamRef writeStream);
+                               CFWriteStreamRef writeStream,
+                               const char* peer_string,
+                               grpc_resource_quota* resource_quota);
 
 #endif /* GRPC_CFSTREAM */
 

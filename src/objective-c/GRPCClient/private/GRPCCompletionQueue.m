@@ -33,7 +33,13 @@
 
 - (instancetype)init {
   if ((self = [super init])) {
-    _unmanagedQueue = grpc_completion_queue_create_for_next(NULL);
+    const grpc_completion_queue_attributes attr = {
+      GRPC_CQ_CURRENT_VERSION,
+      GRPC_CQ_NEXT,
+      GRPC_CQ_NON_POLLING
+    };
+    _unmanagedQueue = grpc_completion_queue_create(grpc_completion_queue_factory_lookup(&attr), &attr, NULL);
+    //_unmanagedQueue = grpc_completion_queue_create_for_next(NULL);
 
     // This is for the following block to capture the pointer by value (instead
     // of retaining self and doing self->_unmanagedQueue). This is essential

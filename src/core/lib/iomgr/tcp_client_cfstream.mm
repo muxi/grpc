@@ -55,13 +55,15 @@ typedef struct cfstream_tcp_connect {
   grpc_endpoint **endpoint;
   int refs;
   char *addr_name;
+  grpc_resource_quota* resource_quota;
 } cfstream_tcp_connect;
 
 static void tcp_connect_cleanup(cfstream_tcp_connect* connect) {
+  grpc_resource_quota_unref_internal(connect->resource_quota);
   CFRelease(connect->readStream);
   CFRelease(connect->writeStream);
   gpr_mu_destroy(&connect->mu);
-  //grpc_channel_args_destroy(connect->channel_args);
+  gpr_free(connect->addr_name);
   gpr_free(connect);
 }
 
@@ -84,7 +86,6 @@ static void on_alarm(void* arg, grpc_error* error) {
 
 static void maybe_on_connected(cfstream_tcp_connect* connect, bool set_read_open, bool set_write_open) {
   NSLog(@"maybe_on_connected, %p, %d, %d (%d, %d)", connect, set_read_open, set_write_open, connect->read_stream_open, connect->write_stream_open);
-  NSLog(@"lock");
   gpr_mu_lock(&connect->mu);
   NSLog(@"maybe_on_connected_locked, %p, %d, %d (%d, %d)", connect, set_read_open, set_write_open, connect->read_stream_open, connect->write_stream_open);
   if (set_read_open) {
@@ -109,7 +110,7 @@ static void maybe_on_connected(cfstream_tcp_connect* connect, bool set_read_open
     if (done) {
       tcp_connect_cleanup(connect);
     } else {
-      *endpoint = grpc_tcp_create(connect->readStream, connect->writeStream);
+      *endpoint = grpc_tcp_create(connect->readStream, connect->writeStream, connect->addr_name, connect->resource_quota);
       GRPC_CLOSURE_SCHED(closure, GRPC_ERROR_NONE);
     }
   } else {
@@ -118,24 +119,22 @@ static void maybe_on_connected(cfstream_tcp_connect* connect, bool set_read_open
 }
 
 static void readCallback(CFReadStreamRef stream, CFStreamEventType type, void *clientCallBackInfo) {
-  NSLog(@"readCallback, type:%lu", type);
   cfstream_tcp_connect* connect = static_cast<cfstream_tcp_connect*>(clientCallBackInfo);
   // Assume that error is impossible just for now
   GPR_ASSERT(type == kCFStreamEventOpenCompleted);
   dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    NSLog(@"client readCallback, type:%lu", type);
     grpc_core::ExecCtx exec_ctx;
-    NSLog(@"readCallback, type:%lu", type);
     maybe_on_connected(connect, true, false);
   });
 }
 
 static void writeCallback(CFWriteStreamRef stream, CFStreamEventType type, void *clientCallBackInfo) {
-  NSLog(@"writeCallback, type:%lu", type);
   cfstream_tcp_connect* connect = static_cast<cfstream_tcp_connect*>(clientCallBackInfo);
   GPR_ASSERT(type == kCFStreamEventOpenCompleted);
   dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    NSLog(@"client writeCallback, type:%lu", type);
     grpc_core::ExecCtx exec_ctx;
-    NSLog(@"writeCallback, type:%lu", type);
     maybe_on_connected(connect, false, true);
   });
 }
@@ -160,11 +159,23 @@ static void tcp_client_connect_impl(grpc_closure* closure, grpc_endpoint** ep,
             connect->addr_name);
   }
 
+  grpc_resource_quota* resource_quota = grpc_resource_quota_create(NULL);
+  if (channel_args != NULL) {
+    for (size_t i = 0; i < channel_args->num_args; i++) {
+      if (0 == strcmp(channel_args->args[i].key, GRPC_ARG_RESOURCE_QUOTA)) {
+        grpc_resource_quota_unref_internal(resource_quota);
+        resource_quota = grpc_resource_quota_ref_internal(
+                                                          (grpc_resource_quota*)channel_args->args[i].value.pointer.p);
+      }
+    }
+  }
+  connect->resource_quota = resource_quota;
+
   CFReadStreamRef readStream;
   CFWriteStreamRef writeStream;
 
   // TODO (mxyan): resolve port number
-  CFStreamCreatePairWithSocketToHost(NULL, CFSTR("grpc-test.sandbox.googleapis.com"), 443,
+  CFStreamCreatePairWithSocketToHost(NULL, CFSTR("localhost"), 5050,
                                      &readStream, &writeStream);
   connect->readStream = readStream;
   connect->writeStream = writeStream;
