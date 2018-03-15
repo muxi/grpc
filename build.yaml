@@ -1210,6 +1210,13 @@ filegroups:
   deps:
   - grpc++
   - grpc
+- name: grpc_cfstream
+  language: objc++
+  headers:
+  - src/core/lib/iomgr/tcp_cfstream.h
+  src:
+  - src/core/lib/iomgr/tcp_cfstream.cc
+  - src/core/lib/iomgr/tcp_client_cfstream.cc
 libs:
 - name: gpr
   build: all
