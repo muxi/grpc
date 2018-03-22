@@ -115,6 +115,9 @@ static void read_action(void* arg, grpc_error* error) {
     // No need to specify an error because it is impossible to have a pending notify in
     // tcp->read_event at this time.
     tcp->read_event.SetShutdown(GRPC_ERROR_NONE);
+  } else if (status == kCFStreamStatusClosed) {
+    grpc_slice_buffer_reset_and_unref_internal(tcp->read_slices);
+    call_read_cb(tcp, error);
   } else {
     grpc_slice *slice = &tcp->read_slices->slices[0];
     GPR_ASSERT(CFReadStreamHasBytesAvailable(tcp->readStream));
@@ -146,6 +149,9 @@ static void write_action(void* arg, grpc_error* error) {
     call_write_cb(tcp, GRPC_ERROR_CREATE_FROM_STATIC_STRING("Stream error"));
     tcp->write_event.SetShutdown(GRPC_ERROR_NONE);
     TCP_UNREF(tcp);
+  } else if (status == kCFStreamStatusClosed) {
+    grpc_slice_buffer_reset_and_unref_internal(tcp->write_slices);
+    call_write_cb(tcp, error);
   } else {
     GPR_ASSERT(CFWriteStreamCanAcceptBytes(tcp->writeStream));
     grpc_slice slice = grpc_slice_buffer_take_first(tcp->write_slices);
@@ -168,7 +174,7 @@ static void write_action(void* arg, grpc_error* error) {
 
 static void readCallback(CFReadStreamRef stream, CFStreamEventType type, void *clientCallBackInfo) {
   dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-    NSLog(@"tcp readCallback, type:%lu", type);
+    NSLog(@"tcp readCallback, stream:%p, type:%lu, info:%p", stream, type, clientCallBackInfo);
     grpc_core::ExecCtx exec_ctx;
     grpc_tcp* tcp = static_cast<grpc_tcp*>(clientCallBackInfo);
     GPR_ASSERT(stream == tcp->readStream);
@@ -178,9 +184,9 @@ static void readCallback(CFReadStreamRef stream, CFStreamEventType type, void *c
 
 static void writeCallback(CFWriteStreamRef stream, CFStreamEventType type, void *clientCallBackInfo) {
   dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-    NSLog(@"writeCallback, type:%lu", type);
     grpc_core::ExecCtx exec_ctx;
     grpc_tcp* tcp = static_cast<grpc_tcp*>(clientCallBackInfo);
+    NSLog(@"writeCallback, stream:%p, type:%lu, info:%p, writeStream:%p", stream, type, clientCallBackInfo, tcp->writeStream);
     GPR_ASSERT(stream == tcp->writeStream);
     tcp->write_event.SetReady();
   });
@@ -215,13 +221,21 @@ static void tcp_write(grpc_endpoint* ep, grpc_slice_buffer* slices, grpc_closure
 }
 
 void tcp_shutdown(grpc_endpoint* ep, grpc_error* why) {
+  NSLog(@"shutdown, %p", ep);
   grpc_tcp* tcp = reinterpret_cast<grpc_tcp*>(ep);
   tcp->read_event.SetShutdown(why);
   tcp->write_event.SetShutdown(why);
+  if (CFReadStreamGetStatus(tcp->readStream) != kCFStreamStatusClosed) {
+    CFReadStreamClose(tcp->readStream);
+  }
+  if (CFWriteStreamGetStatus(tcp->writeStream) != kCFStreamStatusClosed) {
+    CFWriteStreamClose(tcp->writeStream);
+  }
   grpc_resource_user_shutdown(tcp->resource_user);
 }
 
 void tcp_destroy(grpc_endpoint* ep) {
+  NSLog(@"destroy, %p", ep);
   grpc_tcp* tcp = reinterpret_cast<grpc_tcp*>(ep);
   TCP_UNREF(tcp);
 }
@@ -259,7 +273,7 @@ grpc_endpoint* grpc_tcp_create(CFReadStreamRef readStream,
                                CFWriteStreamRef writeStream, const char* peer_string,
                                grpc_resource_quota* resource_quota) {
   grpc_tcp* tcp = static_cast<grpc_tcp*>(gpr_malloc(sizeof(grpc_tcp)));
-  NSLog(@"tcp: %p", tcp);
+  NSLog(@"tcp: %p, readStream: %p, writeStream: %p", tcp, readStream, writeStream);
   tcp->base.vtable = &vtable;
   gpr_ref_init(&tcp->refcount, 1);
   tcp->readStream = readStream;
