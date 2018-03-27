@@ -1,0 +1,8 @@
+framework module RxLibrary {
+  umbrella header "gRPC-RxLibrary-umbrella.h"
+  header "transformations/GRXMappingWriter.h"
+
+  export *
+  module * { export * }
+}
+
