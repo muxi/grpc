@@ -29,6 +29,13 @@
 #include <grpc/support/log.h>
 #include <grpc/support/sync.h>
 
+#include <netinet/in.h>
+
+#include "src/core/ext/filters/client_channel/subchannel.h"
+#include "src/core/ext/filters/client_channel/uri_parser.h"
+
+#include "src/core/lib/channel/channel_args.h"
+#include "src/core/lib/gpr/host_port.h"
 #include "src/core/lib/iomgr/error.h"
 #include "src/core/lib/iomgr/tcp_client.h"
 #include "src/core/lib/iomgr/tcp_cfstream.h"
@@ -139,6 +146,71 @@ static void writeCallback(CFWriteStreamRef stream, CFStreamEventType type, void 
   });
 }
 
+/*static void parse_uri(const grpc_resolved_address *resolved_addr, CFStringRef *host, UInt32 *port) {
+  const struct sockaddr *addr = reinterpret_cast<const struct sockaddr*>(resolved_addr->addr);
+  NSLog(@"%hhu", addr->sa_family);
+  switch (addr->sa_family) {
+    case AF_INET6:
+      const struct sockaddr_in6 *addr = reinterpret_cast<const struct sockaddr_in6*>(addr);
+
+      break;
+    case AF_INET:
+      break;
+    case AF_UNIX:
+      break;
+    default:
+      break;
+  }
+  (void)addr;
+}*/
+
+static void parse_uri(const grpc_channel_args *args, CFStringRef *host, int *port) {
+  char *host_string = nullptr, *port_string = nullptr;
+  grpc_uri *uri = nullptr;
+  const char* addr_uri_str = grpc_get_subchannel_address_uri_arg(args);
+  const char *host_port;
+  if (*addr_uri_str == '\0') {
+    goto error;
+  }
+  uri = grpc_uri_parse(addr_uri_str, 0);
+  if (uri == nullptr) {
+    goto error;
+  }
+  host_port = uri->path;
+  if (*host_port == '/') ++host_port;
+  if (strcmp("unix", uri->scheme) == 0) {
+    goto error; // Not supported
+  } else if (strcmp("ipv4", uri->scheme) == 0 || strcmp("ipv6", uri->scheme) == 0) {
+    if (!gpr_split_host_port(host_port, &host_string, &port_string) || port_string == nullptr){
+      goto error;
+    }
+    int port_num;
+    if (sscanf(port_string, "%d", &port_num) != 1 || port_num < 0 || port_num > 65535) {
+      goto error;
+    }
+    *host = CFStringCreateWithCString(NULL, host_string, kCFStringEncodingUTF8);
+    *port = port_num;
+  }
+  grpc_uri_destroy(uri);
+  gpr_free(host_string);
+  gpr_free(port_string);
+  return;
+
+error:
+  if (uri) {
+    grpc_uri_destroy(uri);
+  }
+  if (host_string) {
+    gpr_free(host_string);
+  }
+  if (port_string) {
+    gpr_free(port_string);
+  }
+  *host = nil;
+  *port = 0;
+  return;
+}
+
 static void tcp_client_connect_impl(grpc_closure* closure, grpc_endpoint** ep,
                                     grpc_pollset_set* interested_parties,
                                     const grpc_channel_args* channel_args,
@@ -174,9 +246,13 @@ static void tcp_client_connect_impl(grpc_closure* closure, grpc_endpoint** ep,
   CFReadStreamRef readStream;
   CFWriteStreamRef writeStream;
 
+  CFStringRef host;
+  int port;
+  parse_uri(channel_args, &host, &port);
   // TODO (mxyan): resolve port number
-  CFStreamCreatePairWithSocketToHost(NULL, CFSTR("localhost"), 5050,
+  CFStreamCreatePairWithSocketToHost(NULL, host, port,
                                      &readStream, &writeStream);
+  CFRelease(host);
   connect->readStream = readStream;
   connect->writeStream = writeStream;
   CFStreamClientContext ctx = {0, static_cast<void*>(connect), nil, nil, nil};
