@@ -41,6 +41,7 @@ Pod::Spec.new do |s|
   s.header_dir = name
 
   src_dir = 'src/objective-c/RxLibrary'
+  s.module_map = '#{src_dir}/module.modulemap'
   s.source_files = "#{src_dir}/*.{h,m}", "#{src_dir}/**/*.{h,m}"
   s.private_header_files = "#{src_dir}/private/*.h"
   s.header_mappings_dir = "#{src_dir}"
