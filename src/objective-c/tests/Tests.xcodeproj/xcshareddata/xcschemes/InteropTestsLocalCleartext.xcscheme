@@ -77,13 +77,13 @@
       <EnvironmentVariables>
          <EnvironmentVariable
             key = "GRPC_TRACE"
-            value = "all"
-            isEnabled = "NO">
+            value = "http"
+            isEnabled = "YES">
          </EnvironmentVariable>
          <EnvironmentVariable
             key = "GRPC_VERBOSITY"
             value = "DEBUG"
-            isEnabled = "NO">
+            isEnabled = "YES">
          </EnvironmentVariable>
       </EnvironmentVariables>
       <AdditionalOptions>

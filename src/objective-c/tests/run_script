@@ -1,0 +1,6 @@
+#!/bin/bash
+
+while true; do
+xcodebuild -workspace Tests.xcworkspace -scheme InteropTestsLocalCleartext -destination name="iPhone 6" -only-testing:InteropTestsLocalCleartext/InteropTestsLocalCleartext HOST_PORT_LOCAL=localhost:5050 test 2>&1 || break
+clear
+done
