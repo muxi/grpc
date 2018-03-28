@@ -22,21 +22,25 @@
 
 #ifdef GRPC_CFSTREAM
 
-#include <condition_variable>
-#include <mutex>
+#include <netinet/in.h>
+
+#include <grpc/impl/codegen/sync.h>
+#include <grpc/support/sync.h>
+
+#include "src/core/lib/iomgr/endpoint.h"
+#include "src/core/lib/iomgr/resolve_address.h"
+#include "src/core/lib/iomgr/tcp_client.h"
+#include "test/core/util/test_config.h"
 
 //static int g_connections_complete = 0;
-static gpr_mu* g_mu;
-static gpr_cv g_connections_complete_cv;
-static bool g_connections_complete = false;
+static gpr_mu g_mu;
+static int g_connections_complete = 0;
 static grpc_endpoint* g_connecting = nullptr;
 
 static void finish_connection() {
-  gpr_mu_lock(g_mu);
-  g_connections_complete = true;
-  gpr_cv_broadcast(&g_connections_complete_cv);
-
-  gpr_mu_unlock(g_mu);
+  gpr_mu_lock(&g_mu);
+  g_connections_complete++;
+  gpr_mu_unlock(&g_mu);
 }
 
 static void must_succeed(void* arg, grpc_error* error) {
@@ -48,16 +52,21 @@ static void must_succeed(void* arg, grpc_error* error) {
   finish_connection();
 }
 
-@interface CFStreamTests : XCTestCase
+static void must_fail(void* arg, grpc_error* error) {
+  GPR_ASSERT(g_connecting == nullptr);
+  GPR_ASSERT(error != GRPC_ERROR_NONE);
+  finish_connection();
+}
+
+@interface CFStreamClientTests : XCTestCase
 
 @end
 
-@implementation CFStreamTests
+@implementation CFStreamClientTests
 
 + (void)setUp {
-  grpc_test_init(argc, argv);
   grpc_init();
-  gpr_cv_init(&g_connections_complete_cv);
+  gpr_mu_init(&g_mu);
 }
 
 + (void)tearDown {
@@ -86,9 +95,9 @@ static void must_succeed(void* arg, grpc_error* error) {
   GPR_ASSERT(0 == bind(svr_fd, (struct sockaddr*)addr, (socklen_t)resolved_addr.len));
   GPR_ASSERT(0 == listen(svr_fd, 1));
 
-  gpr_mu_lock(g_mu);
+  gpr_mu_lock(&g_mu);
   connections_complete_before = g_connections_complete;
-  gpr_mu_unlock(g_mu);
+  gpr_mu_unlock(&g_mu);
 
   /* connect to it */
   GPR_ASSERT(getsockname(svr_fd, (struct sockaddr*)addr,
@@ -105,28 +114,89 @@ static void must_succeed(void* arg, grpc_error* error) {
   } while (r == -1 && errno == EINTR);
   GPR_ASSERT(r >= 0);
   close(r);
-  gpr_mu_lock(g_mu);
-  gpr_cv_wait(&g_connections_complete_cv, g_mu,
-              grpc_timespec_to_millis_round_up(
-                  grpc_timeout_seconds_to_deadline(5)));
 
-  gpr_mu_unlock(g_mu);
+  grpc_core::ExecCtx::Get()->Flush();
+
+  /* wait for the connection callback to finish */
+  gpr_mu_lock(&g_mu);
+  NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:5];
+  while (connections_complete_before == g_connections_complete) {
+    gpr_mu_unlock(&g_mu);
+    [[NSRunLoop mainRunLoop] runMode:NSDefaultRunLoopMode beforeDate:deadline];
+    gpr_mu_lock(&g_mu);
+  }
+  XCTAssertGreaterThan(g_connections_complete, 0);
+
+  gpr_mu_unlock(&g_mu);
 }
 
 - (void)testFails {
   grpc_core::ExecCtx exec_ctx;
+
+  grpc_resolved_address resolved_addr;
+  struct sockaddr_in* addr =
+  reinterpret_cast<struct sockaddr_in*>(resolved_addr.addr);
+  int connections_complete_before;
+  grpc_closure done;
+
+  gpr_log(GPR_DEBUG, "test_fails");
+
+  memset(&resolved_addr, 0, sizeof(resolved_addr));
+  resolved_addr.len = static_cast<socklen_t>(sizeof(struct sockaddr_in));
+  addr->sin_family = AF_INET;
+
+  gpr_mu_lock(&g_mu);
+  connections_complete_before = g_connections_complete;
+  gpr_mu_unlock(&g_mu);
+
+  /* connect to a broken address */
+  GRPC_CLOSURE_INIT(&done, must_fail, nullptr, grpc_schedule_on_exec_ctx);
+  grpc_tcp_client_connect(&done, &g_connecting, nullptr, nullptr,
+                          &resolved_addr, GRPC_MILLIS_INF_FUTURE);
+
+  grpc_core::ExecCtx::Get()->Flush();
+
+  /* wait for the connection callback to finish */
+  gpr_mu_lock(&g_mu);
+  NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:5];
+  while (g_connections_complete == connections_complete_before) {
+    gpr_mu_unlock(&g_mu);
+    [[NSRunLoop mainRunLoop] runMode:NSDefaultRunLoopMode beforeDate:deadline];
+    gpr_mu_lock(&g_mu);
+  }
+
+  XCTAssertEqual(g_connections_complete, connections_complete_before);
+
+  gpr_mu_unlock(&g_mu);
 }
+
+@end
+
+@interface CFStreamEndpointTests : XCTestCase
+
+@end
+
+@implementation CFStreamEndpointTests
++ (void)setUp {
+  grpc_init();
+  gpr_mu_init(&g_mu);
+}
+
++ (void)tearDown {
+  grpc_shutdown();
+}
+
 
 @end
 
 #else
 
 // Dummy test suite
-@interface CFStreamTests : XCTestCase
+@interface CFStreamClientTests : XCTestCase
 
 @end
 
-@implementation CFStreamTests
+@implementation CFStreamClientTests
 
 - (void)setUp {
   [super setUp];

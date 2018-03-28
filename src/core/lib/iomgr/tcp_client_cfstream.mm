@@ -164,7 +164,7 @@ static void writeCallback(CFWriteStreamRef stream, CFStreamEventType type, void 
   (void)addr;
 }*/
 
-static void parse_uri(const grpc_channel_args *args, CFStringRef *host, int *port) {
+/*static void parse_uri(const grpc_channel_args *args, CFStringRef *host, int *port) {
   char *host_string = nullptr, *port_string = nullptr;
   grpc_uri *uri = nullptr;
   const char* addr_uri_str = grpc_get_subchannel_address_uri_arg(args);
@@ -209,6 +209,17 @@ error:
   *host = nil;
   *port = 0;
   return;
+}*/
+
+static void parse_resolved_address(const grpc_resolved_address* addr, CFStringRef *host, int *port) {
+  char *host_port, *host_string, *port_string;
+  grpc_sockaddr_to_string(&host_port, addr, 1);
+  gpr_split_host_port(host_port, &host_string, &port_string);
+  *host = CFStringCreateWithCString(NULL, host_string, kCFStringEncodingUTF8);
+  gpr_free(host_string);
+  gpr_free(port_string);
+  gpr_free(host_port);
+  *port = grpc_sockaddr_get_port(addr);
 }
 
 static void tcp_client_connect_impl(grpc_closure* closure, grpc_endpoint** ep,
@@ -248,8 +259,7 @@ static void tcp_client_connect_impl(grpc_closure* closure, grpc_endpoint** ep,
 
   CFStringRef host;
   int port;
-  parse_uri(channel_args, &host, &port);
-  // TODO (mxyan): resolve port number
+  parse_resolved_address(resolved_addr, &host, &port);
   CFStreamCreatePairWithSocketToHost(NULL, host, port,
                                      &readStream, &writeStream);
   CFRelease(host);

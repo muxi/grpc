@@ -7,14 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		5E143B892069D72200715A6E /* CFStreamTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 5E143B882069D72200715A6E /* CFStreamTests.m */; };
+		5E143B892069D72200715A6E /* CFStreamClientTests.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5E143B882069D72200715A6E /* CFStreamClientTests.mm */; };
 		5E143B8C206B5F9F00715A6E /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 5E143B8A2069D72700715A6E /* Info.plist */; };
 		604EA96D9CD477A8EA411BDF /* libPods-CFStreamTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AFFA154D492751CEAC05D591 /* libPods-CFStreamTests.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		5E143B792069D67300715A6E /* CFStreamTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CFStreamTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		5E143B882069D72200715A6E /* CFStreamTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CFStreamTests.m; sourceTree = "<group>"; };
+		5E143B882069D72200715A6E /* CFStreamClientTests.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = CFStreamClientTests.mm; sourceTree = "<group>"; };
 		5E143B8A2069D72700715A6E /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8CB4409E07E180CCA59987DF /* Pods-CFStreamTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CFStreamTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-CFStreamTests/Pods-CFStreamTests.release.xcconfig"; sourceTree = "<group>"; };
 		9E3FAF9DA6B98ED4FE6D6848 /* Pods-CFStreamTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CFStreamTests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-CFStreamTests/Pods-CFStreamTests.debug.xcconfig"; sourceTree = "<group>"; };
@@ -37,7 +37,7 @@
 			isa = PBXGroup;
 			children = (
 				5E143B8A2069D72700715A6E /* Info.plist */,
-				5E143B882069D72200715A6E /* CFStreamTests.m */,
+				5E143B882069D72200715A6E /* CFStreamClientTests.mm */,
 				5E143B622069D67300715A6E /* Products */,
 				A331D95F7F230B507FBF6D22 /* Pods */,
 				6AC36F6C5DB5CA8F717D1B67 /* Frameworks */,
@@ -192,7 +192,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5E143B892069D72200715A6E /* CFStreamTests.m in Sources */,
+				5E143B892069D72200715A6E /* CFStreamClientTests.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -308,6 +308,14 @@
 			baseConfigurationReference = 9E3FAF9DA6B98ED4FE6D6848 /* Pods-CFStreamTests.debug.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"COCOAPODS=1",
+					"$(inherited)",
+					"PB_FIELD_32BIT=1",
+					"PB_NO_PACKED_STRUCTS=1",
+					"GRPC_CFSTREAM=1",
+				);
 				INFOPLIST_FILE = Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = io.grpc.CFStreamTestsTests;
