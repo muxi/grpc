@@ -8,13 +8,17 @@
 
 /* Begin PBXBuildFile section */
 		5E143B892069D72200715A6E /* CFStreamTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 5E143B882069D72200715A6E /* CFStreamTests.m */; };
-		5E143B8B2069D72700715A6E /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 5E143B8A2069D72700715A6E /* Info.plist */; };
+		5E143B8C206B5F9F00715A6E /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 5E143B8A2069D72700715A6E /* Info.plist */; };
+		604EA96D9CD477A8EA411BDF /* libPods-CFStreamTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AFFA154D492751CEAC05D591 /* libPods-CFStreamTests.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		5E143B792069D67300715A6E /* CFStreamTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CFStreamTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5E143B882069D72200715A6E /* CFStreamTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CFStreamTests.m; sourceTree = "<group>"; };
 		5E143B8A2069D72700715A6E /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		8CB4409E07E180CCA59987DF /* Pods-CFStreamTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CFStreamTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-CFStreamTests/Pods-CFStreamTests.release.xcconfig"; sourceTree = "<group>"; };
+		9E3FAF9DA6B98ED4FE6D6848 /* Pods-CFStreamTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CFStreamTests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-CFStreamTests/Pods-CFStreamTests.debug.xcconfig"; sourceTree = "<group>"; };
+		AFFA154D492751CEAC05D591 /* libPods-CFStreamTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-CFStreamTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -22,6 +26,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				604EA96D9CD477A8EA411BDF /* libPods-CFStreamTests.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -34,6 +39,8 @@
 				5E143B8A2069D72700715A6E /* Info.plist */,
 				5E143B882069D72200715A6E /* CFStreamTests.m */,
 				5E143B622069D67300715A6E /* Products */,
+				A331D95F7F230B507FBF6D22 /* Pods */,
+				6AC36F6C5DB5CA8F717D1B67 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -45,6 +52,23 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		6AC36F6C5DB5CA8F717D1B67 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				AFFA154D492751CEAC05D591 /* libPods-CFStreamTests.a */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		A331D95F7F230B507FBF6D22 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				9E3FAF9DA6B98ED4FE6D6848 /* Pods-CFStreamTests.debug.xcconfig */,
+				8CB4409E07E180CCA59987DF /* Pods-CFStreamTests.release.xcconfig */,
+			);
+			name = Pods;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -52,9 +76,12 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 5E143B852069D67300715A6E /* Build configuration list for PBXNativeTarget "CFStreamTests" */;
 			buildPhases = (
+				4EBA55D3E23FC6C84596E3D5 /* [CP] Check Pods Manifest.lock */,
 				5E143B752069D67300715A6E /* Sources */,
 				5E143B762069D67300715A6E /* Frameworks */,
 				5E143B772069D67300715A6E /* Resources */,
+				12152EAB90BAE38DE4DF0735 /* [CP] Embed Pods Frameworks */,
+				D79EA8DCEED8683DA9EA3C97 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -77,7 +104,6 @@
 					5E143B782069D67300715A6E = {
 						CreatedOnToolsVersion = 9.2;
 						ProvisioningStyle = Automatic;
-						TestTargetID = 5E143B602069D67300715A6E;
 					};
 				};
 			};
@@ -104,11 +130,62 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5E143B8B2069D72700715A6E /* Info.plist in Resources */,
+				5E143B8C206B5F9F00715A6E /* Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		12152EAB90BAE38DE4DF0735 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-CFStreamTests/Pods-CFStreamTests-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		4EBA55D3E23FC6C84596E3D5 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-CFStreamTests-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		D79EA8DCEED8683DA9EA3C97 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Copy Pods Resources";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-CFStreamTests/Pods-CFStreamTests-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		5E143B752069D67300715A6E /* Sources */ = {
@@ -228,29 +305,29 @@
 		};
 		5E143B862069D67300715A6E /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9E3FAF9DA6B98ED4FE6D6848 /* Pods-CFStreamTests.debug.xcconfig */;
 			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				INFOPLIST_FILE = CFStreamTestsTests/Info.plist;
+				INFOPLIST_FILE = Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = io.grpc.CFStreamTestsTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/CFStreamTests.app/CFStreamTests";
+				USER_HEADER_SEARCH_PATHS = ../../../../..;
 			};
 			name = Debug;
 		};
 		5E143B872069D67300715A6E /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 8CB4409E07E180CCA59987DF /* Pods-CFStreamTests.release.xcconfig */;
 			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				INFOPLIST_FILE = CFStreamTestsTests/Info.plist;
+				INFOPLIST_FILE = Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = io.grpc.CFStreamTestsTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/CFStreamTests.app/CFStreamTests";
+				USER_HEADER_SEARCH_PATHS = ../../../../..;
 			};
 			name = Release;
 		};
