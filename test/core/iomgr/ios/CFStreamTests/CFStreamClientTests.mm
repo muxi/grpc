@@ -172,31 +172,14 @@ static void must_fail(void* arg, grpc_error* error) {
 
 @end
 
+#else // GRPC_CFSTREAM
+
+// Dummy test suite
 @interface CFStreamEndpointTests : XCTestCase
 
 @end
 
 @implementation CFStreamEndpointTests
-+ (void)setUp {
-  grpc_init();
-  gpr_mu_init(&g_mu);
-}
-
-+ (void)tearDown {
-  grpc_shutdown();
-}
-
-
-@end
-
-#else
-
-// Dummy test suite
-@interface CFStreamClientTests : XCTestCase
-
-@end
-
-@implementation CFStreamClientTests
 
 - (void)setUp {
   [super setUp];
@@ -208,4 +191,4 @@ static void must_fail(void* arg, grpc_error* error) {
 
 @end
 
-#endif
+#endif // GRPC_CFSTREAM

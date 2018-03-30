@@ -108,6 +108,7 @@ static void read_action(void* arg, grpc_error* error) {
     // No need to specify an error because it is impossible to have a pending notify in
     // tcp->read_event at this time.
     tcp->read_event.SetShutdown(GRPC_ERROR_NONE);
+    TCP_UNREF(tcp);
   } else if (status == kCFStreamStatusError || error != GRPC_ERROR_NONE) {
     CFReadStreamClose(tcp->readStream);
     grpc_slice_buffer_reset_and_unref_internal(tcp->read_slices);
@@ -115,24 +116,30 @@ static void read_action(void* arg, grpc_error* error) {
     // No need to specify an error because it is impossible to have a pending notify in
     // tcp->read_event at this time.
     tcp->read_event.SetShutdown(GRPC_ERROR_NONE);
+    TCP_UNREF(tcp);
   } else if (status == kCFStreamStatusClosed) {
     grpc_slice_buffer_reset_and_unref_internal(tcp->read_slices);
     call_read_cb(tcp, error);
+    TCP_UNREF(tcp);
   } else {
-    grpc_slice *slice = &tcp->read_slices->slices[0];
+    grpc_slice *slice = &tcp->read_slices->slices[tcp->read_slices->count - 1];
     GPR_ASSERT(CFReadStreamHasBytesAvailable(tcp->readStream));
     CFIndex readSize = CFReadStreamRead(tcp->readStream, GRPC_SLICE_START_PTR(*slice), GRPC_TCP_DEFAULT_READ_SLICE_SIZE);
     NSLog(@"read! %lu", readSize);
     if (readSize == -1) {
       call_read_cb(tcp, GRPC_ERROR_CREATE_FROM_STATIC_STRING("Read error"));
+      TCP_UNREF(tcp);
+    } else if (readSize == 0) {
+      // Reset the read notification
+      tcp->read_event.NotifyOn(&tcp->read_action);
     } else {
       if (readSize < GRPC_TCP_DEFAULT_READ_SLICE_SIZE) {
         grpc_slice_buffer_trim_end(tcp->read_slices, GRPC_TCP_DEFAULT_READ_SLICE_SIZE - readSize, nullptr);
       }
       call_read_cb(tcp, GRPC_ERROR_NONE);
+      TCP_UNREF(tcp);
     }
   }
-  TCP_UNREF(tcp);
 }
 
 static void write_action(void* arg, grpc_error* error) {
