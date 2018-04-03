@@ -8618,6 +8618,8 @@
       "src/core/lib/iomgr/socket_utils_uv.cc", 
       "src/core/lib/iomgr/socket_utils_windows.cc", 
       "src/core/lib/iomgr/socket_windows.cc", 
+      "src/core/lib/iomgr/tcp_cfstream.mm", 
+      "src/core/lib/iomgr/tcp_client_cfstream.mm", 
       "src/core/lib/iomgr/tcp_client_posix.cc", 
       "src/core/lib/iomgr/tcp_client_uv.cc", 
       "src/core/lib/iomgr/tcp_client_windows.cc", 
@@ -8779,6 +8781,7 @@
       "src/core/lib/iomgr/socket_utils_posix.h", 
       "src/core/lib/iomgr/socket_windows.h", 
       "src/core/lib/iomgr/sys_epoll_wrapper.h", 
+      "src/core/lib/iomgr/tcp_cfstream.h", 
       "src/core/lib/iomgr/tcp_client.h", 
       "src/core/lib/iomgr/tcp_client_posix.h", 
       "src/core/lib/iomgr/tcp_posix.h", 
@@ -8923,6 +8926,7 @@
       "src/core/lib/iomgr/socket_utils_posix.h", 
       "src/core/lib/iomgr/socket_windows.h", 
       "src/core/lib/iomgr/sys_epoll_wrapper.h", 
+      "src/core/lib/iomgr/tcp_cfstream.h", 
       "src/core/lib/iomgr/tcp_client.h", 
       "src/core/lib/iomgr/tcp_client_posix.h", 
       "src/core/lib/iomgr/tcp_posix.h", 
@@ -10447,6 +10451,22 @@
       "include/grpc++/test/server_context_test_spouse.h", 
       "include/grpcpp/test/mock_stream.h", 
       "include/grpcpp/test/server_context_test_spouse.h"
+    ], 
+    "third_party": false, 
+    "type": "filegroup"
+  }, 
+  {
+    "deps": [], 
+    "headers": [
+      "src/core/lib/iomgr/tcp_cfstream.h"
+    ], 
+    "is_filegroup": true, 
+    "language": "objc++", 
+    "name": "grpc_cfstream", 
+    "src": [
+      "src/core/lib/iomgr/tcp_cfstream.h", 
+      "src/core/lib/iomgr/tcp_cfstream.mm", 
+      "src/core/lib/iomgr/tcp_client_cfstream.cc"
     ], 
     "third_party": false, 
     "type": "filegroup"

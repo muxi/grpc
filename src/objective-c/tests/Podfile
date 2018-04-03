@@ -8,7 +8,6 @@ GRPC_LOCAL_SRC = '../../..'
 
 # Install the dependencies in the main target plus all test targets.
 %w(
-  Tests
   AllTests
   RxLibraryUnitTests
   InteropTestsRemote
@@ -25,7 +24,6 @@ GRPC_LOCAL_SRC = '../../..'
     pod 'BoringSSL',       :podspec => "#{GRPC_LOCAL_SRC}/src/objective-c", :inhibit_warnings => true
 
     pod 'gRPC',           :path => GRPC_LOCAL_SRC
-    pod 'gRPC-Core',      :path => GRPC_LOCAL_SRC
     pod 'gRPC-RxLibrary', :path => GRPC_LOCAL_SRC
     pod 'gRPC-ProtoRPC',  :path => GRPC_LOCAL_SRC
     pod 'RemoteTest', :path => "RemoteTestClient"
@@ -33,6 +31,8 @@ GRPC_LOCAL_SRC = '../../..'
     if target_name == 'InteropTestsRemoteWithCronet'
       pod 'gRPC-Core/Cronet-Implementation', :path => GRPC_LOCAL_SRC
       pod 'CronetFramework', :podspec => "#{GRPC_LOCAL_SRC}/src/objective-c"
+    else
+      pod 'gRPC-Core/CFStream-Implementation',      :path => GRPC_LOCAL_SRC
     end
   end
 end
@@ -66,7 +66,7 @@ end
 # TODO(jcanizales): Send a PR to Cocoapods to get rid of this need.
 pre_install do |installer|
   # This is the gRPC-Core podspec object, as initialized by its podspec file.
-  grpc_core_spec = installer.pod_targets.find{|t| t.name == 'gRPC-Core'}.root_spec
+  grpc_core_spec = installer.pod_targets.find{|t| t.name.start_with?('gRPC-Core')}.root_spec
 
   # Copied from gRPC-Core.podspec, except for the adjusted src_root:
   src_root = "$(PODS_ROOT)/../#{GRPC_LOCAL_SRC}"
@@ -97,7 +97,11 @@ post_install do |installer|
         # GPR_UNREACHABLE_CODE causes "Control may reach end of non-void
         # function" warning
         config.build_settings['GCC_WARN_ABOUT_RETURN_TYPE'] = 'NO'
-        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] = '$(inherited) COCOAPODS=1 GRPC_CRONET_WITH_PACKET_COALESCING=1'
+        if target.name == 'InteropTestsRemoteWithCronet'
+          config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] = '$(inherited) COCOAPODS=1 GRPC_CRONET_WITH_PACKET_COALESCING=1'
+        else
+          config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] = '$(inherited) COCOAPODS=1 GRPC_CRONET_WITH_PACKET_COALESCING=1 GRPC_CFSTREAM=1'
+        end
       end
     end
 

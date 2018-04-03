@@ -534,6 +534,7 @@ Pod::Spec.new do |s|
                       'src/core/lib/iomgr/socket_utils_uv.cc',
                       'src/core/lib/iomgr/socket_utils_windows.cc',
                       'src/core/lib/iomgr/socket_windows.cc',
+                      'src/core/lib/iomgr/tcp_cfstream.mm',
                       'src/core/lib/iomgr/tcp_client_cfstream.mm',
                       'src/core/lib/iomgr/tcp_client_posix.cc',
                       'src/core/lib/iomgr/tcp_client_uv.cc',
@@ -545,7 +546,6 @@ Pod::Spec.new do |s|
                       'src/core/lib/iomgr/tcp_server_utils_posix_noifaddrs.cc',
                       'src/core/lib/iomgr/tcp_server_uv.cc',
                       'src/core/lib/iomgr/tcp_server_windows.cc',
-                      'src/core/lib/iomgr/tcp_cfstream.mm',
                       'src/core/lib/iomgr/tcp_uv.cc',
                       'src/core/lib/iomgr/tcp_windows.cc',
                       'src/core/lib/iomgr/time_averaged_stats.cc',
@@ -890,9 +890,9 @@ Pod::Spec.new do |s|
                               'src/core/lib/iomgr/socket_utils_posix.h',
                               'src/core/lib/iomgr/socket_windows.h',
                               'src/core/lib/iomgr/sys_epoll_wrapper.h',
+                              'src/core/lib/iomgr/tcp_cfstream.h',
                               'src/core/lib/iomgr/tcp_client.h',
                               'src/core/lib/iomgr/tcp_client_posix.h',
-                              'src/core/lib/iomgr/tcp_cfstream.h',
                               'src/core/lib/iomgr/tcp_posix.h',
                               'src/core/lib/iomgr/tcp_server.h',
                               'src/core/lib/iomgr/tcp_server_utils_posix.h',
@@ -963,6 +963,14 @@ Pod::Spec.new do |s|
                               'src/core/ext/filters/message_size/message_size_filter.h',
                               'src/core/ext/filters/workarounds/workaround_cronet_compression_filter.h',
                               'src/core/ext/filters/workarounds/workaround_utils.h'
+  end
+
+  s.subspec 'CFStream-Implementation' do |ss|
+    ss.header_mappings_dir = '.'
+    ss.dependency "#{s.name}/Implementation", version
+    ss.pod_target_xcconfig = {
+      'GCC_PREPROCESSOR_DEFINITIONS' => '"GRPC_CFSTREAM=1"'
+    }
   end
 
   s.subspec 'Cronet-Interface' do |ss|

@@ -326,6 +326,7 @@
     <file baseinstalldir="/" name="src/core/lib/iomgr/socket_utils_posix.h" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/socket_windows.h" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/sys_epoll_wrapper.h" role="src" />
+    <file baseinstalldir="/" name="src/core/lib/iomgr/tcp_cfstream.h" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/tcp_client.h" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/tcp_client_posix.h" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/tcp_posix.h" role="src" />
@@ -470,6 +471,8 @@
     <file baseinstalldir="/" name="src/core/lib/iomgr/socket_utils_uv.cc" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/socket_utils_windows.cc" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/socket_windows.cc" role="src" />
+    <file baseinstalldir="/" name="src/core/lib/iomgr/tcp_cfstream.mm" role="src" />
+    <file baseinstalldir="/" name="src/core/lib/iomgr/tcp_client_cfstream.mm" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/tcp_client_posix.cc" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/tcp_client_uv.cc" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/tcp_client_windows.cc" role="src" />
