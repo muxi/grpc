@@ -75,8 +75,7 @@ static void must_fail(void* arg, grpc_error* error) {
 
 - (void)testSucceeds {
   grpc_resolved_address resolved_addr;
-  struct sockaddr_in* addr =
-  reinterpret_cast<struct sockaddr_in*>(resolved_addr.addr);
+  struct sockaddr_in* addr = reinterpret_cast<struct sockaddr_in*>(resolved_addr.addr);
   int svr_fd;
   int r;
   int connections_complete_before;
