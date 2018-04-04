@@ -288,6 +288,30 @@ static bool compare_slice_buffer_with_buffer(grpc_slice_buffer *slices, const ch
   grpc_endpoint_shutdown(ep_, GRPC_ERROR_NONE);
 }
 
+- (void)testRemoteReset {
+  grpc_core::ExecCtx exec_ctx;
+
+  gpr_atm read;
+  grpc_closure read_done;
+  grpc_slice_buffer read_slices;
+
+  init_event_closure(&read_done, &read);
+  grpc_endpoint_read(ep_, &read_slices, &read_done);
+  grpc_slice_buffer_init(&read_slices);
+
+  struct linger so_linger;
+  so_linger.l_onoff = 1;
+  so_linger.l_linger = 0;
+  setsockopt(svr_fd_, SOL_SOCKET, SO_LINGER, &so_linger, sizeof(so_linger));
+
+  close(svr_fd_);
+
+  [self waitForEvent:&read timeout:kReadTimeout];
+  XCTAssertNotEqual(reinterpret_cast<grpc_error*>(read), GRPC_ERROR_NONE);
+
+  grpc_endpoint_shutdown(ep_, GRPC_ERROR_NONE);
+}
+
 @end
 
 #else // GRPC_CFSTREAM

@@ -57,6 +57,7 @@ typedef struct cfstream_tcp_connect {
 
   bool read_stream_open;
   bool write_stream_open;
+  bool failed;
 
   grpc_closure *closure;
   grpc_endpoint **endpoint;
@@ -76,6 +77,9 @@ static void tcp_connect_cleanup(cfstream_tcp_connect* connect) {
 
 static void on_alarm(void* arg, grpc_error* error) {
   cfstream_tcp_connect* connect = static_cast<cfstream_tcp_connect*>(arg);
+  if (grpc_tcp_trace.enabled()) {
+    gpr_log(GPR_DEBUG, "CLIENT_CONNECT :%p on_alarm, error:%p", connect, error);
+  }
   gpr_mu_lock(&connect->mu);
   grpc_closure* closure = connect->closure;
   connect->closure = nil;
@@ -91,20 +95,24 @@ static void on_alarm(void* arg, grpc_error* error) {
   }
 }
 
-static void maybe_on_connected(cfstream_tcp_connect* connect, bool set_read_open, bool set_write_open) {
-  NSLog(@"maybe_on_connected, %p, %d, %d (%d, %d)", connect, set_read_open, set_write_open, connect->read_stream_open, connect->write_stream_open);
+static void maybe_on_connected(cfstream_tcp_connect* connect, bool set_read_open, bool set_write_open, bool failed) {
   gpr_mu_lock(&connect->mu);
-  NSLog(@"maybe_on_connected_locked, %p, %d, %d (%d, %d)", connect, set_read_open, set_write_open, connect->read_stream_open, connect->write_stream_open);
   if (set_read_open) {
     connect->read_stream_open = true;
   }
   if (set_write_open) {
     connect->write_stream_open = true;
   }
-  const bool connected_or_failed = (connect->read_stream_open && connect->write_stream_open);
+  if (failed) {
+    connect->failed = true;
+  }
 
+  if (grpc_tcp_trace.enabled()) {
+    gpr_log(GPR_DEBUG, "CLIENT_CONNECT :%p read_open:%d write_open:%d, failed:%d", connect, connect->read_stream_open, connect->write_stream_open, connect->failed);
+  }
+  const bool connected_or_failed = (connect->read_stream_open && connect->write_stream_open);
   if (connected_or_failed) {
-    NSLog(@"Connected or failed");
+
     grpc_timer_cancel(&connect->alarm);
 
     grpc_closure* closure = connect->closure;
@@ -112,10 +120,13 @@ static void maybe_on_connected(cfstream_tcp_connect* connect, bool set_read_open
 
     bool done = (--connect->refs == 0);
     grpc_endpoint **endpoint = connect->endpoint;
+    bool to_fail = connect->failed;
     gpr_mu_unlock(&connect->mu);
     // Only schedule a callback once, by either on_timer or on_connected. The first one issues callback while the second one does cleanup.
     if (done) {
       tcp_connect_cleanup(connect);
+    } else if (to_fail) {
+      GRPC_CLOSURE_SCHED(closure, GRPC_ERROR_CREATE_FROM_STATIC_STRING("connect() failed."));
     } else {
       *endpoint = grpc_tcp_create(connect->readStream, connect->writeStream, connect->addr_name, connect->resource_quota);
       GRPC_CLOSURE_SCHED(closure, GRPC_ERROR_NONE);
@@ -127,89 +138,46 @@ static void maybe_on_connected(cfstream_tcp_connect* connect, bool set_read_open
 
 static void readCallback(CFReadStreamRef stream, CFStreamEventType type, void *clientCallBackInfo) {
   cfstream_tcp_connect* connect = static_cast<cfstream_tcp_connect*>(clientCallBackInfo);
-  // Assume that error is impossible just for now
-  GPR_ASSERT(type == kCFStreamEventOpenCompleted);
   dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-    NSLog(@"client readCallback, type:%lu", type);
     grpc_core::ExecCtx exec_ctx;
-    maybe_on_connected(connect, true, false);
+    switch (type) {
+      case kCFStreamEventOpenCompleted:
+      case kCFStreamEventErrorOccurred:
+        maybe_on_connected(connect, true, false, type == kCFStreamEventErrorOccurred);
+        break;
+      case kCFStreamEventHasBytesAvailable:
+      default:
+        // Do nothing; handled by endpoint
+        break;
+    }
+
+    if (grpc_tcp_trace.enabled()) {
+      gpr_log(GPR_DEBUG, "CLIENT_CONNECT :%p connect read callback (%p, %lu, %p)", connect, stream, type, clientCallBackInfo);
+    }
   });
+  CFReadStreamSetClient(stream, 0, nil, nil);
 }
 
 static void writeCallback(CFWriteStreamRef stream, CFStreamEventType type, void *clientCallBackInfo) {
   cfstream_tcp_connect* connect = static_cast<cfstream_tcp_connect*>(clientCallBackInfo);
-  GPR_ASSERT(type == kCFStreamEventOpenCompleted);
   dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-    NSLog(@"client writeCallback, type:%lu", type);
     grpc_core::ExecCtx exec_ctx;
-    maybe_on_connected(connect, false, true);
+    switch (type) {
+      case kCFStreamEventOpenCompleted:
+      case kCFStreamEventErrorOccurred:
+        maybe_on_connected(connect, false, true, type == kCFStreamEventErrorOccurred);
+      case kCFStreamEventCanAcceptBytes:
+      default:
+        // Do nothing; handled by endpoint
+        break;
+    }
+
+    if (grpc_tcp_trace.enabled()) {
+      gpr_log(GPR_DEBUG, "CLIENT_CONNECT :%p connect write callback (%p, %lu, %p)", connect, stream, type, clientCallBackInfo);
+    }
   });
+  CFWriteStreamSetClient(stream, 0, nil, nil);
 }
-
-/*static void parse_uri(const grpc_resolved_address *resolved_addr, CFStringRef *host, UInt32 *port) {
-  const struct sockaddr *addr = reinterpret_cast<const struct sockaddr*>(resolved_addr->addr);
-  NSLog(@"%hhu", addr->sa_family);
-  switch (addr->sa_family) {
-    case AF_INET6:
-      const struct sockaddr_in6 *addr = reinterpret_cast<const struct sockaddr_in6*>(addr);
-
-      break;
-    case AF_INET:
-      break;
-    case AF_UNIX:
-      break;
-    default:
-      break;
-  }
-  (void)addr;
-}*/
-
-/*static void parse_uri(const grpc_channel_args *args, CFStringRef *host, int *port) {
-  char *host_string = nullptr, *port_string = nullptr;
-  grpc_uri *uri = nullptr;
-  const char* addr_uri_str = grpc_get_subchannel_address_uri_arg(args);
-  const char *host_port;
-  if (*addr_uri_str == '\0') {
-    goto error;
-  }
-  uri = grpc_uri_parse(addr_uri_str, 0);
-  if (uri == nullptr) {
-    goto error;
-  }
-  host_port = uri->path;
-  if (*host_port == '/') ++host_port;
-  if (strcmp("unix", uri->scheme) == 0) {
-    goto error; // Not supported
-  } else if (strcmp("ipv4", uri->scheme) == 0 || strcmp("ipv6", uri->scheme) == 0) {
-    if (!gpr_split_host_port(host_port, &host_string, &port_string) || port_string == nullptr){
-      goto error;
-    }
-    int port_num;
-    if (sscanf(port_string, "%d", &port_num) != 1 || port_num < 0 || port_num > 65535) {
-      goto error;
-    }
-    *host = CFStringCreateWithCString(NULL, host_string, kCFStringEncodingUTF8);
-    *port = port_num;
-  }
-  grpc_uri_destroy(uri);
-  gpr_free(host_string);
-  gpr_free(port_string);
-  return;
-
-error:
-  if (uri) {
-    grpc_uri_destroy(uri);
-  }
-  if (host_string) {
-    gpr_free(host_string);
-  }
-  if (port_string) {
-    gpr_free(port_string);
-  }
-  *host = nil;
-  *port = 0;
-  return;
-}*/
 
 static void parse_resolved_address(const grpc_resolved_address* addr, CFStringRef *host, int *port) {
   char *host_port, *host_string, *port_string;
@@ -248,7 +216,7 @@ static void tcp_client_connect_impl(grpc_closure* closure, grpc_endpoint** ep,
       if (0 == strcmp(channel_args->args[i].key, GRPC_ARG_RESOURCE_QUOTA)) {
         grpc_resource_quota_unref_internal(resource_quota);
         resource_quota = grpc_resource_quota_ref_internal(
-                                                          (grpc_resource_quota*)channel_args->args[i].value.pointer.p);
+            (grpc_resource_quota*)channel_args->args[i].value.pointer.p);
       }
     }
   }
@@ -272,7 +240,6 @@ static void tcp_client_connect_impl(grpc_closure* closure, grpc_endpoint** ep,
   CFWriteStreamScheduleWithRunLoop(writeStream, CFRunLoopGetMain(), kCFRunLoopCommonModes);
   GRPC_CLOSURE_INIT(&connect->on_alarm, on_alarm, connect, grpc_schedule_on_exec_ctx);
   gpr_mu_lock(&connect->mu);
-  NSLog(@"Open stream");
   CFReadStreamOpen(readStream);
   CFWriteStreamOpen(writeStream);
   grpc_timer_init(&connect->alarm, deadline, &connect->on_alarm);

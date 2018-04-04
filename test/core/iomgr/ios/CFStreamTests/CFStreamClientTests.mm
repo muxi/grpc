@@ -125,7 +125,7 @@ static void must_fail(void* arg, grpc_error* error) {
     [[NSRunLoop mainRunLoop] runMode:NSDefaultRunLoopMode beforeDate:deadline];
     gpr_mu_lock(&g_mu);
   }
-  XCTAssertGreaterThan(g_connections_complete, 0);
+  XCTAssertGreaterThan(g_connections_complete, connections_complete_before);
 
   gpr_mu_unlock(&g_mu);
 }
@@ -138,12 +138,21 @@ static void must_fail(void* arg, grpc_error* error) {
   reinterpret_cast<struct sockaddr_in*>(resolved_addr.addr);
   int connections_complete_before;
   grpc_closure done;
+  int svr_fd;
 
   gpr_log(GPR_DEBUG, "test_fails");
 
   memset(&resolved_addr, 0, sizeof(resolved_addr));
   resolved_addr.len = static_cast<socklen_t>(sizeof(struct sockaddr_in));
   addr->sin_family = AF_INET;
+
+  svr_fd = socket(AF_INET, SOCK_STREAM, 0);
+  GPR_ASSERT(svr_fd >= 0);
+  GPR_ASSERT(0 == bind(svr_fd, (struct sockaddr*)addr, (socklen_t)resolved_addr.len));
+  GPR_ASSERT(0 == listen(svr_fd, 1));
+  GPR_ASSERT(getsockname(svr_fd, (struct sockaddr*)addr,
+                         (socklen_t*)&resolved_addr.len) == 0);
+  close(svr_fd);
 
   gpr_mu_lock(&g_mu);
   connections_complete_before = g_connections_complete;
@@ -165,7 +174,7 @@ static void must_fail(void* arg, grpc_error* error) {
     gpr_mu_lock(&g_mu);
   }
 
-  XCTAssertEqual(g_connections_complete, connections_complete_before);
+  XCTAssertGreaterThan(g_connections_complete, connections_complete_before);
 
   gpr_mu_unlock(&g_mu);
 }
