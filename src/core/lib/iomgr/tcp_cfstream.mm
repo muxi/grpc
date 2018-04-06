@@ -17,8 +17,9 @@
  */
 
 #include <grpc/support/port_platform.h>
+#include "src/core/lib/iomgr/port.h"
 
-#ifdef GRPC_CFSTREAM
+#ifdef GRPC_CFSTREAM_ENDPOINT
 
 #import <Foundation/Foundation.h>
 
@@ -33,7 +34,7 @@
 #include "src/core/lib/slice/slice_internal.h"
 #include "src/core/lib/slice/slice_string_helpers.h"
 
-extern grpc_core::TraceFlag grpc_tcp_trace;
+grpc_core::TraceFlag grpc_tcp_trace(false, "tcp");
 
 struct cfstream_tcp_connect;
 
@@ -413,4 +414,4 @@ grpc_endpoint* grpc_tcp_create(CFReadStreamRef readStream,
   return &tcp->base;
 }
 
-#endif
+#endif /* GRPC_CFSTREAM_SOCKET */

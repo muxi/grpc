@@ -18,8 +18,9 @@
  */
 
 #include <grpc/support/port_platform.h>
+#include "src/core/lib/iomgr/port.h"
 
-#ifdef GRPC_CFSTREAM
+#ifdef GRPC_CFSTREAM_ASYNC_CONNECT
 
 #include <Foundation/Foundation.h>
 
@@ -262,4 +263,4 @@ void grpc_tcp_client_connect(grpc_closure* closure, grpc_endpoint** ep,
                                addr, deadline);
 }
 
-#endif /* GRPC_CFSTREAM */
+#endif /* GRPC_CFSTREAM_SOCKET */
