@@ -38,6 +38,7 @@
 #include "src/core/lib/channel/channel_args.h"
 #include "src/core/lib/gpr/host_port.h"
 #include "src/core/lib/iomgr/error.h"
+#include "src/core/lib/iomgr/error_apple.h"
 #include "src/core/lib/iomgr/tcp_client.h"
 #include "src/core/lib/iomgr/tcp_cfstream.h"
 #include "src/core/lib/iomgr/timer.h"
@@ -113,6 +114,14 @@ static void maybe_on_connected(cfstream_tcp_connect* connect, bool set_read_open
   }
   const bool connected_or_failed = (connect->read_stream_open && connect->write_stream_open);
   if (connected_or_failed) {
+    CFErrorRef error = NULL;
+    if (connect->failed) {
+      error = CFReadStreamCopyError(connect->readStream);
+      if (error == NULL) {
+        error = CFWriteStreamCopyError(connect->writeStream);
+      }
+      GPR_ASSERT(error != NULL);
+    }
 
     grpc_timer_cancel(&connect->alarm);
 
@@ -121,16 +130,19 @@ static void maybe_on_connected(cfstream_tcp_connect* connect, bool set_read_open
 
     bool done = (--connect->refs == 0);
     grpc_endpoint **endpoint = connect->endpoint;
-    bool to_fail = connect->failed;
     gpr_mu_unlock(&connect->mu);
     // Only schedule a callback once, by either on_timer or on_connected. The first one issues callback while the second one does cleanup.
     if (done) {
       tcp_connect_cleanup(connect);
-    } else if (to_fail) {
-      GRPC_CLOSURE_SCHED(closure, GRPC_ERROR_CREATE_FROM_STATIC_STRING("connect() failed."));
+    } else if (error != NULL) {
+      grpc_error *trans_error = GRPC_ERROR_CREATE_FROM_CFERROR(error, "connect() failed.");
+      GRPC_CLOSURE_SCHED(closure, trans_error);
     } else {
       *endpoint = grpc_tcp_create(connect->readStream, connect->writeStream, connect->addr_name, connect->resource_quota);
       GRPC_CLOSURE_SCHED(closure, GRPC_ERROR_NONE);
+    }
+    if (error != NULL) {
+      CFRelease(error);
     }
   } else {
     gpr_mu_unlock(&connect->mu);

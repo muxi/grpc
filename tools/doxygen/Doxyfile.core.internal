@@ -1150,6 +1150,8 @@ src/core/lib/iomgr/endpoint_pair_uv.cc \
 src/core/lib/iomgr/endpoint_pair_windows.cc \
 src/core/lib/iomgr/error.cc \
 src/core/lib/iomgr/error.h \
+src/core/lib/iomgr/error_apple.h \
+src/core/lib/iomgr/error_apple.mm \
 src/core/lib/iomgr/error_internal.h \
 src/core/lib/iomgr/ev_epoll1_linux.cc \
 src/core/lib/iomgr/ev_epoll1_linux.h \

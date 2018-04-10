@@ -28,9 +28,10 @@
 #include <grpc/support/string_util.h>
 
 #include "src/core/lib/gpr/string.h"
-#include "src/core/lib/iomgr/lockfree_event.h"
-#include "src/core/lib/iomgr/endpoint.h"
 #include "src/core/lib/iomgr/closure.h"
+#include "src/core/lib/iomgr/error_apple.h"
+#include "src/core/lib/iomgr/endpoint.h"
+#include "src/core/lib/iomgr/lockfree_event.h"
 #include "src/core/lib/slice/slice_internal.h"
 #include "src/core/lib/slice/slice_string_helpers.h"
 
@@ -156,9 +157,16 @@ static void read_action(void* arg, grpc_error* error) {
     tcp->read_event.SetShutdown(GRPC_ERROR_NONE);
     TCP_UNREF(tcp, "read");
   } else if (status == kCFStreamStatusError || error != GRPC_ERROR_NONE) {
-    CFReadStreamClose(tcp->readStream);
     grpc_slice_buffer_reset_and_unref_internal(tcp->read_slices);
-    call_read_cb(tcp, GRPC_ERROR_CREATE_FROM_STATIC_STRING("Stream error"));
+    if (status == kCFStreamStatusError) {
+      CFErrorRef streamError = CFReadStreamCopyError(tcp->readStream);
+      GPR_ASSERT(streamError != NULL);
+      CFReadStreamClose(tcp->readStream);
+      call_read_cb(tcp, GRPC_ERROR_CREATE_FROM_CFERROR(streamError, "Stream error"));
+      CFRelease(streamError);
+    } else {
+      call_read_cb(tcp, GRPC_ERROR_REF(error));
+    }
     // No need to specify an error because it is impossible to have a pending notify in
     // tcp->read_event at this time.
     tcp->read_event.SetShutdown(GRPC_ERROR_NONE);
@@ -173,7 +181,9 @@ static void read_action(void* arg, grpc_error* error) {
     CFIndex readSize = CFReadStreamRead(tcp->readStream, GRPC_SLICE_START_PTR(*slice), GRPC_TCP_DEFAULT_READ_SLICE_SIZE);
     if (readSize == -1) {
       grpc_slice_buffer_reset_and_unref_internal(tcp->read_slices);
-      call_read_cb(tcp, GRPC_ERROR_CREATE_FROM_STATIC_STRING("Read error"));
+      CFErrorRef streamError = CFReadStreamCopyError(tcp->readStream);
+      call_read_cb(tcp, GRPC_ERROR_CREATE_FROM_CFERROR(streamError, "Read error"));
+      CFRelease(streamError);
       TCP_UNREF(tcp, "read");
     } else if (readSize == 0) {
       // Reset the read notification
@@ -199,9 +209,15 @@ static void write_action(void* arg, grpc_error* error) {
     tcp->write_event.SetShutdown(GRPC_ERROR_NONE);
     TCP_UNREF(tcp, "write");
   } else if (status == kCFStreamStatusError || error != GRPC_ERROR_NONE) {
-    CFWriteStreamClose(tcp->writeStream);
     grpc_slice_buffer_reset_and_unref_internal(tcp->write_slices);
-    call_write_cb(tcp, GRPC_ERROR_CREATE_FROM_STATIC_STRING("Stream error"));
+    if (status == kCFStreamStatusError) {
+      CFErrorRef streamError = CFWriteStreamCopyError(tcp->writeStream);
+      CFWriteStreamClose(tcp->writeStream);
+      call_write_cb(tcp, GRPC_ERROR_CREATE_FROM_CFERROR(streamError, "Stream error"));
+      CFRelease(streamError);
+    } else {
+      call_write_cb(tcp, GRPC_ERROR_REF(error));
+    }
     tcp->write_event.SetShutdown(GRPC_ERROR_NONE);
     TCP_UNREF(tcp, "write");
   } else if (status == kCFStreamStatusClosed) {
@@ -215,7 +231,9 @@ static void write_action(void* arg, grpc_error* error) {
     CFIndex writeSize = CFWriteStreamWrite(tcp->writeStream, GRPC_SLICE_START_PTR(slice), slice_len);
     if (writeSize == -1) {
       grpc_slice_buffer_reset_and_unref_internal(tcp->write_slices);
-      call_write_cb(tcp, GRPC_ERROR_CREATE_FROM_STATIC_STRING("write failed."));
+      CFErrorRef streamError = CFWriteStreamCopyError(tcp->writeStream);
+      call_write_cb(tcp, GRPC_ERROR_CREATE_FROM_CFERROR(streamError, "write failed."));
+      CFRelease(streamError);
       TCP_UNREF(tcp, "write");
     } else {
       if (writeSize < GRPC_SLICE_LENGTH(slice)) {

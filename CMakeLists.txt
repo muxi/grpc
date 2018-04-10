@@ -821,6 +821,7 @@ add_library(grpc
   src/core/lib/iomgr/endpoint_pair_uv.cc
   src/core/lib/iomgr/endpoint_pair_windows.cc
   src/core/lib/iomgr/error.cc
+  src/core/lib/iomgr/error_apple.mm
   src/core/lib/iomgr/ev_epoll1_linux.cc
   src/core/lib/iomgr/ev_epollex_linux.cc
   src/core/lib/iomgr/ev_epollsig_linux.cc
@@ -1165,6 +1166,7 @@ add_library(grpc_cronet
   src/core/lib/iomgr/endpoint_pair_uv.cc
   src/core/lib/iomgr/endpoint_pair_windows.cc
   src/core/lib/iomgr/error.cc
+  src/core/lib/iomgr/error_apple.mm
   src/core/lib/iomgr/ev_epoll1_linux.cc
   src/core/lib/iomgr/ev_epollex_linux.cc
   src/core/lib/iomgr/ev_epollsig_linux.cc
@@ -1495,6 +1497,7 @@ add_library(grpc_test_util
   src/core/lib/iomgr/endpoint_pair_uv.cc
   src/core/lib/iomgr/endpoint_pair_windows.cc
   src/core/lib/iomgr/error.cc
+  src/core/lib/iomgr/error_apple.mm
   src/core/lib/iomgr/ev_epoll1_linux.cc
   src/core/lib/iomgr/ev_epollex_linux.cc
   src/core/lib/iomgr/ev_epollsig_linux.cc
@@ -1786,6 +1789,7 @@ add_library(grpc_test_util_unsecure
   src/core/lib/iomgr/endpoint_pair_uv.cc
   src/core/lib/iomgr/endpoint_pair_windows.cc
   src/core/lib/iomgr/error.cc
+  src/core/lib/iomgr/error_apple.mm
   src/core/lib/iomgr/ev_epoll1_linux.cc
   src/core/lib/iomgr/ev_epollex_linux.cc
   src/core/lib/iomgr/ev_epollsig_linux.cc
@@ -2057,6 +2061,7 @@ add_library(grpc_unsecure
   src/core/lib/iomgr/endpoint_pair_uv.cc
   src/core/lib/iomgr/endpoint_pair_windows.cc
   src/core/lib/iomgr/error.cc
+  src/core/lib/iomgr/error_apple.mm
   src/core/lib/iomgr/ev_epoll1_linux.cc
   src/core/lib/iomgr/ev_epollex_linux.cc
   src/core/lib/iomgr/ev_epollsig_linux.cc
@@ -2862,6 +2867,7 @@ add_library(grpc++_cronet
   src/core/lib/iomgr/endpoint_pair_uv.cc
   src/core/lib/iomgr/endpoint_pair_windows.cc
   src/core/lib/iomgr/error.cc
+  src/core/lib/iomgr/error_apple.mm
   src/core/lib/iomgr/ev_epoll1_linux.cc
   src/core/lib/iomgr/ev_epollex_linux.cc
   src/core/lib/iomgr/ev_epollsig_linux.cc

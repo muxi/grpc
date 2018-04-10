@@ -288,6 +288,7 @@
     <file baseinstalldir="/" name="src/core/lib/iomgr/endpoint.h" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/endpoint_pair.h" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/error.h" role="src" />
+    <file baseinstalldir="/" name="src/core/lib/iomgr/error_apple.h" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/error_internal.h" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/ev_epoll1_linux.h" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/ev_epollex_linux.h" role="src" />
@@ -431,6 +432,7 @@
     <file baseinstalldir="/" name="src/core/lib/iomgr/endpoint_pair_uv.cc" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/endpoint_pair_windows.cc" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/error.cc" role="src" />
+    <file baseinstalldir="/" name="src/core/lib/iomgr/error_apple.mm" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/ev_epoll1_linux.cc" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/ev_epollex_linux.cc" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/ev_epollsig_linux.cc" role="src" />
