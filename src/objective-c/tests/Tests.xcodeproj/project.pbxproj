@@ -13,7 +13,6 @@
 		16A9E77B6E336B3C0B9BA6E0 /* libPods-InteropTestsLocalSSL.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DBEDE45BDA60DF1E1C8950C0 /* libPods-InteropTestsLocalSSL.a */; };
 		20DFDF829DD993A4A00D5662 /* libPods-RxLibraryUnitTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A58BE6DF1C62D1739EBB2C78 /* libPods-RxLibraryUnitTests.a */; };
 		333E8FC01C8285B7C547D799 /* libPods-InteropTestsLocalCleartext.a in Frameworks */ = {isa = PBXBuildFile; fileRef = FD346DB2C23F676C4842F3FF /* libPods-InteropTestsLocalCleartext.a */; };
-		3D7C85F6AA68C4A205E3BA16 /* libPods-Tests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 20DFF2F3C97EF098FE5A3171 /* libPods-Tests.a */; };
 		5E8A5DA71D3840B4000F8BC4 /* CoreCronetEnd2EndTests.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5E8A5DA61D3840B4000F8BC4 /* CoreCronetEnd2EndTests.mm */; };
 		5E8A5DA91D3840B4000F8BC4 /* libTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 635697C71B14FC11007A7283 /* libTests.a */; };
 		5EAD6D271E27047400002378 /* CronetUnitTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 5EAD6D261E27047400002378 /* CronetUnitTests.m */; };
@@ -120,7 +119,6 @@
 
 /* Begin PBXFileReference section */
 		02192CF1FF9534E3D18C65FC /* Pods-CronetUnitTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CronetUnitTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-CronetUnitTests/Pods-CronetUnitTests.release.xcconfig"; sourceTree = "<group>"; };
-		060EF32D7EC0DF67ED617507 /* Pods-Tests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Tests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-Tests/Pods-Tests.debug.xcconfig"; sourceTree = "<group>"; };
 		07D10A965323BEA7FE59A74B /* Pods-RxLibraryUnitTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RxLibraryUnitTests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-RxLibraryUnitTests/Pods-RxLibraryUnitTests.debug.xcconfig"; sourceTree = "<group>"; };
 		0A4F89D9C90E9C30990218F0 /* Pods.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.release.xcconfig; path = "Pods/Target Support Files/Pods/Pods.release.xcconfig"; sourceTree = "<group>"; };
 		0D2284C3DF7E57F0ED504E39 /* Pods-CoreCronetEnd2EndTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CoreCronetEnd2EndTests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-CoreCronetEnd2EndTests/Pods-CoreCronetEnd2EndTests.debug.xcconfig"; sourceTree = "<group>"; };
@@ -170,7 +168,6 @@
 		79C68EFFCB5533475D810B79 /* Pods-RxLibraryUnitTests.cronet.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RxLibraryUnitTests.cronet.xcconfig"; path = "Pods/Target Support Files/Pods-RxLibraryUnitTests/Pods-RxLibraryUnitTests.cronet.xcconfig"; sourceTree = "<group>"; };
 		7A2E97E3F469CC2A758D77DE /* Pods-InteropTestsLocalSSL.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-InteropTestsLocalSSL.release.xcconfig"; path = "Pods/Target Support Files/Pods-InteropTestsLocalSSL/Pods-InteropTestsLocalSSL.release.xcconfig"; sourceTree = "<group>"; };
 		9E9444C764F0FFF64A7EB58E /* libPods-InteropTestsRemoteWithCronet.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-InteropTestsRemoteWithCronet.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		A0361771A855917162911180 /* Pods-Tests.test.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Tests.test.xcconfig"; path = "Pods/Target Support Files/Pods-Tests/Pods-Tests.test.xcconfig"; sourceTree = "<group>"; };
 		A58BE6DF1C62D1739EBB2C78 /* libPods-RxLibraryUnitTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-RxLibraryUnitTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		A6F832FCEFA6F6881E620F12 /* Pods-InteropTestsRemote.test.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-InteropTestsRemote.test.xcconfig"; path = "Pods/Target Support Files/Pods-InteropTestsRemote/Pods-InteropTestsRemote.test.xcconfig"; sourceTree = "<group>"; };
 		AA7CB64B4DD9915AE7C03163 /* Pods-InteropTestsLocalCleartext.cronet.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-InteropTestsLocalCleartext.cronet.xcconfig"; path = "Pods/Target Support Files/Pods-InteropTestsLocalCleartext/Pods-InteropTestsLocalCleartext.cronet.xcconfig"; sourceTree = "<group>"; };
@@ -186,9 +183,7 @@
 		DC3CA1D948F068E76957A861 /* Pods-InteropTestsRemote.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-InteropTestsRemote.debug.xcconfig"; path = "Pods/Target Support Files/Pods-InteropTestsRemote/Pods-InteropTestsRemote.debug.xcconfig"; sourceTree = "<group>"; };
 		E1486220285AF123EB124008 /* Pods-InteropTestsLocalCleartext.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-InteropTestsLocalCleartext.debug.xcconfig"; path = "Pods/Target Support Files/Pods-InteropTestsLocalCleartext/Pods-InteropTestsLocalCleartext.debug.xcconfig"; sourceTree = "<group>"; };
 		E4275A759BDBDF143B9B438F /* Pods-InteropTestsRemote.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-InteropTestsRemote.release.xcconfig"; path = "Pods/Target Support Files/Pods-InteropTestsRemote/Pods-InteropTestsRemote.release.xcconfig"; sourceTree = "<group>"; };
-		E6733B838B28453434B556E2 /* Pods-Tests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Tests.release.xcconfig"; path = "Pods/Target Support Files/Pods-Tests/Pods-Tests.release.xcconfig"; sourceTree = "<group>"; };
 		E7E4D3FD76E3B745D992AF5F /* Pods-AllTests.cronet.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AllTests.cronet.xcconfig"; path = "Pods/Target Support Files/Pods-AllTests/Pods-AllTests.cronet.xcconfig"; sourceTree = "<group>"; };
-		F671D4CAD2864FB203B920B4 /* Pods-Tests.cronet.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Tests.cronet.xcconfig"; path = "Pods/Target Support Files/Pods-Tests/Pods-Tests.cronet.xcconfig"; sourceTree = "<group>"; };
 		FBD98AC417B9882D32B19F28 /* libPods-CoreCronetEnd2EndTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-CoreCronetEnd2EndTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		FD346DB2C23F676C4842F3FF /* libPods-InteropTestsLocalCleartext.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-InteropTestsLocalCleartext.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		FF7B5489BCFE40111D768DD0 /* Pods.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.debug.xcconfig; path = "Pods/Target Support Files/Pods/Pods.debug.xcconfig"; sourceTree = "<group>"; };
@@ -235,7 +230,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3D7C85F6AA68C4A205E3BA16 /* libPods-Tests.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -310,8 +304,6 @@
 				E4275A759BDBDF143B9B438F /* Pods-InteropTestsRemote.release.xcconfig */,
 				07D10A965323BEA7FE59A74B /* Pods-RxLibraryUnitTests.debug.xcconfig */,
 				3B0861FC805389C52DB260D4 /* Pods-RxLibraryUnitTests.release.xcconfig */,
-				060EF32D7EC0DF67ED617507 /* Pods-Tests.debug.xcconfig */,
-				E6733B838B28453434B556E2 /* Pods-Tests.release.xcconfig */,
 				0D2284C3DF7E57F0ED504E39 /* Pods-CoreCronetEnd2EndTests.debug.xcconfig */,
 				4AD97096D13D7416DC91A72A /* Pods-CoreCronetEnd2EndTests.release.xcconfig */,
 				17F60BF2871F6AF85FB3FA12 /* Pods-InteropTestsRemoteWithCronet.debug.xcconfig */,
@@ -323,7 +315,6 @@
 				4ADEA1C8BBE10D90940AC68E /* Pods-InteropTestsRemote.cronet.xcconfig */,
 				3F27B2E744482771EB93C394 /* Pods-InteropTestsRemoteWithCronet.cronet.xcconfig */,
 				79C68EFFCB5533475D810B79 /* Pods-RxLibraryUnitTests.cronet.xcconfig */,
-				F671D4CAD2864FB203B920B4 /* Pods-Tests.cronet.xcconfig */,
 				64F68A9A6A63CC930DD30A6E /* Pods-CronetUnitTests.debug.xcconfig */,
 				386712AEACF7C2190C4B8B3F /* Pods-CronetUnitTests.cronet.xcconfig */,
 				02192CF1FF9534E3D18C65FC /* Pods-CronetUnitTests.release.xcconfig */,
@@ -335,7 +326,6 @@
 				A6F832FCEFA6F6881E620F12 /* Pods-InteropTestsRemote.test.xcconfig */,
 				2B89F3037963E6EDDD48D8C3 /* Pods-InteropTestsRemoteWithCronet.test.xcconfig */,
 				781089FAE980F51F88A3BE0B /* Pods-RxLibraryUnitTests.test.xcconfig */,
-				A0361771A855917162911180 /* Pods-Tests.test.xcconfig */,
 			);
 			name = Pods;
 			sourceTree = "<group>";
@@ -512,11 +502,9 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 635697DB1B14FC11007A7283 /* Build configuration list for PBXNativeTarget "Tests" */;
 			buildPhases = (
-				796680C7599CB4ED736DD62A /* [CP] Check Pods Manifest.lock */,
 				635697C31B14FC11007A7283 /* Sources */,
 				635697C41B14FC11007A7283 /* Frameworks */,
 				635697C51B14FC11007A7283 /* CopyFiles */,
-				AEEBFC914CBAEE347382E8C4 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -892,24 +880,6 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		796680C7599CB4ED736DD62A /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-Tests-checkManifestLockResult.txt",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
 		80E2DDD2EC04A4009F45E933 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -1028,24 +998,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-InteropTestsLocalCleartext/Pods-InteropTestsLocalCleartext-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		AEEBFC914CBAEE347382E8C4 /* [CP] Copy Pods Resources */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"${SRCROOT}/Pods/Target Support Files/Pods-Tests/Pods-Tests-resources.sh",
-				"${PODS_CONFIGURATION_BUILD_DIR}/gRPC/gRPCCertificates.bundle",
-			);
-			name = "[CP] Copy Pods Resources";
-			outputPaths = (
-				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/gRPCCertificates.bundle",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-Tests/Pods-Tests-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		B2986CEEE8CDD4901C97598B /* [CP] Check Pods Manifest.lock */ = {
@@ -1369,7 +1321,6 @@
 		};
 		5E1228991E4D400F00E8504F /* Test */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = A0361771A855917162911180 /* Pods-Tests.test.xcconfig */;
 			buildSettings = {
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1657,7 +1608,6 @@
 		};
 		5EC3C7A11D4FC18C000330E2 /* Cronet */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = F671D4CAD2864FB203B920B4 /* Pods-Tests.cronet.xcconfig */;
 			buildSettings = {
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1942,7 +1892,6 @@
 		};
 		635697DC1B14FC11007A7283 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 060EF32D7EC0DF67ED617507 /* Pods-Tests.debug.xcconfig */;
 			buildSettings = {
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1952,7 +1901,6 @@
 		};
 		635697DD1B14FC11007A7283 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = E6733B838B28453434B556E2 /* Pods-Tests.release.xcconfig */;
 			buildSettings = {
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
