@@ -45,8 +45,6 @@ typedef struct {
 
   CFReadStreamRef readStream;
   CFWriteStreamRef writeStream;
-  cfstream_tcp_connect* connect;
-  void (*on_connected)(cfstream_tcp_connect* connect, CFStreamEventType type);
 
   grpc_closure* read_cb;
   grpc_closure* write_cb;
@@ -150,8 +148,7 @@ static void read_action(void* arg, grpc_error* error) {
   if (status == kCFStreamStatusAtEnd) {
     CFReadStreamClose(tcp->readStream);
     grpc_slice_buffer_reset_and_unref_internal(tcp->read_slices);
-    call_read_cb(
-                 tcp, GRPC_ERROR_CREATE_FROM_STATIC_STRING("Stream closed"));
+    call_read_cb(tcp, GRPC_ERROR_CREATE_FROM_STATIC_STRING("Stream closed"));
     // No need to specify an error because it is impossible to have a pending notify in
     // tcp->read_event at this time.
     tcp->read_event.SetShutdown(GRPC_ERROR_NONE);
