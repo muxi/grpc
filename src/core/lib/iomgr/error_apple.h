@@ -21,9 +21,11 @@
 
 #ifdef GPR_APPLE
 // Create an error from Apple Core Foundation CFError object
-#define GRPC_ERROR_CREATE_FROM_CFERROR(error, desc) \
-  grpc_error_create_from_cferror(__FILE__, __LINE__, static_cast<void*>((error)), (desc))
-grpc_error* grpc_error_create_from_cferror(const char* file, int line, void* arg, const char* desc);
+#define GRPC_ERROR_CREATE_FROM_CFERROR(error, desc)  \
+  grpc_error_create_from_cferror(__FILE__, __LINE__, \
+                                 static_cast<void*>((error)), (desc))
+grpc_error* grpc_error_create_from_cferror(const char* file, int line,
+                                           void* arg, const char* desc);
 #endif
 
 #endif

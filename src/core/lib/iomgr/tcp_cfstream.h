@@ -38,7 +38,6 @@
 #include "src/core/lib/debug/trace.h"
 #include "src/core/lib/iomgr/endpoint.h"
 
-
 extern grpc_core::TraceFlag grpc_tcp_trace;
 
 struct cfstream_tcp_connect;
