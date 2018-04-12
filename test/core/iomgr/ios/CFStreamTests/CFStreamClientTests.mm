@@ -32,7 +32,7 @@
 #include "src/core/lib/iomgr/tcp_client.h"
 #include "test/core/util/test_config.h"
 
-//static int g_connections_complete = 0;
+// static int g_connections_complete = 0;
 static gpr_mu g_mu;
 static int g_connections_complete = 0;
 static grpc_endpoint* g_connecting = nullptr;
@@ -101,11 +101,10 @@ static void must_fail(void* arg, grpc_error* error) {
   gpr_mu_unlock(&g_mu);
 
   /* connect to it */
-  GPR_ASSERT(getsockname(svr_fd, (struct sockaddr*)addr,
-                         (socklen_t*)&resolved_addr.len) == 0);
+  GPR_ASSERT(getsockname(svr_fd, (struct sockaddr*)addr, (socklen_t*)&resolved_addr.len) == 0);
   GRPC_CLOSURE_INIT(&done, must_succeed, nullptr, grpc_schedule_on_exec_ctx);
-  grpc_tcp_client_connect(&done, &g_connecting, nullptr, nullptr,
-                          &resolved_addr, GRPC_MILLIS_INF_FUTURE);
+  grpc_tcp_client_connect(&done, &g_connecting, nullptr, nullptr, &resolved_addr,
+                          GRPC_MILLIS_INF_FUTURE);
 
   /* await the connection */
   do {
@@ -120,7 +119,7 @@ static void must_fail(void* arg, grpc_error* error) {
 
   /* wait for the connection callback to finish */
   gpr_mu_lock(&g_mu);
-  NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:5];
+  NSDate* deadline = [NSDate dateWithTimeIntervalSinceNow:5];
   while (connections_complete_before == g_connections_complete) {
     gpr_mu_unlock(&g_mu);
     [[NSRunLoop mainRunLoop] runMode:NSDefaultRunLoopMode beforeDate:deadline];
@@ -135,8 +134,7 @@ static void must_fail(void* arg, grpc_error* error) {
   grpc_core::ExecCtx exec_ctx;
 
   grpc_resolved_address resolved_addr;
-  struct sockaddr_in* addr =
-  reinterpret_cast<struct sockaddr_in*>(resolved_addr.addr);
+  struct sockaddr_in* addr = reinterpret_cast<struct sockaddr_in*>(resolved_addr.addr);
   int connections_complete_before;
   grpc_closure done;
   int svr_fd;
@@ -151,8 +149,7 @@ static void must_fail(void* arg, grpc_error* error) {
   GPR_ASSERT(svr_fd >= 0);
   GPR_ASSERT(0 == bind(svr_fd, (struct sockaddr*)addr, (socklen_t)resolved_addr.len));
   GPR_ASSERT(0 == listen(svr_fd, 1));
-  GPR_ASSERT(getsockname(svr_fd, (struct sockaddr*)addr,
-                         (socklen_t*)&resolved_addr.len) == 0);
+  GPR_ASSERT(getsockname(svr_fd, (struct sockaddr*)addr, (socklen_t*)&resolved_addr.len) == 0);
   close(svr_fd);
 
   gpr_mu_lock(&g_mu);
@@ -161,14 +158,14 @@ static void must_fail(void* arg, grpc_error* error) {
 
   /* connect to a broken address */
   GRPC_CLOSURE_INIT(&done, must_fail, nullptr, grpc_schedule_on_exec_ctx);
-  grpc_tcp_client_connect(&done, &g_connecting, nullptr, nullptr,
-                          &resolved_addr, GRPC_MILLIS_INF_FUTURE);
+  grpc_tcp_client_connect(&done, &g_connecting, nullptr, nullptr, &resolved_addr,
+                          GRPC_MILLIS_INF_FUTURE);
 
   grpc_core::ExecCtx::Get()->Flush();
 
   /* wait for the connection callback to finish */
   gpr_mu_lock(&g_mu);
-  NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:5];
+  NSDate* deadline = [NSDate dateWithTimeIntervalSinceNow:5];
   while (g_connections_complete == connections_complete_before) {
     gpr_mu_unlock(&g_mu);
     [[NSRunLoop mainRunLoop] runMode:NSDefaultRunLoopMode beforeDate:deadline];
@@ -182,7 +179,7 @@ static void must_fail(void* arg, grpc_error* error) {
 
 @end
 
-#else // GRPC_CFSTREAM
+#else  // GRPC_CFSTREAM
 
 // Dummy test suite
 @interface CFStreamEndpointTests : XCTestCase
@@ -201,4 +198,4 @@ static void must_fail(void* arg, grpc_error* error) {
 
 @end
 
-#endif // GRPC_CFSTREAM
+#endif  // GRPC_CFSTREAM

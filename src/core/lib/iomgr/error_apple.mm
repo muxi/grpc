@@ -27,7 +27,8 @@
 
 #define MAX_ERROR_DESCRIPTION 256
 
-grpc_error* grpc_error_create_from_cferror(const char* file, int line, void* arg, const char* custom_desc) {
+grpc_error* grpc_error_create_from_cferror(const char* file, int line, void* arg,
+                                           const char* custom_desc) {
   CFErrorRef error = static_cast<CFErrorRef>(arg);
   char buf_domain[MAX_ERROR_DESCRIPTION], buf_desc[MAX_ERROR_DESCRIPTION];
   char* error_msg;
@@ -36,9 +37,9 @@ grpc_error* grpc_error_create_from_cferror(const char* file, int line, void* arg
   CFStringRef desc = CFErrorCopyDescription((error));
   CFStringGetCString(domain, buf_domain, MAX_ERROR_DESCRIPTION, kCFStringEncodingUTF8);
   CFStringGetCString(desc, buf_desc, MAX_ERROR_DESCRIPTION, kCFStringEncodingUTF8);
-  gpr_asprintf(&error_msg, "%s (error domain:%s, code:%ld, description:%s)", custom_desc, buf_domain, code, buf_desc);
+  gpr_asprintf(&error_msg, "%s (error domain:%s, code:%ld, description:%s)", custom_desc,
+               buf_domain, code, buf_desc);
   CFRelease(desc);
-  return grpc_error_create(file, line, grpc_slice_from_copied_string(error_msg),
-                           NULL, 0);
+  return grpc_error_create(file, line, grpc_slice_from_copied_string(error_msg), NULL, 0);
 }
 #endif
