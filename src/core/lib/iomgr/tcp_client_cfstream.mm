@@ -48,37 +48,37 @@
 
 extern grpc_core::TraceFlag grpc_tcp_trace;
 
-typedef struct cfstream_tcp_connect {
+typedef struct CFStreamTCPConnect {
   gpr_mu mu;
 
   CFReadStreamRef readStream;
   CFWriteStreamRef writeStream;
 
   grpc_timer alarm;
-  grpc_closure on_alarm;
+  grpc_closure onAlarm;
 
-  bool read_stream_open;
-  bool write_stream_open;
+  bool readStreamOpen;
+  bool writeStreamOpen;
   bool failed;
 
   grpc_closure* closure;
   grpc_endpoint** endpoint;
   int refs;
-  char* addr_name;
-  grpc_resource_quota* resource_quota;
-} cfstream_tcp_connect;
+  char* addrName;
+  grpc_resource_quota* resourceQuota;
+} CFStreamTCPConnect;
 
-static void tcp_connect_cleanup(cfstream_tcp_connect* connect) {
-  grpc_resource_quota_unref_internal(connect->resource_quota);
+static void TCPConnectCleanup(CFStreamTCPConnect* connect) {
+  grpc_resource_quota_unref_internal(connect->resourceQuota);
   CFRelease(connect->readStream);
   CFRelease(connect->writeStream);
   gpr_mu_destroy(&connect->mu);
-  gpr_free(connect->addr_name);
+  gpr_free(connect->addrName);
   gpr_free(connect);
 }
 
-static void on_alarm(void* arg, grpc_error* error) {
-  cfstream_tcp_connect* connect = static_cast<cfstream_tcp_connect*>(arg);
+static void OnAlarm(void* arg, grpc_error* error) {
+  CFStreamTCPConnect* connect = static_cast<CFStreamTCPConnect*>(arg);
   if (grpc_tcp_trace.enabled()) {
     gpr_log(GPR_DEBUG, "CLIENT_CONNECT :%p on_alarm, error:%p", connect, error);
   }
@@ -90,21 +90,21 @@ static void on_alarm(void* arg, grpc_error* error) {
   // Only schedule a callback once, by either on_timer or on_connected. The first one issues
   // callback while the second one does cleanup.
   if (done) {
-    tcp_connect_cleanup(connect);
+    TCPConnectCleanup(connect);
   } else {
     grpc_error* error = GRPC_ERROR_CREATE_FROM_STATIC_STRING("connect() timed out");
     GRPC_CLOSURE_SCHED(closure, error);
   }
 }
 
-static void maybe_on_connected(cfstream_tcp_connect* connect, bool set_read_open,
-                               bool set_write_open, bool failed) {
+static void MaybeOnConnected(CFStreamTCPConnect* connect, bool setReadOpen,
+                               bool setWriteOpen, bool failed) {
   gpr_mu_lock(&connect->mu);
-  if (set_read_open) {
-    connect->read_stream_open = true;
+  if (setReadOpen) {
+    connect->readStreamOpen = true;
   }
-  if (set_write_open) {
-    connect->write_stream_open = true;
+  if (setWriteOpen) {
+    connect->writeStreamOpen = true;
   }
   if (failed) {
     connect->failed = true;
@@ -112,10 +112,10 @@ static void maybe_on_connected(cfstream_tcp_connect* connect, bool set_read_open
 
   if (grpc_tcp_trace.enabled()) {
     gpr_log(GPR_DEBUG, "CLIENT_CONNECT :%p read_open:%d write_open:%d, failed:%d", connect,
-            connect->read_stream_open, connect->write_stream_open, connect->failed);
+            connect->readStreamOpen, connect->writeStreamOpen, connect->failed);
   }
-  const bool connected_or_failed = (connect->read_stream_open && connect->write_stream_open);
-  if (connected_or_failed) {
+  const bool connectedOrFailed = (connect->readStreamOpen && connect->writeStreamOpen);
+  if (connectedOrFailed) {
     CFErrorRef error = NULL;
     if (connect->failed) {
       error = CFReadStreamCopyError(connect->readStream);
@@ -136,13 +136,13 @@ static void maybe_on_connected(cfstream_tcp_connect* connect, bool set_read_open
     // Only schedule a callback once, by either on_timer or on_connected. The first one issues
     // callback while the second one does cleanup.
     if (done) {
-      tcp_connect_cleanup(connect);
+      TCPConnectCleanup(connect);
     } else if (error != NULL) {
-      grpc_error* trans_error = GRPC_ERROR_CREATE_FROM_CFERROR(error, "connect() failed.");
-      GRPC_CLOSURE_SCHED(closure, trans_error);
+      grpc_error* transError = GRPC_ERROR_CREATE_FROM_CFERROR(error, "connect() failed.");
+      GRPC_CLOSURE_SCHED(closure, transError);
     } else {
-      *endpoint = grpc_tcp_create(connect->readStream, connect->writeStream, connect->addr_name,
-                                  connect->resource_quota);
+      *endpoint = grpc_tcp_create(connect->readStream, connect->writeStream, connect->addrName,
+                                  connect->resourceQuota);
       GRPC_CLOSURE_SCHED(closure, GRPC_ERROR_NONE);
     }
     if (error != NULL) {
@@ -153,14 +153,14 @@ static void maybe_on_connected(cfstream_tcp_connect* connect, bool set_read_open
   }
 }
 
-static void readCallback(CFReadStreamRef stream, CFStreamEventType type, void* clientCallBackInfo) {
-  cfstream_tcp_connect* connect = static_cast<cfstream_tcp_connect*>(clientCallBackInfo);
+static void ReadCallback(CFReadStreamRef stream, CFStreamEventType type, void* clientCallBackInfo) {
+  CFStreamTCPConnect* connect = static_cast<CFStreamTCPConnect*>(clientCallBackInfo);
   dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
     grpc_core::ExecCtx exec_ctx;
     switch (type) {
       case kCFStreamEventOpenCompleted:
       case kCFStreamEventErrorOccurred:
-        maybe_on_connected(connect, true, false, type == kCFStreamEventErrorOccurred);
+        MaybeOnConnected(connect, true, false, type == kCFStreamEventErrorOccurred);
         break;
       case kCFStreamEventHasBytesAvailable:
       default:
@@ -176,15 +176,15 @@ static void readCallback(CFReadStreamRef stream, CFStreamEventType type, void* c
   CFReadStreamSetClient(stream, 0, nil, nil);
 }
 
-static void writeCallback(CFWriteStreamRef stream, CFStreamEventType type,
+static void WriteCallback(CFWriteStreamRef stream, CFStreamEventType type,
                           void* clientCallBackInfo) {
-  cfstream_tcp_connect* connect = static_cast<cfstream_tcp_connect*>(clientCallBackInfo);
+  CFStreamTCPConnect* connect = static_cast<CFStreamTCPConnect*>(clientCallBackInfo);
   dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
     grpc_core::ExecCtx exec_ctx;
     switch (type) {
       case kCFStreamEventOpenCompleted:
       case kCFStreamEventErrorOccurred:
-        maybe_on_connected(connect, false, true, type == kCFStreamEventErrorOccurred);
+        MaybeOnConnected(connect, false, true, type == kCFStreamEventErrorOccurred);
       case kCFStreamEventCanAcceptBytes:
       default:
         // Do nothing; handled by endpoint
@@ -199,71 +199,71 @@ static void writeCallback(CFWriteStreamRef stream, CFStreamEventType type,
   CFWriteStreamSetClient(stream, 0, nil, nil);
 }
 
-static void parse_resolved_address(const grpc_resolved_address* addr, CFStringRef* host,
+static void ParseResolvedAddress(const grpc_resolved_address* addr, CFStringRef* host,
                                    int* port) {
-  char *host_port, *host_string, *port_string;
-  grpc_sockaddr_to_string(&host_port, addr, 1);
-  gpr_split_host_port(host_port, &host_string, &port_string);
-  *host = CFStringCreateWithCString(NULL, host_string, kCFStringEncodingUTF8);
-  gpr_free(host_string);
-  gpr_free(port_string);
-  gpr_free(host_port);
+  char *hostPort, *hostString, *portString;
+  grpc_sockaddr_to_string(&hostPort, addr, 1);
+  gpr_split_host_port(hostPort, &hostString, &portString);
+  *host = CFStringCreateWithCString(NULL, hostString, kCFStringEncodingUTF8);
+  gpr_free(hostString);
+  gpr_free(portString);
+  gpr_free(hostPort);
   *port = grpc_sockaddr_get_port(addr);
 }
 
-static void tcp_client_connect_impl(grpc_closure* closure, grpc_endpoint** ep,
-                                    grpc_pollset_set* interested_parties,
-                                    const grpc_channel_args* channel_args,
-                                    const grpc_resolved_address* resolved_addr,
+static void TCPClientConnectImpl(grpc_closure* closure, grpc_endpoint** ep,
+                                    grpc_pollset_set* interestedParties,
+                                    const grpc_channel_args* channelArgs,
+                                    const grpc_resolved_address* resolvedAddr,
                                     grpc_millis deadline) {
-  cfstream_tcp_connect* connect;
+  CFStreamTCPConnect* connect;
 
-  connect = (cfstream_tcp_connect*)gpr_zalloc(sizeof(cfstream_tcp_connect));
+  connect = (CFStreamTCPConnect*)gpr_zalloc(sizeof(CFStreamTCPConnect));
   connect->closure = closure;
   connect->endpoint = ep;
-  connect->addr_name = grpc_sockaddr_to_uri(resolved_addr);
+  connect->addrName = grpc_sockaddr_to_uri(resolvedAddr);
   // connect->resource_quota = resource_quota;
   connect->refs = 2;  // One for the connect operation, one for the timer.
   gpr_mu_init(&connect->mu);
 
   if (grpc_tcp_trace.enabled()) {
-    gpr_log(GPR_DEBUG, "CLIENT_CONNECT: %s: asynchronously connecting", connect->addr_name);
+    gpr_log(GPR_DEBUG, "CLIENT_CONNECT: %s: asynchronously connecting", connect->addrName);
   }
 
-  grpc_resource_quota* resource_quota = grpc_resource_quota_create(NULL);
-  if (channel_args != NULL) {
-    for (size_t i = 0; i < channel_args->num_args; i++) {
-      if (0 == strcmp(channel_args->args[i].key, GRPC_ARG_RESOURCE_QUOTA)) {
-        grpc_resource_quota_unref_internal(resource_quota);
-        resource_quota = grpc_resource_quota_ref_internal(
-            (grpc_resource_quota*)channel_args->args[i].value.pointer.p);
+  grpc_resource_quota* resourceQuota = grpc_resource_quota_create(NULL);
+  if (channelArgs != NULL) {
+    for (size_t i = 0; i < channelArgs->num_args; i++) {
+      if (0 == strcmp(channelArgs->args[i].key, GRPC_ARG_RESOURCE_QUOTA)) {
+        grpc_resource_quota_unref_internal(resourceQuota);
+        resourceQuota = grpc_resource_quota_ref_internal(
+            (grpc_resource_quota*)channelArgs->args[i].value.pointer.p);
       }
     }
   }
-  connect->resource_quota = resource_quota;
+  connect->resourceQuota = resourceQuota;
 
   CFReadStreamRef readStream;
   CFWriteStreamRef writeStream;
 
   CFStringRef host;
   int port;
-  parse_resolved_address(resolved_addr, &host, &port);
+  ParseResolvedAddress(resolvedAddr, &host, &port);
   CFStreamCreatePairWithSocketToHost(NULL, host, port, &readStream, &writeStream);
   CFRelease(host);
   connect->readStream = readStream;
   connect->writeStream = writeStream;
   CFStreamClientContext ctx = {0, static_cast<void*>(connect), nil, nil, nil};
   CFReadStreamSetClient(readStream, kCFStreamEventErrorOccurred | kCFStreamEventOpenCompleted,
-                        readCallback, &ctx);
+                        ReadCallback, &ctx);
   CFWriteStreamSetClient(writeStream, kCFStreamEventErrorOccurred | kCFStreamEventOpenCompleted,
-                         writeCallback, &ctx);
+                         WriteCallback, &ctx);
   CFReadStreamScheduleWithRunLoop(readStream, CFRunLoopGetMain(), kCFRunLoopCommonModes);
   CFWriteStreamScheduleWithRunLoop(writeStream, CFRunLoopGetMain(), kCFRunLoopCommonModes);
-  GRPC_CLOSURE_INIT(&connect->on_alarm, on_alarm, connect, grpc_schedule_on_exec_ctx);
+  GRPC_CLOSURE_INIT(&connect->onAlarm, OnAlarm, connect, grpc_schedule_on_exec_ctx);
   gpr_mu_lock(&connect->mu);
   CFReadStreamOpen(readStream);
   CFWriteStreamOpen(writeStream);
-  grpc_timer_init(&connect->alarm, deadline, &connect->on_alarm);
+  grpc_timer_init(&connect->alarm, deadline, &connect->onAlarm);
   gpr_mu_unlock(&connect->mu);
 }
 
@@ -272,7 +272,7 @@ void (*grpc_tcp_client_connect_impl)(grpc_closure* closure, grpc_endpoint** ep,
                                      grpc_pollset_set* interested_parties,
                                      const grpc_channel_args* channel_args,
                                      const grpc_resolved_address* addr,
-                                     grpc_millis deadline) = tcp_client_connect_impl;
+                                     grpc_millis deadline) = TCPClientConnectImpl;
 
 void grpc_tcp_client_connect(grpc_closure* closure, grpc_endpoint** ep,
                              grpc_pollset_set* interested_parties,
