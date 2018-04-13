@@ -176,7 +176,6 @@ filegroups:
   - src/core/lib/iomgr/endpoint_pair_uv.cc
   - src/core/lib/iomgr/endpoint_pair_windows.cc
   - src/core/lib/iomgr/error.cc
-  - src/core/lib/iomgr/error_apple.mm
   - src/core/lib/iomgr/ev_epoll1_linux.cc
   - src/core/lib/iomgr/ev_epollex_linux.cc
   - src/core/lib/iomgr/ev_epollsig_linux.cc
@@ -217,8 +216,6 @@ filegroups:
   - src/core/lib/iomgr/socket_utils_uv.cc
   - src/core/lib/iomgr/socket_utils_windows.cc
   - src/core/lib/iomgr/socket_windows.cc
-  - src/core/lib/iomgr/tcp_cfstream.mm
-  - src/core/lib/iomgr/tcp_client_cfstream.mm
   - src/core/lib/iomgr/tcp_client_posix.cc
   - src/core/lib/iomgr/tcp_client_uv.cc
   - src/core/lib/iomgr/tcp_client_windows.cc
@@ -341,7 +338,6 @@ filegroups:
   - src/core/lib/iomgr/endpoint.h
   - src/core/lib/iomgr/endpoint_pair.h
   - src/core/lib/iomgr/error.h
-  - src/core/lib/iomgr/error_apple.h
   - src/core/lib/iomgr/error_internal.h
   - src/core/lib/iomgr/ev_epoll1_linux.h
   - src/core/lib/iomgr/ev_epollex_linux.h
@@ -380,7 +376,6 @@ filegroups:
   - src/core/lib/iomgr/socket_utils_posix.h
   - src/core/lib/iomgr/socket_windows.h
   - src/core/lib/iomgr/sys_epoll_wrapper.h
-  - src/core/lib/iomgr/tcp_cfstream.h
   - src/core/lib/iomgr/tcp_client.h
   - src/core/lib/iomgr/tcp_client_posix.h
   - src/core/lib/iomgr/tcp_posix.h
@@ -1218,10 +1213,12 @@ filegroups:
 - name: grpc_cfstream
   language: objc++
   headers:
+  - src/core/lib/iomgr/error_apple.h
   - src/core/lib/iomgr/tcp_cfstream.h
   src:
+  - src/core/lib/iomgr/error_apple.mm
   - src/core/lib/iomgr/tcp_cfstream.mm
-  - src/core/lib/iomgr/tcp_client_cfstream.cc
+  - src/core/lib/iomgr/tcp_client_cfstream.mm
 libs:
 - name: gpr
   build: all

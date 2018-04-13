@@ -355,7 +355,6 @@ Pod::Spec.new do |s|
                       'src/core/lib/iomgr/endpoint.h',
                       'src/core/lib/iomgr/endpoint_pair.h',
                       'src/core/lib/iomgr/error.h',
-                      'src/core/lib/iomgr/error_apple.h',
                       'src/core/lib/iomgr/error_internal.h',
                       'src/core/lib/iomgr/ev_epoll1_linux.h',
                       'src/core/lib/iomgr/ev_epollex_linux.h',
@@ -394,7 +393,6 @@ Pod::Spec.new do |s|
                       'src/core/lib/iomgr/socket_utils_posix.h',
                       'src/core/lib/iomgr/socket_windows.h',
                       'src/core/lib/iomgr/sys_epoll_wrapper.h',
-                      'src/core/lib/iomgr/tcp_cfstream.h',
                       'src/core/lib/iomgr/tcp_client.h',
                       'src/core/lib/iomgr/tcp_client_posix.h',
                       'src/core/lib/iomgr/tcp_posix.h',
@@ -495,7 +493,6 @@ Pod::Spec.new do |s|
                       'src/core/lib/iomgr/endpoint_pair_uv.cc',
                       'src/core/lib/iomgr/endpoint_pair_windows.cc',
                       'src/core/lib/iomgr/error.cc',
-                      'src/core/lib/iomgr/error_apple.mm',
                       'src/core/lib/iomgr/ev_epoll1_linux.cc',
                       'src/core/lib/iomgr/ev_epollex_linux.cc',
                       'src/core/lib/iomgr/ev_epollsig_linux.cc',
@@ -536,8 +533,6 @@ Pod::Spec.new do |s|
                       'src/core/lib/iomgr/socket_utils_uv.cc',
                       'src/core/lib/iomgr/socket_utils_windows.cc',
                       'src/core/lib/iomgr/socket_windows.cc',
-                      'src/core/lib/iomgr/tcp_cfstream.mm',
-                      'src/core/lib/iomgr/tcp_client_cfstream.mm',
                       'src/core/lib/iomgr/tcp_client_posix.cc',
                       'src/core/lib/iomgr/tcp_client_uv.cc',
                       'src/core/lib/iomgr/tcp_client_windows.cc',
@@ -854,7 +849,6 @@ Pod::Spec.new do |s|
                               'src/core/lib/iomgr/endpoint.h',
                               'src/core/lib/iomgr/endpoint_pair.h',
                               'src/core/lib/iomgr/error.h',
-                              'src/core/lib/iomgr/error_apple.h',
                               'src/core/lib/iomgr/error_internal.h',
                               'src/core/lib/iomgr/ev_epoll1_linux.h',
                               'src/core/lib/iomgr/ev_epollex_linux.h',
@@ -893,7 +887,6 @@ Pod::Spec.new do |s|
                               'src/core/lib/iomgr/socket_utils_posix.h',
                               'src/core/lib/iomgr/socket_windows.h',
                               'src/core/lib/iomgr/sys_epoll_wrapper.h',
-                              'src/core/lib/iomgr/tcp_cfstream.h',
                               'src/core/lib/iomgr/tcp_client.h',
                               'src/core/lib/iomgr/tcp_client_posix.h',
                               'src/core/lib/iomgr/tcp_posix.h',
@@ -974,6 +967,13 @@ Pod::Spec.new do |s|
     ss.pod_target_xcconfig = {
       'GCC_PREPROCESSOR_DEFINITIONS' => '"GRPC_CFSTREAM=1"'
     }
+    ss.source_files = 'src/core/lib/iomgr/error_apple.mm',
+                      'src/core/lib/iomgr/tcp_cfstream.mm',
+                      'src/core/lib/iomgr/tcp_client_cfstream.mm',
+                      'src/core/lib/iomgr/error_apple.h',
+                      'src/core/lib/iomgr/tcp_cfstream.h'
+    ss.private_header_files = 'src/core/lib/iomgr/error_apple.h',
+                              'src/core/lib/iomgr/tcp_cfstream.h'
   end
 
   s.subspec 'Cronet-Interface' do |ss|
