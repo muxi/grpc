@@ -40,10 +40,17 @@ export GOOGLE_APPLICATION_CREDENTIALS=${KOKORO_GFILE_DIR}/GrpcTesting-d0eeee2db3
 
 # If this is a PR using RUN_TESTS_FLAGS var, then add flags to filter tests
 if [ -n "$KOKORO_GITHUB_PULL_REQUEST_NUMBER" ] && [ -n "$RUN_TESTS_FLAGS" ]; then
+  set +x
   brew update
   brew install jq
   ghprbTargetBranch=$(curl -s https://api.github.com/repos/grpc/grpc/pulls/$KOKORO_GITHUB_PULL_REQUEST_NUMBER | jq -r .base.ref)
   export RUN_TESTS_FLAGS="$RUN_TESTS_FLAGS --filter_pr_tests --base_branch origin/$ghprbTargetBranch"
+
+  gsutil cp gs://grpc-testing-secrets/github_credentials/oauth_token.txt ~/
+  # TODO(matt-kwong): rename this to GITHUB_OAUTH_TOKEN after Jenkins deprecation
+  export JENKINS_OAUTH_TOKEN=$(cat ~/oauth_token.txt)
+  export ghprbPullId=$KOKORO_GITHUB_PULL_REQUEST_NUMBER
+  set -x
 fi
 
 set +ex  # rvm script is very verbose and exits with errorcode
