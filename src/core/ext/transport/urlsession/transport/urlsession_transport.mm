@@ -525,28 +525,169 @@ private:
   void DestroySelf();
 
   URLSessionStream* s_;
-  grpc_transport_stream_op_batch* ops_;
+  grpc_metadata_batch* recv_initial_metadata_;
+  grpc_closure* recv_initial_metadata_ready_;
 };
 
-OpRecvInitialMetadata::OpRecvInitialMetadata(URLSessionStream* s, grpc_transport_stream_op_batch* ops) : s_(s), ops_(ops) {}
+OpRecvInitialMetadata::OpRecvInitialMetadata(URLSessionStream* s, grpc_transport_stream_op_batch* ops) :
+    s_(s),
+    recv_initial_metadata_(ops->payload->recv_initial_metadata.recv_initial_metadata),
+    recv_initial_metadata_ready_(ops->payload->recv_initial_metadata.recv_initial_metadata_ready) {}
+
 OpRecvInitialMetadata::~OpRecvInitialMetadata() {}
+
 grpc_error* OpRecvInitialMetadata::Perform() {
-  if (s_->state_-> == GRPC_URLSESSION_STREAM_STARTED) {
-    auto mds = s_->parser_->GetInitialMetadata();
-    grpc_metadata_batch_move(mds, ops_->payload->recv_initial_metadata.recv_initial_metadata);
+  if (s_->state_ == GRPC_URLSESSION_STREAM_STARTED) {
+    if (s_->parser_.IsInitialMetadataReady()) {
+      //* Release mds?
+      grpc_metadata_batch* mds = s_->parser_->GetInitialMetadata();
+      grpc_metadata_batch_move(mds, recv_initial_metadata_);
+      gpr_free(mds);
+    } // If initial metadata is not ready, trailing metadata is ready.
+    GRPC_CLOSURE_SCHED(recv_initial_metadata_ready_, GRPC_ERROR_NONE);
     s_->op_storage_->OpDone(OP_RECV_INITIAL_METADATA, GRPC_ERROR_NONE);
     DestroySelf();
-  } else if (s_->state_-> == GRPC_URLSESSION_STREAM_FINISHED) {
+  } else if (s_->state_ == GRPC_URLSESSION_STREAM_FINISHED) {
     GPR_ASSERT(s_->finish_error_ != GRPC_ERROR_NONE);
+    GRPC_CLOSURE_SCHED(recv_initial_metadata_ready_, s_->finish_error_);
     s_->op_storage_->OpDone(OP_RECV_INITIAL_METADATA, s_->finish_error_);
     DestroySelf();
+    return GRPC_ERROR_NONE;
+  } else {
+    GPR_UNREACHABLE_CODE(return GRPC_ERROR_NONE);
   }
 }
+
 bool OpRecvInitialMetadata::CanRun() {
-
+  if (s_->state_ == GRPC_URLSESSION_STREAM_STARTED &&
+      (s_->parser_.IsInitialMetadataReady() || s_->parser_.IsTrailingMetadataReady())) {
+    return true;
+  } else if (s_->state_ == GRPC_URLSESSION_STREAM_FINISHED) {
+    return true;
+  }
+  return false;
 }
-void OpRecvInitialMetadata::DestroySelf();
 
+void OpRecvInitialMetadata::DestroySelf() {
+  delete self;
+}
+
+class OpRecvMessage : public Op {
+public:
+  OpRecvMessage(URLSessionStream* s, grpc_transport_stream_op_batch* ops);
+  virtual ~OpRecvMessage();
+  grpc_error* Perform() override;
+  bool CanRun() override;
+private:
+  void DestroySelf();
+
+  URLSessionStream* s_;
+  grpc_core::OrphanablePtr<grpc_core::ByteStream>* recv_message_;
+  grpc_closure* recv_message_ready_;
+};
+
+OpRecvMessage::OpRecvMessage(URLSessionStream* s, grpc_transport_stream_op_batch* ops) :
+    s_(s), recv_message(ops->payload->recv_message.recv_message), recv_message_ready_(ops->payload->recv_message.recv_message_ready) {}
+
+OpRecvMessage::~OpRecvMessage() {}
+
+grpc_error* OpRecvMessage::Perform() {
+  if (s_->state_ == GRPC_URLSESSION_STREAM_STARTED) {
+    if (s_->parser_.IsMessageReady()) {
+      //* Make types correct
+      ByteStream* bs = s_->parser_->GetMessage();
+      //* Publish bs
+      recv_message_->reset(bs);
+    } else {
+      // Received trailing metadata
+      recv_message_->reset(nullptr);
+    }
+    GRPC_CLOSURE_SCHED(recv_message_ready_, GRPC_ERROR_NONE);
+    s_->op_storage_->OpDone(OP_RECV_MESSAGE, GRPC_ERROR_NONE);
+    DestroySelf();
+    return GRPC_ERROR_NONE;
+  } else if (s_->state_ == GRPC_URLSESSION_STREAM_FINISHED) {
+    GPR_ASSERT(s_->finish_error_ != GRPC_ERROR_NONE);
+    recv_message_->reset(nullptr);
+    GRPC_CLOSURE_SCHED(recv_message_ready_, s_->finish_error_);
+    s_->op_storage_->OpDone(OP_RECV_MESSAGE, s_->finish_error_);
+    DestroySelf();
+    return GRPC_ERROR_NONE;
+  } else {
+    GPR_UNREACHABLE_CODE(return GRPC_ERROR_NONE);
+  }
+}
+
+bool OpRecvMessage::CanRun() {
+  if (s_->state_ == GRPC_URLSESSION_STREAM_STARTED &&
+      (s_->parser_.IsMessageReady() || s_->parser_.IsTrailingMetadataReady())) {
+    return true;
+  } else if (s_->state_ == GRPC_URLSESSION_STREAM_FINISHED) {
+    return true;
+  }
+  return false;
+}
+
+void OpRecvMessage::DestroySelf() {
+  delete self;
+}
+
+class OpRecvTrailingMetadata : public Op {
+public:
+  OpRecvTrailingMetadata(URLSessionStream* s, grpc_transport_stream_op_batch* ops);
+  virtual ~OpRecvTrailingMetadata();
+  grpc_error* Perform() override;
+  bool CanRun() override;
+private:
+  void DestroySelf();
+
+  URLSessionStream* s_;
+  // TODO (mxyan): collect_stats
+  grpc_metadata_batch* recv_trailing_metadata_;
+  grpc_closure* recv_trailing_metadata_ready_;
+};
+
+OpRecvTrailingMetadata::OpRecvTrailingMetadata(URLSessionStream* s, grpc_transport_stream_op_batch* ops) :
+    s_(s), recv_trailing_metadata_(ops->payload->recv_trailing_metadata.recv_trailing_metadata),
+    recv_trailing_metadata_ready_(ops->payload->recv_trailing_metadata.recv_trailing_metadata_ready) {}
+
+OpRecvTrailingMetadata::~OpRecvTrailingMetadata() {}
+
+grpc_error* OpRecvTrailingMetadata::Perform() {
+  if (s_->state_ == GRPC_URLSESSION_STREAM_STARTED) {
+    GPR_ASSERT(s_->parser_.IsTrailingMetadataReady() == true);
+    //* Release mds?
+    grpc_metadata_batch* mds = s_->parser_.GetTrailingMetadata();
+    grpc_metadata_batch_move(mds, recv_initial_metadata_);
+    gpr_free(mds);
+    GRPC_CLOSURE_SCHED(recv_trailing_metadata_ready_, GRPC_ERROR_NONE);
+    s_->op_storage_->OpDone(OP_RECV_TRAILING_METADATA, GRPC_ERROR_NONE);
+    DestroySelf();
+    return GRPC_ERROR_NONE;
+  } else if (s_->state_ == GRPC_URLSESSION_STREAM_FINISHED) {
+    GPR_ASSERT(s_->finish_error_ != GRPC_ERROR_NONE);
+    recv_message_->reset(nullptr);
+    GRPC_CLOSURE_SCHED(recv_message_ready_, s_->finish_error_);
+    s_->op_storage_->OpDone(OP_RECV_MESSAGE, s_->finish_error_);
+    DestroySelf();
+    return GRPC_ERROR_NONE;
+  } else {
+    GPR_UNREACHABLE_CODE(return GRPC_ERROR_NONE);
+  }
+}
+
+bool OpRecvTrailingMetadata::CanRun() {
+  if (s_->state_ == GRPC_URLSESSION_STREAM_STARTED &&
+      s_->parser_.IsTrailingMetadataReady()) {
+    return true;
+  } else if (s_->state_ == GRPC_URLSESSION_STREAM_FINISHED) {
+    return true;
+  }
+  return false;
+}
+
+private:
+void OpRecvTrailingMetadata::DestroySelf();
 
 #pragma mark OpStorage
 
@@ -715,6 +856,9 @@ public:
   bool IsInitialMetadataReady() const = 0;
   bool IsMessageReady() const = 0;
   bool IsTrailingMetadataReady() const = 0;
+  GetInitialMetadata() = 0;
+  GetMessage() = 0;
+  GetTrailingMetadata() = 0;
 };
 
 class GRPCWebParser : Parser final {
@@ -725,4 +869,26 @@ class GRPCWebParser : Parser final {
   bool IsInitialMetadataReady() const = 0;
   bool IsMessageReady() const = 0;
   bool IsTrailingMetadataReady() const = 0;
+  GetInitialMetadata();
+  GetMessage();
+  GetTrailingMetadata();
 };
+
+grpc_error* GRPCWebParser::ParseHeader(NSURLResponse* response) {
+  NSHTTPURLResponse *res = (NSHTTPURLResponse*)response;
+  NSDictionary *headers = response.allHeaderFields;
+  grpc_chttp2_incoming_metadata_buffer_init(&s_->state.rs.trailing_metadata,
+                                            s_->arena);
+
+}
+grpc_error* GRPCWebParser::ParseData(NSData* data);
+// Not used until trailer gets implemented
+grpc_error* GRPCWebParser::ParseTrailer(void* reserved);
+bool GRPCWebParser::IsInitialMetadataReady() const = 0;
+bool GRPCWebParser::IsMessageReady() const = 0;
+bool GRPCWebParser::IsTrailingMetadataReady() const = 0;
+GRPCWebParser::GetInitialMetadata();
+GRPCWebParser::GetMessage();
+GRPCWebParser::GetTrailingMetadata();
+
+
