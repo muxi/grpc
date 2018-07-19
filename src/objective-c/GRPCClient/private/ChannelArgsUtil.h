@@ -1,6 +1,6 @@
 /*
  *
- * Copyright 2016 gRPC authors.
+ * Copyright 2018 gRPC authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,17 +15,9 @@
  * limitations under the License.
  *
  */
-#ifdef GRPC_COMPILE_WITH_CRONET
-#import <Cronet/Cronet.h>
 
-#import "GRPCCall.h"
+#include <grpc/impl/codegen/grpc_types.h>
 
-// Deprecated interface. Please use GRPCCallOptions instead.
-@interface GRPCCall (Cronet)
+void FreeChannelArgs(grpc_channel_args *channel_args);
 
-+ (void)useCronetWithEngine:(stream_engine*)engine;
-+ (stream_engine*)cronetEngine;
-+ (BOOL)isUsingCronet;
-
-@end
-#endif
+grpc_channel_args *BuildChannelArgs(NSDictionary *dictionary);

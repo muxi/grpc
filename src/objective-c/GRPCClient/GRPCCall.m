@@ -26,12 +26,13 @@
 #include <grpc/support/time.h>
 
 #import "private/GRPCConnectivityMonitor.h"
-#import "private/GRPCHost.h"
 #import "private/GRPCRequestHeaders.h"
 #import "private/GRPCWrappedCall.h"
 #import "private/NSData+GRPC.h"
 #import "private/NSDictionary+GRPC.h"
 #import "private/NSError+GRPC.h"
+#import "GRPCCallOptions.h"
+#import "GRPCHost.h"
 
 // At most 6 ops can be in an op batch for a client: SEND_INITIAL_METADATA,
 // SEND_MESSAGE, SEND_CLOSE_FROM_CLIENT, RECV_INITIAL_METADATA, RECV_MESSAGE,
@@ -114,6 +115,7 @@ static NSString *const kBearerPrefix = @"Bearer ";
 }
 
 @synthesize state = _state;
+@synthesize options = _options;
 
 + (void)initialize {
   // Guarantees the code in {} block is invoked only once. See ref at:
@@ -178,6 +180,8 @@ static NSString *const kBearerPrefix = @"Bearer ";
     }
 
     _responseQueue = dispatch_get_main_queue();
+
+    _options = nil;
   }
   return self;
 }
@@ -313,11 +317,35 @@ static NSString *const kBearerPrefix = @"Bearer ";
 
 #pragma mark Send headers
 
-- (void)sendHeaders:(NSDictionary *)headers {
+- (void)sendHeaders {
+  // TODO (mxyan): Remove after deprecated methods are removed
+  uint32_t callSafetyFlags;
+  switch (self.options.callSafety) {
+    case GRPCCallSafetyDefault:
+      callSafetyFlags = 0;
+      break;
+    case GRPCCallSafetyIdempotentRequest:
+      callSafetyFlags = GRPC_INITIAL_METADATA_IDEMPOTENT_REQUEST;
+      break;
+    case GRPCCallSafetyCacheableRequest:
+      callSafetyFlags = GRPC_INITIAL_METADATA_CACHEABLE_REQUEST;
+      break;
+    default:
+      [NSException raise:NSInvalidArgumentException
+                  format:@"Invalid call safety value."];
+  }
+  uint32_t callFlag = callSafetyFlags | self.options.callFlags;
+
+  NSMutableDictionary *headers = [_requestHeaders mutableCopy];
+  if (_options.oauth2AccessToken != nil) {
+    _requestHeaders[@"authorization"] = _options.oauth2AccessToken;
+  }
+  [headers addEntriesFromDictionary:self.options.additionalInitialMetadata];
+
   // TODO(jcanizales): Add error handlers for async failures
   GRPCOpSendMetadata *op = [[GRPCOpSendMetadata alloc]
       initWithMetadata:headers
-                 flags:[GRPCCall callFlagsForHost:_host path:_path]
+                 flags:callFlag
                handler:nil];  // No clean-up needed after SEND_INITIAL_METADATA
   if (!_unaryCall) {
     [_wrappedCall startBatchWithOperations:@[ op ]];
@@ -450,17 +478,17 @@ static NSString *const kBearerPrefix = @"Bearer ";
 
 #pragma mark GRXWriter implementation
 
-- (void)startCallWithWriteable:(id<GRXWriteable>)writeable {
+- (void)startCallWithWriteable:(id<GRXWriteable>)writeable
+                       options:(GRPCCallOptions*)options {
   _responseWriteable =
-      [[GRXConcurrentWriteable alloc] initWithWriteable:writeable dispatchQueue:_responseQueue];
+      [[GRXConcurrentWriteable alloc] initWithWriteable:writeable dispatchQueue:options.dispatchQueue];
 
   _wrappedCall = [[GRPCWrappedCall alloc] initWithHost:_host
-                                            serverName:_serverName
                                                   path:_path
-                                               timeout:_timeout];
+                                               options:options];
   NSAssert(_wrappedCall, @"Error allocating RPC objects. Low memory?");
 
-  [self sendHeaders:_requestHeaders];
+  [self sendHeaders];
   [self invokeCall];
 
 #ifndef GRPC_CFSTREAM
@@ -480,7 +508,38 @@ static NSString *const kBearerPrefix = @"Bearer ";
   // that the life of the instance is determined by this retain cycle.
   _retainSelf = self;
 
-  if (self.tokenProvider != nil) {
+  // TODO (mxyan): Remove when GRPCHost is deprecated
+  GRPCCallOptions *options = nil;
+  if ([GRPCHost isHostConfigured:_host]) {
+    GRPCHost *hostConfig = [GRPCHost hostWithAddress:_host];
+    options = hostConfig.callOptions;
+    [options mergeWithHigherPriorityOptions:self.options];
+  } else {
+    options = self.options;
+  }
+  if (_serverName != nil && options.serverName == nil) {
+    options.serverName = _serverName;
+  }
+  if (_timeout != 0 && options.timeout == 0) {
+    options.timeout = _timeout;
+  }
+  uint32_t callFlags = [GRPCCall callFlagsForHost:_host path:_path];
+  if (callFlags != 0 && options.callSafety == GRPCCallSafetyDefault) {
+    if (callFlags == GRPC_INITIAL_METADATA_IDEMPOTENT_REQUEST) {
+      options.callSafety = GRPCCallSafetyIdempotentRequest;
+    } else if (callFlags == GRPC_INITIAL_METADATA_CACHEABLE_REQUEST) {
+      options.callSafety = GRPCCallSafetyCacheableRequest;
+    }
+  }
+  if (_responseQueue != dispatch_get_main_queue() && options.dispatchQueue == dispatch_get_main_queue()) {
+    options.dispatchQueue = _responseQueue;
+  }
+
+  id<GRPCAuthorizationProtocol> tokenProvider = self.tokenProvider;
+  if (tokenProvider == nil) {
+    tokenProvider = options.authTokenProvider;
+  }
+  if (tokenProvider != nil) {
     self.isWaitingForToken = YES;
     __weak typeof(self) weakSelf = self;
     [self.tokenProvider getTokenWithHandler:^(NSString *token) {
@@ -490,12 +549,15 @@ static NSString *const kBearerPrefix = @"Bearer ";
           NSString *t = [kBearerPrefix stringByAppendingString:token];
           strongSelf.requestHeaders[kAuthorizationHeader] = t;
         }
-        [strongSelf startCallWithWriteable:writeable];
+        [strongSelf startCallWithWriteable:writeable options:options];
         strongSelf.isWaitingForToken = NO;
       }
     }];
+  } else if (options.oauth2AccessToken != nil) {
+    self.requestHeaders[kAuthorizationHeader] = [kBearerPrefix stringByAppendingString:options.oauth2AccessToken];
+    [self startCallWithWriteable:writeable options:options];
   } else {
-    [self startCallWithWriteable:writeable];
+    [self startCallWithWriteable:writeable options:options];
   }
 }
 
@@ -537,6 +599,17 @@ static NSString *const kBearerPrefix = @"Bearer ";
                                              }]];
   // Cancel underlying call upon this notification
   [self cancelCall];
+}
+
+- (void)setOptions:(GRPCCallOptions *)options {
+  _options = options;
+}
+
+- (GRPCCallOptions *)options {
+  if (!_options) {
+    _options = [[GRPCCallOptions alloc] init];
+  }
+  return _options;
 }
 
 @end

@@ -49,6 +49,7 @@
     _host = [host copy];
     _packageName = [packageName copy];
     _serviceName = [serviceName copy];
+    _options = nil;
   }
   return self;
 }
@@ -59,11 +60,15 @@
             responsesWriteable:(id<GRXWriteable>)responsesWriteable {
   GRPCProtoMethod *methodName =
       [[GRPCProtoMethod alloc] initWithPackage:_packageName service:_serviceName method:method];
-  return [[GRPCProtoCall alloc] initWithHost:_host
-                                      method:methodName
-                              requestsWriter:requestsWriter
-                               responseClass:responseClass
-                          responsesWriteable:responsesWriteable];
+  GRPCProtoCall *rpc = [[GRPCProtoCall alloc] initWithHost:_host
+                                                    method:methodName
+                                            requestsWriter:requestsWriter
+                                             responseClass:responseClass
+                                        responsesWriteable:responsesWriteable];
+  if (_options != nil) {
+    rpc.options = _options;
+  }
+  return rpc;
 }
 @end
 

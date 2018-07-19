@@ -18,189 +18,247 @@
 
 #import "GRPCChannel.h"
 
-#include <grpc/grpc_security.h>
-#ifdef GRPC_COMPILE_WITH_CRONET
-#include <grpc/grpc_cronet.h>
-#endif
-#include <grpc/support/alloc.h>
 #include <grpc/support/log.h>
-#include <grpc/support/string_util.h>
 
-#ifdef GRPC_COMPILE_WITH_CRONET
-#import <Cronet/Cronet.h>
-#import <GRPCClient/GRPCCall+Cronet.h>
-#endif
+#import "ChannelArgsUtil.h"
 #import "GRPCCompletionQueue.h"
+#import "GRPCChannelFactory.h"
+#import "GRPCCronetChannelFactory.h"
+#import "GRPCInsecureChannelFactory.h"
+#import "GRPCSecureChannelFactory.h"
+#import "version.h"
 
-static void *copy_pointer_arg(void *p) {
-  // Add ref count to the object when making copy
-  id obj = (__bridge id)p;
-  return (__bridge_retained void *)obj;
-}
+#import <GRPCClient/GRPCCallOptions.h>
+#import <GRPCClient/GRPCCall+Cronet.h>
 
-static void destroy_pointer_arg(void *p) {
-  // Decrease ref count to the object when destroying
-  CFRelease((CFTreeRef)p);
-}
+@interface GRPCChannelConfiguration : NSObject <NSCopying>
 
-static int cmp_pointer_arg(void *p, void *q) { return p == q; }
+@property(atomic, copy, readwrite) NSString* host;
+@property(atomic, copy, readwrite) NSString* userAgentPrefix;
+@property(atomic, readwrite) NSUInteger responseSizeLimit;
+@property(atomic, readwrite) GRPCCompressAlgorithm compressAlgorithm;
+@property(atomic, readwrite) BOOL enableRetry;
+@property(atomic, readwrite) NSUInteger keepaliveInterval;
+@property(atomic, readwrite) NSUInteger keepaliveTimeout;
+@property(atomic, readwrite) NSUInteger connectMinTimeout;
+@property(atomic, readwrite) NSUInteger connectInitialBackoff;
+@property(atomic, readwrite) NSUInteger connectMaxBackoff;
+@property(atomic, copy, readwrite) NSDictionary* additionalChannelArgs;
 
-static const grpc_arg_pointer_vtable objc_arg_vtable = {copy_pointer_arg, destroy_pointer_arg,
-                                                        cmp_pointer_arg};
+@property(atomic, copy, readwrite) NSString *pemRootCert;
+@property(atomic, copy, readwrite) NSString *pemPrivateKey;
+@property(atomic, copy, readwrite) NSString *pemCertChain;
+@property(atomic, copy, readwrite) NSString *hostNameOverride;
 
-static void FreeChannelArgs(grpc_channel_args *channel_args) {
-  for (size_t i = 0; i < channel_args->num_args; ++i) {
-    grpc_arg *arg = &channel_args->args[i];
-    gpr_free(arg->key);
-    if (arg->type == GRPC_ARG_STRING) {
-      gpr_free(arg->value.string);
-    }
+@property(atomic, readwrite) GRPCTransportType transportType;
+@property(atomic, readwrite) struct stream_engine* cronetEngine;
+
+@property(atomic, copy, readwrite) id logContext;
+
+@property(readonly) id<GRPCChannelFactory> channelFactory;
+@property(readonly) NSMutableDictionary* channelArgs;
+
+- (nullable instancetype)initWithHost:(NSString *)host options:(GRPCCallOptions *)options;
+
+@end
+
+@implementation GRPCChannelConfiguration
+
+- (nullable instancetype)initWithHost:(NSString *)host options:(GRPCCallOptions *)options {
+  if ((self = [super init])) {
+    _host = host;
+    _userAgentPrefix = options.userAgentPrefix;
+    _responseSizeLimit = options.responseSizeLimit;
+    _compressAlgorithm = options.compressAlgorithm;
+    _enableRetry = options.enableRetry;
+    _keepaliveInterval = options.keepaliveInterval;
+    _keepaliveTimeout = options.keepaliveTimeout;
+    _connectMinTimeout = options.connectMinTimeout;
+    _connectInitialBackoff = options.connectInitialBackoff;
+    _connectMaxBackoff = options.connectMaxBackoff;
+    _additionalChannelArgs = options.additionalChannelArgs;
+    _pemRootCert = options.pemRootCert;
+    _pemPrivateKey = options.pemPrivateKey;
+    _pemCertChain = options.pemCertChain;
+    _hostNameOverride = options.hostNameOverride;
+    _transportType = options.transportType;
+    _cronetEngine = options.cronetEngine;
+    _logContext = options.logContext;
   }
-  gpr_free(channel_args->args);
-  gpr_free(channel_args);
+  return self;
 }
 
-/**
- * Allocates a @c grpc_channel_args and populates it with the options specified in the
- * @c dictionary. Keys must be @c NSString. If the value responds to @c @selector(UTF8String) then
- * it will be mapped to @c GRPC_ARG_STRING. If not, it will be mapped to @c GRPC_ARG_INTEGER if the
- * value responds to @c @selector(intValue). Otherwise, an exception will be raised. The caller of
- * this function is responsible for calling @c freeChannelArgs on a non-NULL returned value.
- */
-static grpc_channel_args *BuildChannelArgs(NSDictionary *dictionary) {
-  if (!dictionary) {
-    return NULL;
+- (id<GRPCChannelFactory>)channelFactory {
+  NSError *error;
+  id<GRPCChannelFactory> factory;
+  GRPCTransportType type = _transportType;
+  switch (type) {
+    case GRPCTransportTypeDefault:
+      // TODO (mxyan): Remove when the API is deprecated
+#ifdef GRPC_COMPILE_WITH_CRONET
+      if (![GRPCCall isUsingCronet]) {
+#endif
+        factory = [GRPCSecureChannelFactory factoryWithPEMRootCerts:_pemRootCert
+                                                         privateKey:_pemPrivateKey
+                                                          certChain:_pemCertChain
+                                                              error:&error];
+        if (error) {
+          NSLog(@"Error creating secure channel factory: %@", error);
+          return nil;
+        }
+        return factory;
+#ifdef GRPC_COMPILE_WITH_CRONET
+      }
+      _cronetEngine = [GRPCCall cronetEngine];
+#endif
+      // fallthrough
+    case GRPCTransportTypeCronet:
+      return [GRPCCronetChannelFactory factoryWithEngine:_cronetEngine];
+    case GRPCTransportTypeInsecure:
+      return [GRPCInsecureChannelFactory sharedInstance];
+    default:
+      GPR_UNREACHABLE_CODE(return nil);
   }
-
-  NSArray *keys = [dictionary allKeys];
-  NSUInteger argCount = [keys count];
-
-  grpc_channel_args *channelArgs = gpr_malloc(sizeof(grpc_channel_args));
-  channelArgs->num_args = argCount;
-  channelArgs->args = gpr_malloc(argCount * sizeof(grpc_arg));
-
-  // TODO(kriswuollett) Check that keys adhere to GRPC core library requirements
-
-  for (NSUInteger i = 0; i < argCount; ++i) {
-    grpc_arg *arg = &channelArgs->args[i];
-    arg->key = gpr_strdup([keys[i] UTF8String]);
-
-    id value = dictionary[keys[i]];
-    if ([value respondsToSelector:@selector(UTF8String)]) {
-      arg->type = GRPC_ARG_STRING;
-      arg->value.string = gpr_strdup([value UTF8String]);
-    } else if ([value respondsToSelector:@selector(intValue)]) {
-      arg->type = GRPC_ARG_INTEGER;
-      arg->value.integer = [value intValue];
-    } else if (value != nil) {
-      arg->type = GRPC_ARG_POINTER;
-      arg->value.pointer.p = (__bridge_retained void *)value;
-      arg->value.pointer.vtable = &objc_arg_vtable;
-    } else {
-      [NSException raise:NSInvalidArgumentException
-                  format:@"Invalid value type: %@", [value class]];
-    }
-  }
-
-  return channelArgs;
 }
+
+- (NSMutableDictionary *)channelArgs {
+  NSMutableDictionary *args = [NSMutableDictionary new];
+
+  NSString *userAgent = @"grpc-objc/" GRPC_OBJC_VERSION_STRING;
+  if (_userAgentPrefix) {
+    args[@GRPC_ARG_PRIMARY_USER_AGENT_STRING] = [_userAgentPrefix stringByAppendingFormat:@" %@", userAgent];
+  } else {
+    args[@GRPC_ARG_PRIMARY_USER_AGENT_STRING] = userAgent;
+  }
+
+  if (_hostNameOverride) {
+    args[@GRPC_SSL_TARGET_NAME_OVERRIDE_ARG] = _hostNameOverride;
+  }
+
+  if (_responseSizeLimit) {
+    args[@GRPC_ARG_MAX_RECEIVE_MESSAGE_LENGTH] = [NSNumber numberWithUnsignedInteger:_responseSizeLimit];
+  }
+
+  if (_compressAlgorithm != GRPC_COMPRESS_NONE) {
+    args[@GRPC_COMPRESSION_CHANNEL_DEFAULT_ALGORITHM] = [NSNumber numberWithInt:_compressAlgorithm];
+  }
+
+  if (_keepaliveInterval != 0) {
+    args[@GRPC_ARG_KEEPALIVE_TIME_MS] = [NSNumber numberWithUnsignedInteger:_keepaliveInterval];
+    args[@GRPC_ARG_KEEPALIVE_TIMEOUT_MS] = [NSNumber numberWithUnsignedInteger:_keepaliveTimeout];
+  }
+
+  if (_enableRetry == NO) {
+    args[@GRPC_ARG_ENABLE_RETRIES] = [NSNumber numberWithInt:_enableRetry];
+  }
+
+  if (_connectMinTimeout > 0) {
+    args[@GRPC_ARG_MIN_RECONNECT_BACKOFF_MS] = [NSNumber numberWithUnsignedInteger:_connectMinTimeout];
+  }
+  if (_connectInitialBackoff > 0) {
+    args[@GRPC_ARG_INITIAL_RECONNECT_BACKOFF_MS] = [NSNumber numberWithUnsignedInteger:_connectInitialBackoff];
+  }
+  if (_connectMaxBackoff > 0) {
+    args[@GRPC_ARG_MAX_RECONNECT_BACKOFF_MS] = [NSNumber numberWithUnsignedInteger:_connectMaxBackoff];
+  }
+
+  if (_logContext != nil) {
+    args[@GRPC_ARG_MOBILE_LOG_CONTEXT] = _logContext;
+  }
+
+  [args addEntriesFromDictionary:_additionalChannelArgs];
+
+  return args;
+}
+
+- (nonnull id)copyWithZone:(nullable NSZone *)zone {
+  GRPCChannelConfiguration *newConfig = [[GRPCChannelConfiguration alloc] init];
+  newConfig.host = _host;
+  newConfig.userAgentPrefix = _userAgentPrefix;
+  newConfig.responseSizeLimit = _responseSizeLimit;
+  newConfig.compressAlgorithm = _compressAlgorithm;
+  newConfig.enableRetry = _enableRetry;
+  newConfig.keepaliveInterval = _keepaliveInterval;
+  newConfig.keepaliveTimeout = _keepaliveTimeout;
+  newConfig.connectMinTimeout = _connectMinTimeout;
+  newConfig.connectInitialBackoff = _connectInitialBackoff;
+  newConfig.connectMaxBackoff = _connectMaxBackoff;
+  newConfig.additionalChannelArgs = [_additionalChannelArgs copy];
+  newConfig.pemRootCert = _pemRootCert;
+  newConfig.pemPrivateKey = _pemPrivateKey;
+  newConfig.pemCertChain = _pemCertChain;
+  newConfig.hostNameOverride = _hostNameOverride;
+  newConfig.transportType = _transportType;
+  newConfig.cronetEngine = _cronetEngine;
+  newConfig.logContext = _logContext;
+  
+  return newConfig;
+}
+
+- (BOOL)isEqual:(id)object {
+  NSAssert([object isKindOfClass:[GRPCChannelConfiguration class]], @"Illegal :isEqual");
+  GRPCChannelConfiguration *obj = (GRPCChannelConfiguration *)object;
+  if (!(obj.host == _host || [obj.host isEqualToString:_host])) return NO;
+  if (!(obj.userAgentPrefix == _userAgentPrefix || [obj.userAgentPrefix isEqualToString:_userAgentPrefix])) return NO;
+  if (!(obj.responseSizeLimit == _responseSizeLimit)) return NO;
+  if (!(obj.compressAlgorithm == _compressAlgorithm)) return NO;
+  if (!(obj.enableRetry == _enableRetry)) return NO;
+  if (!(obj.keepaliveInterval == _keepaliveInterval)) return NO;
+  if (!(obj.keepaliveTimeout == _keepaliveTimeout)) return NO;
+  if (!(obj.connectMinTimeout == _connectMinTimeout)) return NO;
+  if (!(obj.connectInitialBackoff == _connectInitialBackoff)) return NO;
+  if (!(obj.connectMaxBackoff == _connectMaxBackoff)) return NO;
+  if (!(obj.additionalChannelArgs == _additionalChannelArgs || [obj.additionalChannelArgs isEqualToDictionary:_additionalChannelArgs])) return NO;
+  if (!(obj.pemRootCert == _pemRootCert || [obj.pemRootCert isEqualToString:_pemRootCert])) return NO;
+  if (!(obj.pemPrivateKey == _pemPrivateKey || [obj.pemPrivateKey isEqualToString:_pemPrivateKey])) return NO;
+  if (!(obj.pemCertChain == _pemCertChain || [obj.pemCertChain isEqualToString:_pemCertChain])) return NO;
+  if (!(obj.hostNameOverride == _hostNameOverride || [obj.hostNameOverride isEqualToString:_hostNameOverride])) return NO;
+  if (!(obj.transportType == _transportType)) return NO;
+  if (!(obj.cronetEngine == _cronetEngine)) return NO;
+  if (!(obj.logContext == _logContext || [obj isEqual:_logContext])) return NO;
+
+  return YES;
+}
+
+- (NSUInteger)hash {
+  NSUInteger result = 0;
+  result ^= _host.hash;
+  result ^= _userAgentPrefix.hash;
+  result ^= _responseSizeLimit;
+  result ^= _compressAlgorithm;
+  result ^= _enableRetry;
+  result ^= _keepaliveInterval;
+  result ^= _keepaliveTimeout;
+  result ^= _connectMinTimeout;
+  result ^= _connectInitialBackoff;
+  result ^= _connectMaxBackoff;
+  result ^= _additionalChannelArgs.hash;
+  result ^= _pemRootCert.hash;
+  result ^= _pemPrivateKey.hash;
+  result ^= _pemCertChain.hash;
+  result ^= _hostNameOverride.hash;
+  result ^= _transportType;
+  result ^= (NSUInteger)_cronetEngine;
+  result ^= [_logContext hash];
+
+  return result;
+}
+
+@end
 
 @implementation GRPCChannel {
   // Retain arguments to channel_create because they may not be used on the thread that invoked
   // the channel_create function.
   NSString *_host;
-  grpc_channel_args *_channelArgs;
-}
-
-#ifdef GRPC_COMPILE_WITH_CRONET
-- (instancetype)initWithHost:(NSString *)host
-                cronetEngine:(stream_engine *)cronetEngine
-                 channelArgs:(NSDictionary *)channelArgs {
-  if (!host) {
-    [NSException raise:NSInvalidArgumentException format:@"host argument missing"];
-  }
-
-  if (self = [super init]) {
-    _channelArgs = BuildChannelArgs(channelArgs);
-    _host = [host copy];
-    _unmanagedChannel =
-        grpc_cronet_secure_channel_create(cronetEngine, _host.UTF8String, _channelArgs, NULL);
-  }
-
-  return self;
-}
-#endif
-
-- (instancetype)initWithHost:(NSString *)host
-                      secure:(BOOL)secure
-                 credentials:(struct grpc_channel_credentials *)credentials
-                 channelArgs:(NSDictionary *)channelArgs {
-  if (!host) {
-    [NSException raise:NSInvalidArgumentException format:@"host argument missing"];
-  }
-
-  if (secure && !credentials) {
-    return nil;
-  }
-
-  if (self = [super init]) {
-    _channelArgs = BuildChannelArgs(channelArgs);
-    _host = [host copy];
-    if (secure) {
-      _unmanagedChannel =
-          grpc_secure_channel_create(credentials, _host.UTF8String, _channelArgs, NULL);
-    } else {
-      _unmanagedChannel = grpc_insecure_channel_create(_host.UTF8String, _channelArgs, NULL);
-    }
-  }
-
-  return self;
-}
-
-- (void)dealloc {
-  // TODO(jcanizales): Be sure to add a test with a server that closes the connection prematurely,
-  // as in the past that made this call to crash.
-  grpc_channel_destroy(_unmanagedChannel);
-  FreeChannelArgs(_channelArgs);
-}
-
-#ifdef GRPC_COMPILE_WITH_CRONET
-+ (GRPCChannel *)secureCronetChannelWithHost:(NSString *)host
-                                 channelArgs:(NSDictionary *)channelArgs {
-  stream_engine *engine = [GRPCCall cronetEngine];
-  if (!engine) {
-    [NSException raise:NSInvalidArgumentException format:@"cronet_engine is NULL. Set it first."];
-    return nil;
-  }
-  return [[GRPCChannel alloc] initWithHost:host cronetEngine:engine channelArgs:channelArgs];
-}
-#endif
-
-+ (GRPCChannel *)secureChannelWithHost:(NSString *)host {
-  return [[GRPCChannel alloc] initWithHost:host secure:YES credentials:NULL channelArgs:NULL];
-}
-
-+ (GRPCChannel *)secureChannelWithHost:(NSString *)host
-                           credentials:(struct grpc_channel_credentials *)credentials
-                           channelArgs:(NSDictionary *)channelArgs {
-  return [[GRPCChannel alloc] initWithHost:host
-                                    secure:YES
-                               credentials:credentials
-                               channelArgs:channelArgs];
-}
-
-+ (GRPCChannel *)insecureChannelWithHost:(NSString *)host channelArgs:(NSDictionary *)channelArgs {
-  return [[GRPCChannel alloc] initWithHost:host secure:NO credentials:NULL channelArgs:channelArgs];
+  grpc_channel *_unmanagedChannel;
 }
 
 - (grpc_call *)unmanagedCallWithPath:(NSString *)path
-                          serverName:(NSString *)serverName
-                             timeout:(NSTimeInterval)timeout
-                     completionQueue:(GRPCCompletionQueue *)queue {
+                     completionQueue:(nonnull GRPCCompletionQueue *)queue
+                             options:(GRPCCallOptions *)options {
+  NSString *serverName = options.serverName;
+  NSTimeInterval timeout = options.timeout;
   GPR_ASSERT(timeout >= 0);
-  if (timeout < 0) {
-    timeout = 0;
-  }
   grpc_slice host_slice = grpc_empty_slice();
   if (serverName) {
     host_slice = grpc_slice_from_copied_string(serverName.UTF8String);
@@ -218,6 +276,52 @@ static grpc_channel_args *BuildChannelArgs(NSDictionary *dictionary) {
   }
   grpc_slice_unref(path_slice);
   return call;
+}
+
+- (nullable instancetype)initWithUnmanagedChannel:(nullable grpc_channel *)unmanagedChannel {
+  if ((self = [super init])) {
+    _unmanagedChannel = unmanagedChannel;
+  }
+  return self;
+}
+
+- (void)dealloc {
+  grpc_channel_destroy(_unmanagedChannel);
+}
+
++ (nullable instancetype)createChannelWithConfiguration:(GRPCChannelConfiguration*)config {
+  NSString *host = config.host;
+  if (host == nil || [host length] == 0) {
+    return nil;
+  }
+
+  NSMutableDictionary* channelArgs = config.channelArgs;
+  [channelArgs addEntriesFromDictionary:config.additionalChannelArgs];
+  id<GRPCChannelFactory> factory = config.channelFactory;
+  grpc_channel *unmanaged_channel = [factory createChannelWithHost:host channelArgs:channelArgs];
+  return [[GRPCChannel alloc] initWithUnmanagedChannel:unmanaged_channel];
+}
+
+static dispatch_once_t initChannelPool;
+static NSMutableDictionary *kChannelPool;
+
++ (nullable instancetype)channelWithHost:(NSString*)host options:(GRPCCallOptions*)options {
+  dispatch_once(&initChannelPool, ^{
+    kChannelPool = [NSMutableDictionary new];
+  });
+  
+  NSURL *hostURL = [NSURL URLWithString:[@"https://" stringByAppendingString:host]];
+  if (hostURL.host && !hostURL.port) {
+    host = [hostURL.host stringByAppendingString:@":443"];
+  }
+  
+  GRPCChannelConfiguration* channelConfig = [[GRPCChannelConfiguration alloc] initWithHost:host options:options];
+  GRPCChannel* channel = kChannelPool[channelConfig];
+  if (channel == nil) {
+    channel = [GRPCChannel createChannelWithConfiguration:channelConfig];
+    kChannelPool[channelConfig] = channel;
+  }
+  return channel;
 }
 
 @end

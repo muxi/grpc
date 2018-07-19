@@ -1,6 +1,6 @@
 /*
  *
- * Copyright 2016 gRPC authors.
+ * Copyright 2018 gRPC authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,17 +15,21 @@
  * limitations under the License.
  *
  */
-#ifdef GRPC_COMPILE_WITH_CRONET
-#import <Cronet/Cronet.h>
+#import "GRPCChannelFactory.h"
 
-#import "GRPCCall.h"
+@class GRPCChannel;
 
-// Deprecated interface. Please use GRPCCallOptions instead.
-@interface GRPCCall (Cronet)
+NS_ASSUME_NONNULL_BEGIN
 
-+ (void)useCronetWithEngine:(stream_engine*)engine;
-+ (stream_engine*)cronetEngine;
-+ (BOOL)isUsingCronet;
+@interface GRPCInsecureChannelFactory : NSObject<GRPCChannelFactory>
+
++ (nullable instancetype)sharedInstance;
+
+- (nullable grpc_channel *)createChannelWithHost:(NSString *)host
+                                    channelArgs:(nullable NSMutableDictionary *)args;
+
+- (nullable instancetype)init NS_UNAVAILABLE;
 
 @end
-#endif
+
+NS_ASSUME_NONNULL_END

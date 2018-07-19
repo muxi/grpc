@@ -21,6 +21,7 @@
 @class GRPCProtoCall;
 @protocol GRXWriteable;
 @class GRXWriter;
+@class GRPCCallOptions;
 
 __attribute__((deprecated("Please use GRPCProtoService."))) @interface ProtoService
     : NSObject -
@@ -31,6 +32,9 @@ __attribute__((deprecated("Please use GRPCProtoService."))) @interface ProtoServ
                 requestsWriter:(GRXWriter *)requestsWriter
                  responseClass:(Class)responseClass
             responsesWriteable:(id<GRXWriteable>)responsesWriteable;
+
+@property (atomic, copy, readwrite) GRPCCallOptions* options;
+
 @end
 
 /**

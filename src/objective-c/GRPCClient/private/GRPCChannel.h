@@ -21,6 +21,7 @@
 #include <grpc/grpc.h>
 
 @class GRPCCompletionQueue;
+@class GRPCCallOptions;
 struct grpc_channel_credentials;
 
 /**
@@ -28,41 +29,13 @@ struct grpc_channel_credentials;
  */
 @interface GRPCChannel : NSObject
 
-@property(nonatomic, readonly, nonnull) struct grpc_channel *unmanagedChannel;
-
 - (nullable instancetype)init NS_UNAVAILABLE;
 
-/**
- * Creates a secure channel to the specified @c host using default credentials and channel
- * arguments. If certificates could not be found to create a secure channel, then @c nil is
- * returned.
- */
-+ (nullable GRPCChannel *)secureChannelWithHost:(nonnull NSString *)host;
-
-/**
- * Creates a secure channel to the specified @c host using Cronet as a transport mechanism.
- */
-#ifdef GRPC_COMPILE_WITH_CRONET
-+ (nullable GRPCChannel *)secureCronetChannelWithHost:(nonnull NSString *)host
-                                          channelArgs:(nonnull NSDictionary *)channelArgs;
-#endif
-/**
- * Creates a secure channel to the specified @c host using the specified @c credentials and
- * @c channelArgs. Only in tests should @c GRPC_SSL_TARGET_NAME_OVERRIDE_ARG channel arg be set.
- */
-+ (nonnull GRPCChannel *)secureChannelWithHost:(nonnull NSString *)host
-                                   credentials:
-                                       (nonnull struct grpc_channel_credentials *)credentials
-                                   channelArgs:(nullable NSDictionary *)channelArgs;
-
-/**
- * Creates an insecure channel to the specified @c host using the specified @c channelArgs.
- */
-+ (nonnull GRPCChannel *)insecureChannelWithHost:(nonnull NSString *)host
-                                     channelArgs:(nullable NSDictionary *)channelArgs;
++ (nullable instancetype)channelWithHost:(nonnull NSString*)host
+                                 options:(nullable GRPCCallOptions *)options;
 
 - (nullable grpc_call *)unmanagedCallWithPath:(nonnull NSString *)path
-                                   serverName:(nonnull NSString *)serverName
-                                      timeout:(NSTimeInterval)timeout
-                              completionQueue:(nonnull GRPCCompletionQueue *)queue;
+                              completionQueue:(nonnull GRPCCompletionQueue *)queue
+                                      options:(nonnull GRPCCallOptions *)options;
+
 @end

@@ -37,6 +37,10 @@
 
 #include <AvailabilityMacros.h>
 
+#include "GRPCCallOptions.h"
+
+@class GRPCCallOptions;
+
 #pragma mark gRPC errors
 
 /** Domain of NSError objects produced by gRPC. */
@@ -140,19 +144,6 @@ typedef NS_ENUM(NSUInteger, GRPCErrorCode) {
 };
 
 /**
- * Safety remark of a gRPC method as defined in RFC 2616 Section 9.1
- */
-typedef NS_ENUM(NSUInteger, GRPCCallSafety) {
-  /** Signal that there is no guarantees on how the call affects the server state. */
-  GRPCCallSafetyDefault = 0,
-  /** Signal that the call is idempotent. gRPC is free to use PUT verb. */
-  GRPCCallSafetyIdempotentRequest = 1,
-  /** Signal that the call is cacheable and will not affect server state. gRPC is free to use GET
-     verb. */
-  GRPCCallSafetyCacheableRequest = 2,
-};
-
-/**
  * Keys used in |NSError|'s |userInfo| dictionary to store the response headers and trailers sent by
  * the server.
  */
@@ -163,19 +154,6 @@ extern id const kGRPCTrailersKey;
 
 /** Represents a single gRPC remote call. */
 @interface GRPCCall : GRXWriter
-
-/**
- * The authority for the RPC. If nil, the default authority will be used. This property must be nil
- * when Cronet transport is enabled.
- */
-@property(atomic, copy, readwrite) NSString *serverName;
-
-/**
- * The timeout for the RPC call in seconds. If set to 0, the call will not timeout. If set to
- * positive, the gRPC call returns with status GRPCErrorCodeDeadlineExceeded if it is not completed
- * within \a timeout seconds. A negative value is not allowed.
- */
-@property NSTimeInterval timeout;
 
 /**
  * The container of the request headers of an RPC conforms to this protocol, which is a subset of
@@ -245,21 +223,15 @@ extern id const kGRPCTrailersKey;
 - (void)cancel;
 
 /**
- * Set the call flag for a specific host path.
- *
- * Host parameter should not contain the scheme (http:// or https://), only the name or IP addr
- * and the port number, for example @"localhost:5050".
+ * The following methods are deprecated.
  */
 + (void)setCallSafety:(GRPCCallSafety)callSafety host:(NSString *)host path:(NSString *)path;
-
-/**
- * Set the dispatch queue to be used for callbacks.
- *
- * This configuration is only effective before the call starts.
- */
+@property(atomic, copy, readwrite) NSString *serverName;
+@property NSTimeInterval timeout;
 - (void)setResponseDispatchQueue:(dispatch_queue_t)queue;
 
-// TODO(jcanizales): Let specify a deadline. As a category of GRXWriter?
+@property(nonatomic, strong, readwrite) GRPCCallOptions* options;
+
 @end
 
 #pragma mark Backwards compatibiity

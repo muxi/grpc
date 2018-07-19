@@ -31,11 +31,11 @@
 
 + (void)setResponseSizeLimit:(NSUInteger)limit forHost:(nonnull NSString *)host {
   GRPCHost *hostConfig = [GRPCHost hostWithAddress:host];
-  hostConfig.responseSizeLimitOverride = @(limit);
+  hostConfig.responseSizeLimitOverride = limit;
 }
 
 + (void)closeOpenConnections {
-  [GRPCHost flushChannelCache];
+  //* */
 }
 
 + (void)setDefaultCompressMethod:(GRPCCompressAlgorithm)algorithm forhost:(nonnull NSString *)host {
