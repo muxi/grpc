@@ -25,14 +25,14 @@
 #include <grpc/grpc.h>
 #include <grpc/support/time.h>
 
+#import "GRPCCallOptions.h"
+#import "GRPCHost.h"
 #import "private/GRPCConnectivityMonitor.h"
 #import "private/GRPCRequestHeaders.h"
 #import "private/GRPCWrappedCall.h"
 #import "private/NSData+GRPC.h"
 #import "private/NSDictionary+GRPC.h"
 #import "private/NSError+GRPC.h"
-#import "GRPCCallOptions.h"
-#import "GRPCHost.h"
 
 // At most 6 ops can be in an op batch for a client: SEND_INITIAL_METADATA,
 // SEND_MESSAGE, SEND_CLOSE_FROM_CLIENT, RECV_INITIAL_METADATA, RECV_MESSAGE,
@@ -331,8 +331,7 @@ static NSString *const kBearerPrefix = @"Bearer ";
       callSafetyFlags = GRPC_INITIAL_METADATA_CACHEABLE_REQUEST;
       break;
     default:
-      [NSException raise:NSInvalidArgumentException
-                  format:@"Invalid call safety value."];
+      [NSException raise:NSInvalidArgumentException format:@"Invalid call safety value."];
   }
   uint32_t callFlag = callSafetyFlags | self.options.callFlags;
 
@@ -478,14 +477,11 @@ static NSString *const kBearerPrefix = @"Bearer ";
 
 #pragma mark GRXWriter implementation
 
-- (void)startCallWithWriteable:(id<GRXWriteable>)writeable
-                       options:(GRPCCallOptions*)options {
-  _responseWriteable =
-      [[GRXConcurrentWriteable alloc] initWithWriteable:writeable dispatchQueue:options.dispatchQueue];
+- (void)startCallWithWriteable:(id<GRXWriteable>)writeable options:(GRPCCallOptions *)options {
+  _responseWriteable = [[GRXConcurrentWriteable alloc] initWithWriteable:writeable
+                                                           dispatchQueue:options.dispatchQueue];
 
-  _wrappedCall = [[GRPCWrappedCall alloc] initWithHost:_host
-                                                  path:_path
-                                               options:options];
+  _wrappedCall = [[GRPCWrappedCall alloc] initWithHost:_host path:_path options:options];
   NSAssert(_wrappedCall, @"Error allocating RPC objects. Low memory?");
 
   [self sendHeaders];
@@ -531,7 +527,8 @@ static NSString *const kBearerPrefix = @"Bearer ";
       options.callSafety = GRPCCallSafetyCacheableRequest;
     }
   }
-  if (_responseQueue != dispatch_get_main_queue() && options.dispatchQueue == dispatch_get_main_queue()) {
+  if (_responseQueue != dispatch_get_main_queue() &&
+      options.dispatchQueue == dispatch_get_main_queue()) {
     options.dispatchQueue = _responseQueue;
   }
 
@@ -554,7 +551,8 @@ static NSString *const kBearerPrefix = @"Bearer ";
       }
     }];
   } else if (options.oauth2AccessToken != nil) {
-    self.requestHeaders[kAuthorizationHeader] = [kBearerPrefix stringByAppendingString:options.oauth2AccessToken];
+    self.requestHeaders[kAuthorizationHeader] =
+        [kBearerPrefix stringByAppendingString:options.oauth2AccessToken];
     [self startCallWithWriteable:writeable options:options];
   } else {
     [self startCallWithWriteable:writeable options:options];

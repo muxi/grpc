@@ -18,8 +18,8 @@
 
 #import "GRPCInsecureChannelFactory.h"
 
-#import "GRPCChannel.h"
 #import "ChannelArgsUtil.h"
+#import "GRPCChannel.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -35,9 +35,10 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (nullable grpc_channel *)createChannelWithHost:(NSString *)host
-                                    channelArgs:(nullable NSMutableDictionary *)args {
+                                     channelArgs:(nullable NSMutableDictionary *)args {
   grpc_channel_args *coreChannelArgs = BuildChannelArgs([args copy]);
-  grpc_channel *unmanagedChannel = grpc_insecure_channel_create(host.UTF8String, coreChannelArgs, NULL);
+  grpc_channel *unmanagedChannel =
+      grpc_insecure_channel_create(host.UTF8String, coreChannelArgs, NULL);
   FreeChannelArgs(coreChannelArgs);
   return unmanagedChannel;
 }

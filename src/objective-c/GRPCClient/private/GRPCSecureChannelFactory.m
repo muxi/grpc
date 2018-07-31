@@ -20,8 +20,8 @@
 
 #include <grpc/grpc_security.h>
 
-#import "GRPCChannel.h"
 #import "ChannelArgsUtil.h"
+#import "GRPCChannel.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -110,7 +110,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (nullable grpc_channel *)createChannelWithHost:(NSString *)host
-                                    channelArgs:(nullable NSMutableArray *)args {
+                                     channelArgs:(nullable NSMutableArray *)args {
   grpc_channel_args *coreChannelArgs = BuildChannelArgs([args copy]);
   grpc_channel *unmanagedChannel =
       grpc_secure_channel_create(_channelCreds, host.UTF8String, coreChannelArgs, NULL);

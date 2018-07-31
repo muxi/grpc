@@ -230,7 +230,7 @@ extern id const kGRPCTrailersKey;
 @property NSTimeInterval timeout;
 - (void)setResponseDispatchQueue:(dispatch_queue_t)queue;
 
-@property(nonatomic, strong, readwrite) GRPCCallOptions* options;
+@property(nonatomic, strong, readwrite) GRPCCallOptions *options;
 
 @end
 

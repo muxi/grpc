@@ -18,6 +18,6 @@
 
 #include <grpc/impl/codegen/grpc_types.h>
 
-void FreeChannelArgs(grpc_channel_args *channel_args);
+void FreeChannelArgs(grpc_channel_args* channel_args);
 
-grpc_channel_args *BuildChannelArgs(NSDictionary *dictionary);
+grpc_channel_args* BuildChannelArgs(NSDictionary* dictionary);

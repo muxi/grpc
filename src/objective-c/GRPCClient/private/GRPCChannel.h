@@ -31,7 +31,7 @@ struct grpc_channel_credentials;
 
 - (nullable instancetype)init NS_UNAVAILABLE;
 
-+ (nullable instancetype)channelWithHost:(nonnull NSString*)host
++ (nullable instancetype)channelWithHost:(nonnull NSString *)host
                                  options:(nullable GRPCCallOptions *)options;
 
 - (nullable grpc_call *)unmanagedCallWithPath:(nonnull NSString *)path

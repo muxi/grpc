@@ -21,20 +21,20 @@
 #include <grpc/support/log.h>
 
 #import "ChannelArgsUtil.h"
-#import "GRPCCompletionQueue.h"
 #import "GRPCChannelFactory.h"
+#import "GRPCCompletionQueue.h"
 #import "GRPCCronetChannelFactory.h"
 #import "GRPCInsecureChannelFactory.h"
 #import "GRPCSecureChannelFactory.h"
 #import "version.h"
 
-#import <GRPCClient/GRPCCallOptions.h>
 #import <GRPCClient/GRPCCall+Cronet.h>
+#import <GRPCClient/GRPCCallOptions.h>
 
-@interface GRPCChannelConfiguration : NSObject <NSCopying>
+@interface GRPCChannelConfiguration : NSObject<NSCopying>
 
-@property(atomic, copy, readwrite) NSString* host;
-@property(atomic, copy, readwrite) NSString* userAgentPrefix;
+@property(atomic, copy, readwrite) NSString *host;
+@property(atomic, copy, readwrite) NSString *userAgentPrefix;
 @property(atomic, readwrite) NSUInteger responseSizeLimit;
 @property(atomic, readwrite) GRPCCompressAlgorithm compressAlgorithm;
 @property(atomic, readwrite) BOOL enableRetry;
@@ -43,7 +43,7 @@
 @property(atomic, readwrite) NSUInteger connectMinTimeout;
 @property(atomic, readwrite) NSUInteger connectInitialBackoff;
 @property(atomic, readwrite) NSUInteger connectMaxBackoff;
-@property(atomic, copy, readwrite) NSDictionary* additionalChannelArgs;
+@property(atomic, copy, readwrite) NSDictionary *additionalChannelArgs;
 
 @property(atomic, copy, readwrite) NSString *pemRootCert;
 @property(atomic, copy, readwrite) NSString *pemPrivateKey;
@@ -51,12 +51,12 @@
 @property(atomic, copy, readwrite) NSString *hostNameOverride;
 
 @property(atomic, readwrite) GRPCTransportType transportType;
-@property(atomic, readwrite) struct stream_engine* cronetEngine;
+@property(atomic, readwrite) struct stream_engine *cronetEngine;
 
 @property(atomic, copy, readwrite) id logContext;
 
 @property(readonly) id<GRPCChannelFactory> channelFactory;
-@property(readonly) NSMutableDictionary* channelArgs;
+@property(readonly) NSMutableDictionary *channelArgs;
 
 - (nullable instancetype)initWithHost:(NSString *)host options:(GRPCCallOptions *)options;
 
@@ -126,7 +126,8 @@
 
   NSString *userAgent = @"grpc-objc/" GRPC_OBJC_VERSION_STRING;
   if (_userAgentPrefix) {
-    args[@GRPC_ARG_PRIMARY_USER_AGENT_STRING] = [_userAgentPrefix stringByAppendingFormat:@" %@", userAgent];
+    args[@GRPC_ARG_PRIMARY_USER_AGENT_STRING] =
+        [_userAgentPrefix stringByAppendingFormat:@" %@", userAgent];
   } else {
     args[@GRPC_ARG_PRIMARY_USER_AGENT_STRING] = userAgent;
   }
@@ -136,7 +137,8 @@
   }
 
   if (_responseSizeLimit) {
-    args[@GRPC_ARG_MAX_RECEIVE_MESSAGE_LENGTH] = [NSNumber numberWithUnsignedInteger:_responseSizeLimit];
+    args[@GRPC_ARG_MAX_RECEIVE_MESSAGE_LENGTH] =
+        [NSNumber numberWithUnsignedInteger:_responseSizeLimit];
   }
 
   if (_compressAlgorithm != GRPC_COMPRESS_NONE) {
@@ -153,13 +155,16 @@
   }
 
   if (_connectMinTimeout > 0) {
-    args[@GRPC_ARG_MIN_RECONNECT_BACKOFF_MS] = [NSNumber numberWithUnsignedInteger:_connectMinTimeout];
+    args[@GRPC_ARG_MIN_RECONNECT_BACKOFF_MS] =
+        [NSNumber numberWithUnsignedInteger:_connectMinTimeout];
   }
   if (_connectInitialBackoff > 0) {
-    args[@GRPC_ARG_INITIAL_RECONNECT_BACKOFF_MS] = [NSNumber numberWithUnsignedInteger:_connectInitialBackoff];
+    args[@GRPC_ARG_INITIAL_RECONNECT_BACKOFF_MS] =
+        [NSNumber numberWithUnsignedInteger:_connectInitialBackoff];
   }
   if (_connectMaxBackoff > 0) {
-    args[@GRPC_ARG_MAX_RECONNECT_BACKOFF_MS] = [NSNumber numberWithUnsignedInteger:_connectMaxBackoff];
+    args[@GRPC_ARG_MAX_RECONNECT_BACKOFF_MS] =
+        [NSNumber numberWithUnsignedInteger:_connectMaxBackoff];
   }
 
   if (_logContext != nil) {
@@ -191,7 +196,7 @@
   newConfig.transportType = _transportType;
   newConfig.cronetEngine = _cronetEngine;
   newConfig.logContext = _logContext;
-  
+
   return newConfig;
 }
 
@@ -199,7 +204,9 @@
   NSAssert([object isKindOfClass:[GRPCChannelConfiguration class]], @"Illegal :isEqual");
   GRPCChannelConfiguration *obj = (GRPCChannelConfiguration *)object;
   if (!(obj.host == _host || [obj.host isEqualToString:_host])) return NO;
-  if (!(obj.userAgentPrefix == _userAgentPrefix || [obj.userAgentPrefix isEqualToString:_userAgentPrefix])) return NO;
+  if (!(obj.userAgentPrefix == _userAgentPrefix ||
+        [obj.userAgentPrefix isEqualToString:_userAgentPrefix]))
+    return NO;
   if (!(obj.responseSizeLimit == _responseSizeLimit)) return NO;
   if (!(obj.compressAlgorithm == _compressAlgorithm)) return NO;
   if (!(obj.enableRetry == _enableRetry)) return NO;
@@ -208,11 +215,18 @@
   if (!(obj.connectMinTimeout == _connectMinTimeout)) return NO;
   if (!(obj.connectInitialBackoff == _connectInitialBackoff)) return NO;
   if (!(obj.connectMaxBackoff == _connectMaxBackoff)) return NO;
-  if (!(obj.additionalChannelArgs == _additionalChannelArgs || [obj.additionalChannelArgs isEqualToDictionary:_additionalChannelArgs])) return NO;
-  if (!(obj.pemRootCert == _pemRootCert || [obj.pemRootCert isEqualToString:_pemRootCert])) return NO;
-  if (!(obj.pemPrivateKey == _pemPrivateKey || [obj.pemPrivateKey isEqualToString:_pemPrivateKey])) return NO;
-  if (!(obj.pemCertChain == _pemCertChain || [obj.pemCertChain isEqualToString:_pemCertChain])) return NO;
-  if (!(obj.hostNameOverride == _hostNameOverride || [obj.hostNameOverride isEqualToString:_hostNameOverride])) return NO;
+  if (!(obj.additionalChannelArgs == _additionalChannelArgs ||
+        [obj.additionalChannelArgs isEqualToDictionary:_additionalChannelArgs]))
+    return NO;
+  if (!(obj.pemRootCert == _pemRootCert || [obj.pemRootCert isEqualToString:_pemRootCert]))
+    return NO;
+  if (!(obj.pemPrivateKey == _pemPrivateKey || [obj.pemPrivateKey isEqualToString:_pemPrivateKey]))
+    return NO;
+  if (!(obj.pemCertChain == _pemCertChain || [obj.pemCertChain isEqualToString:_pemCertChain]))
+    return NO;
+  if (!(obj.hostNameOverride == _hostNameOverride ||
+        [obj.hostNameOverride isEqualToString:_hostNameOverride]))
+    return NO;
   if (!(obj.transportType == _transportType)) return NO;
   if (!(obj.cronetEngine == _cronetEngine)) return NO;
   if (!(obj.logContext == _logContext || [obj isEqual:_logContext])) return NO;
@@ -289,13 +303,13 @@
   grpc_channel_destroy(_unmanagedChannel);
 }
 
-+ (nullable instancetype)createChannelWithConfiguration:(GRPCChannelConfiguration*)config {
++ (nullable instancetype)createChannelWithConfiguration:(GRPCChannelConfiguration *)config {
   NSString *host = config.host;
   if (host == nil || [host length] == 0) {
     return nil;
   }
 
-  NSMutableDictionary* channelArgs = config.channelArgs;
+  NSMutableDictionary *channelArgs = config.channelArgs;
   [channelArgs addEntriesFromDictionary:config.additionalChannelArgs];
   id<GRPCChannelFactory> factory = config.channelFactory;
   grpc_channel *unmanaged_channel = [factory createChannelWithHost:host channelArgs:channelArgs];
@@ -305,18 +319,19 @@
 static dispatch_once_t initChannelPool;
 static NSMutableDictionary *kChannelPool;
 
-+ (nullable instancetype)channelWithHost:(NSString*)host options:(GRPCCallOptions*)options {
++ (nullable instancetype)channelWithHost:(NSString *)host options:(GRPCCallOptions *)options {
   dispatch_once(&initChannelPool, ^{
     kChannelPool = [NSMutableDictionary new];
   });
-  
+
   NSURL *hostURL = [NSURL URLWithString:[@"https://" stringByAppendingString:host]];
   if (hostURL.host && !hostURL.port) {
     host = [hostURL.host stringByAppendingString:@":443"];
   }
-  
-  GRPCChannelConfiguration* channelConfig = [[GRPCChannelConfiguration alloc] initWithHost:host options:options];
-  GRPCChannel* channel = kChannelPool[channelConfig];
+
+  GRPCChannelConfiguration *channelConfig =
+      [[GRPCChannelConfiguration alloc] initWithHost:host options:options];
+  GRPCChannel *channel = kChannelPool[channelConfig];
   if (channel == nil) {
     channel = [GRPCChannel createChannelWithConfiguration:channelConfig];
     kChannelPool[channelConfig] = channel;

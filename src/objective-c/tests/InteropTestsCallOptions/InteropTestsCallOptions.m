@@ -32,7 +32,8 @@ static const NSTimeInterval TEST_TIMEOUT = 16000;
   __weak XCTestExpectation *expectation = [self expectationWithDescription:@"MaxResponseSize"];
 
   RMTSimpleRequest *request = [RMTSimpleRequest message];
-  const int32_t kPayloadSize = 4 * 1024 * 1024 - kRemoteInteropServerOverhead;  // 4MB - encoding overhead
+  const int32_t kPayloadSize =
+      4 * 1024 * 1024 - kRemoteInteropServerOverhead;  // 4MB - encoding overhead
   request.responseSize = kPayloadSize;
 
   [_service unaryCallWithRequest:request
@@ -49,14 +50,15 @@ static const NSTimeInterval TEST_TIMEOUT = 16000;
   __weak XCTestExpectation *expectation = [self expectationWithDescription:@"ResponseOverMaxSize"];
 
   RMTSimpleRequest *request = [RMTSimpleRequest message];
-  const int32_t kPayloadSize = 4 * 1024 * 1024 - kRemoteInteropServerOverhead + 1;  // 1B over max size
+  const int32_t kPayloadSize =
+      4 * 1024 * 1024 - kRemoteInteropServerOverhead + 1;  // 1B over max size
   request.responseSize = kPayloadSize;
 
   [_service unaryCallWithRequest:request
                          handler:^(RMTSimpleResponse *response, NSError *error) {
                            XCTAssertEqualObjects(
-                                                 error.localizedDescription,
-                                                 @"Received message larger than max (4194305 vs. 4194304)");
+                               error.localizedDescription,
+                               @"Received message larger than max (4194305 vs. 4194304)");
                            [expectation fulfill];
                          }];
 
@@ -65,18 +67,19 @@ static const NSTimeInterval TEST_TIMEOUT = 16000;
 
 - (void)testResponsesOver4MBAreAcceptedIfOptedIn {
   __weak XCTestExpectation *expectation =
-  [self expectationWithDescription:@"HigherResponseSizeLimit"];
+      [self expectationWithDescription:@"HigherResponseSizeLimit"];
 
   RMTSimpleRequest *request = [RMTSimpleRequest message];
   const size_t kPayloadSize = 5 * 1024 * 1024;  // 5MB
   request.responseSize = kPayloadSize;
 
-  GRPCProtoCall *rpc = [_service RPCToUnaryCallWithRequest:request
-                         handler:^(RMTSimpleResponse *response, NSError *error) {
-                           XCTAssertNil(error, @"Finished with unexpected error: %@", error);
-                           XCTAssertEqual(response.payload.body.length, kPayloadSize);
-                           [expectation fulfill];
-                         }];
+  GRPCProtoCall *rpc = [_service
+      RPCToUnaryCallWithRequest:request
+                        handler:^(RMTSimpleResponse *response, NSError *error) {
+                          XCTAssertNil(error, @"Finished with unexpected error: %@", error);
+                          XCTAssertEqual(response.payload.body.length, kPayloadSize);
+                          [expectation fulfill];
+                        }];
   GRPCCallOptions *options = rpc.options;
   options.responseSizeLimit = 6 * 1024 * 1024;
 
@@ -86,10 +89,10 @@ static const NSTimeInterval TEST_TIMEOUT = 16000;
 }
 
 - (void)testPerformanceExample {
-    // This is an example of a performance test case.
-    [self measureBlock:^{
-        // Put the code you want to measure the time of here.
-    }];
+  // This is an example of a performance test case.
+  [self measureBlock:^{
+      // Put the code you want to measure the time of here.
+  }];
 }
 
 @end

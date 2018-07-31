@@ -1,6 +1,6 @@
 #import "GRPCCallOptions.h"
 
-static NSString * const kDefaultServerName = nil;
+static NSString* const kDefaultServerName = nil;
 static const NSTimeInterval kDefaultTimeout = 0;
 static const GRPCCallSafety kDefaultCallSafety = GRPCCallSafetyDefault;
 static NSDictionary* const kDefaultAdditionalInitialMetadata = nil;
@@ -15,14 +15,14 @@ static const NSUInteger kDefaultConnectMinTimeout = 0;
 static const NSUInteger kDefaultConnectInitialBackoff = 0;
 static const NSUInteger kDefaultConnectMaxBackoff = 0;
 static NSDictionary* const kDefaultAdditionalChannelArgs = nil;
-static NSString * const kDefaultPemRootCert = nil;
-static NSString * const kDefaultPemPrivateKey = nil;
-static NSString * const kDefaultPemCertChain = nil;
-static NSString * const kDefaultOauth2AccessToken = nil;
+static NSString* const kDefaultPemRootCert = nil;
+static NSString* const kDefaultPemPrivateKey = nil;
+static NSString* const kDefaultPemCertChain = nil;
+static NSString* const kDefaultOauth2AccessToken = nil;
 static const id<GRPCAuthorizationProtocol> kDefaultAuthTokenProvider = nil;
 static const GRPCTransportType kDefaultTransportType = GRPCTransportTypeDefault;
 static struct stream_engine* const kDefaultCronetEngine = nil;
-static NSString * const kDefaultHostNameOverride = nil;
+static NSString* const kDefaultHostNameOverride = nil;
 static const id kDefaultLogContext = nil;
 
 @implementation GRPCCallOptions
@@ -57,8 +57,8 @@ static const id kDefaultLogContext = nil;
   return self;
 }
 
-- (nonnull id)copyWithZone:(NSZone *)zone {
-  GRPCCallOptions *newOptions = [[GRPCCallOptions alloc] init];
+- (nonnull id)copyWithZone:(NSZone*)zone {
+  GRPCCallOptions* newOptions = [[GRPCCallOptions alloc] init];
   newOptions.serverName = _serverName;
   newOptions.timeout = _timeout;
   newOptions.callSafety = _callSafety;
@@ -88,7 +88,7 @@ static const id kDefaultLogContext = nil;
   return newOptions;
 }
 
-- (void)mergeWithHigherPriorityOptions:(GRPCCallOptions *)options {
+- (void)mergeWithHigherPriorityOptions:(GRPCCallOptions*)options {
   if (options == nil) {
     return;
   }

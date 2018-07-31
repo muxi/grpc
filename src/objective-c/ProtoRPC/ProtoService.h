@@ -33,7 +33,7 @@ __attribute__((deprecated("Please use GRPCProtoService."))) @interface ProtoServ
                  responseClass:(Class)responseClass
             responsesWriteable:(id<GRXWriteable>)responsesWriteable;
 
-@property (atomic, copy, readwrite) GRPCCallOptions* options;
+@property(atomic, copy, readwrite) GRPCCallOptions *options;
 
 @end
 

@@ -35,7 +35,7 @@ static void destroy_pointer_arg(void *p) {
 static int cmp_pointer_arg(void *p, void *q) { return p == q; }
 
 static const grpc_arg_pointer_vtable objc_arg_vtable = {copy_pointer_arg, destroy_pointer_arg,
-  cmp_pointer_arg};
+                                                        cmp_pointer_arg};
 
 void FreeChannelArgs(grpc_channel_args *channel_args) {
   for (size_t i = 0; i < channel_args->num_args; ++i) {

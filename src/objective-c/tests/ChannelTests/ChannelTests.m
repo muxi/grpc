@@ -18,8 +18,8 @@
 
 #import <XCTest/XCTest.h>
 
-#import "../../GRPCClient/private/GRPCChannel.h"
 #import "../../GRPCClient/GRPCCallOptions.h"
+#import "../../GRPCClient/private/GRPCChannel.h"
 
 @interface ChannelTests : XCTestCase
 

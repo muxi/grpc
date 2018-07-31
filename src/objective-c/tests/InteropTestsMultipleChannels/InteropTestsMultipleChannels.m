@@ -90,10 +90,10 @@ dispatch_once_t initCronet;
 
   NSBundle *bundle = [NSBundle bundleForClass:self.class];
   NSString *certsPath =
-  [bundle pathForResource:@"TestCertificates.bundle/test-certificates" ofType:@"pem"];
+      [bundle pathForResource:@"TestCertificates.bundle/test-certificates" ofType:@"pem"];
   NSError *error = nil;
   NSString *certs =
-  [NSString stringWithContentsOfFile:certsPath encoding:NSUTF8StringEncoding error:&error];
+      [NSString stringWithContentsOfFile:certsPath encoding:NSUTF8StringEncoding error:&error];
   XCTAssertNil(error);
 
   options = [[GRPCCallOptions alloc] init];
@@ -105,8 +105,10 @@ dispatch_once_t initCronet;
 
 - (void)testEmptyUnaryRPC {
   __weak XCTestExpectation *expectRemote = [self expectationWithDescription:@"Remote RPC finish"];
-  __weak XCTestExpectation *expectCronetRemote = [self expectationWithDescription:@"Remote RPC finish"];
-  __weak XCTestExpectation *expectCleartext = [self expectationWithDescription:@"Remote RPC finish"];
+  __weak XCTestExpectation *expectCronetRemote =
+      [self expectationWithDescription:@"Remote RPC finish"];
+  __weak XCTestExpectation *expectCleartext =
+      [self expectationWithDescription:@"Remote RPC finish"];
   __weak XCTestExpectation *expectSSL = [self expectationWithDescription:@"Remote RPC finish"];
 
   GPBEmpty *request = [GPBEmpty message];
@@ -118,30 +120,36 @@ dispatch_once_t initCronet;
     XCTAssertEqualObjects(response, expectedResponse);
   };
 
-  [_remoteService emptyCallWithRequest:request handler:^(GPBEmpty *response, NSError *error) {
-    handler(response, error);
-    [expectRemote fulfill];
-  }];
-  [_remoteCronetService emptyCallWithRequest:request handler:^(GPBEmpty *response, NSError *error) {
-    handler(response, error);
-    [expectCronetRemote fulfill];
-  }];
-  [_localCleartextService emptyCallWithRequest:request handler:^(GPBEmpty *response, NSError *error) {
-    handler(response, error);
-    [expectCleartext fulfill];
-  }];
-  [_localSSLService emptyCallWithRequest:request handler:^(GPBEmpty *response, NSError *error) {
-    handler(response, error);
-    [expectSSL fulfill];
-  }];
+  [_remoteService emptyCallWithRequest:request
+                               handler:^(GPBEmpty *response, NSError *error) {
+                                 handler(response, error);
+                                 [expectRemote fulfill];
+                               }];
+  [_remoteCronetService emptyCallWithRequest:request
+                                     handler:^(GPBEmpty *response, NSError *error) {
+                                       handler(response, error);
+                                       [expectCronetRemote fulfill];
+                                     }];
+  [_localCleartextService emptyCallWithRequest:request
+                                       handler:^(GPBEmpty *response, NSError *error) {
+                                         handler(response, error);
+                                         [expectCleartext fulfill];
+                                       }];
+  [_localSSLService emptyCallWithRequest:request
+                                 handler:^(GPBEmpty *response, NSError *error) {
+                                   handler(response, error);
+                                   [expectSSL fulfill];
+                                 }];
 
   [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];
 }
 
 - (void)testFullDuplexRPC {
   __weak XCTestExpectation *expectRemote = [self expectationWithDescription:@"Remote RPC finish"];
-  __weak XCTestExpectation *expectCronetRemote = [self expectationWithDescription:@"Remote RPC finish"];
-  __weak XCTestExpectation *expectCleartext = [self expectationWithDescription:@"Remote RPC finish"];
+  __weak XCTestExpectation *expectCronetRemote =
+      [self expectationWithDescription:@"Remote RPC finish"];
+  __weak XCTestExpectation *expectCleartext =
+      [self expectationWithDescription:@"Remote RPC finish"];
   __weak XCTestExpectation *expectSSL = [self expectationWithDescription:@"Remote RPC finish"];
 
   NSArray *requestSizes = @[ @100, @101, @102, @103 ];
@@ -152,7 +160,8 @@ dispatch_once_t initCronet;
   NSMutableArray *requests = [NSMutableArray arrayWithCapacity:kRounds];
   NSMutableArray *responses = [NSMutableArray arrayWithCapacity:kRounds];
   for (int i = 0; i < kRounds; i++) {
-    requests[i] = [RMTStreamingOutputCallRequest messageWithPayloadSize:requestSizes[i] requestedResponseSize:responseSizes[i]];
+    requests[i] = [RMTStreamingOutputCallRequest messageWithPayloadSize:requestSizes[i]
+                                                  requestedResponseSize:responseSizes[i]];
     responses[i] = [RMTStreamingOutputCallResponse messageWithPayloadSize:responseSizes[i]];
   }
 
@@ -167,11 +176,11 @@ dispatch_once_t initCronet;
   BOOL (^handler)(int, BOOL, RMTStreamingOutputCallResponse *, NSError *) =
       ^(int index, BOOL done, RMTStreamingOutputCallResponse *response, NSError *error) {
         XCTAssertNil(error, @"Finished with unexpected error: %@", error);
-        XCTAssertTrue(done || response,
-                      @"Event handler called without an event.");
+        XCTAssertTrue(done || response, @"Event handler called without an event.");
         if (response) {
           NSUInteger step = [steps[index] unsignedIntegerValue];
-          XCTAssertLessThan(step, kRounds, @"More than %lu responses received.", (unsigned long)kRounds);
+          XCTAssertLessThan(step, kRounds, @"More than %lu responses received.",
+                            (unsigned long)kRounds);
           XCTAssertEqualObjects(response, responses[step]);
           step++;
           steps[index] = [NSNumber numberWithUnsignedInteger:step];
@@ -190,26 +199,42 @@ dispatch_once_t initCronet;
         return NO;
       };
 
-  [_remoteService fullDuplexCallWithRequestsWriter:requestsBuffers[0] eventHandler:^(BOOL done, RMTStreamingOutputCallResponse * _Nullable response, NSError * _Nullable error) {
-    if (handler(0, done, response, error)) {
-      [expectRemote fulfill];
-    }
-  }];
-  [_remoteCronetService fullDuplexCallWithRequestsWriter:requestsBuffers[1] eventHandler:^(BOOL done, RMTStreamingOutputCallResponse * _Nullable response, NSError * _Nullable error) {
-    if (handler(1, done, response, error)) {
-      [expectCronetRemote fulfill];
-    }
-  }];
-  [_localCleartextService fullDuplexCallWithRequestsWriter:requestsBuffers[2] eventHandler:^(BOOL done, RMTStreamingOutputCallResponse * _Nullable response, NSError * _Nullable error) {
-    if (handler(2, done, response, error)) {
-      [expectCleartext fulfill];
-    }
-  }];
-  [_localSSLService fullDuplexCallWithRequestsWriter:requestsBuffers[3] eventHandler:^(BOOL done, RMTStreamingOutputCallResponse * _Nullable response, NSError * _Nullable error) {
-    if (handler(3, done, response, error)) {
-      [expectSSL fulfill];
-    }
-  }];
+  [_remoteService
+      fullDuplexCallWithRequestsWriter:requestsBuffers[0]
+                          eventHandler:^(BOOL done,
+                                         RMTStreamingOutputCallResponse *_Nullable response,
+                                         NSError *_Nullable error) {
+                            if (handler(0, done, response, error)) {
+                              [expectRemote fulfill];
+                            }
+                          }];
+  [_remoteCronetService
+      fullDuplexCallWithRequestsWriter:requestsBuffers[1]
+                          eventHandler:^(BOOL done,
+                                         RMTStreamingOutputCallResponse *_Nullable response,
+                                         NSError *_Nullable error) {
+                            if (handler(1, done, response, error)) {
+                              [expectCronetRemote fulfill];
+                            }
+                          }];
+  [_localCleartextService
+      fullDuplexCallWithRequestsWriter:requestsBuffers[2]
+                          eventHandler:^(BOOL done,
+                                         RMTStreamingOutputCallResponse *_Nullable response,
+                                         NSError *_Nullable error) {
+                            if (handler(2, done, response, error)) {
+                              [expectCleartext fulfill];
+                            }
+                          }];
+  [_localSSLService
+      fullDuplexCallWithRequestsWriter:requestsBuffers[3]
+                          eventHandler:^(BOOL done,
+                                         RMTStreamingOutputCallResponse *_Nullable response,
+                                         NSError *_Nullable error) {
+                            if (handler(3, done, response, error)) {
+                              [expectSSL fulfill];
+                            }
+                          }];
 
   [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];
 }

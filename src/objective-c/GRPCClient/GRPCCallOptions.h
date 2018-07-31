@@ -33,7 +33,7 @@ typedef NS_ENUM(NSInteger, GRPCTransportType) {
 - (void)getTokenWithHandler:(void (^)(NSString *token))hander;
 @end
 
-@interface GRPCCallOptions : NSObject <NSCopying>
+@interface GRPCCallOptions : NSObject<NSCopying>
 
 /**
  * The authority for the RPC. If nil, the default authority will be used.
@@ -68,7 +68,7 @@ typedef NS_ENUM(NSInteger, GRPCTransportType) {
 /**
  * Additional initial metadata key-value pairs that should be included in the call request.
  */
-@property(atomic, copy, readwrite) NSDictionary* additionalInitialMetadata;
+@property(atomic, copy, readwrite) NSDictionary *additionalInitialMetadata;
 
 /**
  * Call flags to be used for the call. For a list of call flags available, see grpc/grpc_types.h.
@@ -79,7 +79,7 @@ typedef NS_ENUM(NSInteger, GRPCTransportType) {
  * Custom string that is prefixed to a request's user-agent header field before gRPC's internal
  * user-agent string.
  */
-@property(atomic, copy, readwrite) NSString* userAgentPrefix;
+@property(atomic, copy, readwrite) NSString *userAgentPrefix;
 
 /**
  * The size limit for the response received from server. If it is exceeded, an error with status
@@ -118,7 +118,7 @@ typedef NS_ENUM(NSInteger, GRPCTransportType) {
  * Specify channel args to be used for this call. For a list of channel args available, see
  * grpc/grpc_types.h
  */
-@property(atomic, copy, readwrite) NSDictionary* additionalChannelArgs;
+@property(atomic, copy, readwrite) NSDictionary *additionalChannelArgs;
 
 // Parameters for SSL authentication.
 
@@ -162,7 +162,7 @@ typedef NS_ENUM(NSInteger, GRPCTransportType) {
  * Effective only if \a transportType is set to GRPCTransportTypeCronet. Should be set to the global
  * Cronet engine.
  */
-@property(atomic, readwrite) struct stream_engine* cronetEngine;
+@property(atomic, readwrite) struct stream_engine *cronetEngine;
 
 /**
  * Override the hostname during the TLS hostname validation process.

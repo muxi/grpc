@@ -24,6 +24,7 @@
 #include <grpc/grpc.h>
 #include <grpc/grpc_security.h>
 
+#import <GRPCClient/GRPCCallOptions.h>
 #import "GRPCChannelFactory.h"
 #import "GRPCCompletionQueue.h"
 #import "GRPCConnectivityMonitor.h"
@@ -31,7 +32,6 @@
 #import "GRPCSecureChannelFactory.h"
 #import "NSDictionary+GRPC.h"
 #import "version.h"
-#import <GRPCClient/GRPCCallOptions.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -119,7 +119,7 @@ static NSMutableDictionary *kHostCache;
   return options;
 }
 
-+ (BOOL)isHostConfigured:(NSString*)address {
++ (BOOL)isHostConfigured:(NSString *)address {
   // TODO (mxyan): Remove when old API is deprecated
   NSURL *hostURL = [NSURL URLWithString:[@"https://" stringByAppendingString:address]];
   if (hostURL.host && !hostURL.port) {
