@@ -339,4 +339,8 @@ static NSMutableDictionary *kChannelPool;
   return channel;
 }
 
++ (void)closeOpenConnections {
+  kChannelPool = [NSMutableDictionary dictionary];
+}
+
 @end

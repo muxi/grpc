@@ -19,6 +19,7 @@
 #import "GRPCCall+ChannelArg.h"
 
 #import "private/GRPCHost.h"
+#import "private/GRPCChannel.h"
 
 #import <grpc/impl/codegen/compression_types.h>
 
@@ -35,7 +36,7 @@
 }
 
 + (void)closeOpenConnections {
-  //* */
+  [GRPCChannel closeOpenConnections];
 }
 
 + (void)setDefaultCompressMethod:(GRPCCompressAlgorithm)algorithm forhost:(nonnull NSString *)host {

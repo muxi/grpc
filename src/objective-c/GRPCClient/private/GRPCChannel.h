@@ -38,4 +38,6 @@ struct grpc_channel_credentials;
                               completionQueue:(nonnull GRPCCompletionQueue *)queue
                                       options:(nonnull GRPCCallOptions *)options;
 
+// TODO (mxyan): deprecate with GRPCCall:closeOpenConnections
++ (void)closeOpenConnections;
 @end
