@@ -53,6 +53,7 @@ typedef NS_ENUM(NSInteger, GRPCTransportType) {
 
 @interface GRPCCallOptions : NSObject<NSCopying>
 
+// Call parameters
 /**
  * The authority for the RPC. If nil, the default authority will be used.
  *
@@ -88,10 +89,28 @@ typedef NS_ENUM(NSInteger, GRPCTransportType) {
  */
 @property(atomic, copy, readwrite) NSDictionary *additionalInitialMetadata;
 
+// OAuth2 parameters. Users of gRPC may specify one of the following two parameters.
+
+/**
+ * The OAuth2 access token string. The string is prefixed with "Bearer " then used as value of the
+ * request's "authorization" header field. This parameter should not be used simultaneously with
+ * \a authTokenProvider.
+ */
+@property(atomic, copy, readwrite) NSString *oauth2AccessToken;
+
+/**
+ * The interface to get the OAuth2 access token string. gRPC will attempt to acquire token when
+ * initiating the call. This parameter should not be used simultaneously with \a oauth2AccessToken.
+ */
+@property(atomic, readwrite) id<GRPCAuthorizationProtocol> authTokenProvider;
+
 /**
  * Call flags to be used for the call. For a list of call flags available, see grpc/grpc_types.h.
  */
 @property(readonly) uint32_t callFlags;
+
+
+// Channel parameters; take into account of channel signature.
 
 /**
  * Custom string that is prefixed to a request's user-agent header field before gRPC's internal
@@ -156,31 +175,10 @@ typedef NS_ENUM(NSInteger, GRPCTransportType) {
  */
 @property(atomic, copy, readwrite) NSString *pemCertChain;
 
-// OAuth2 parameters. Users of gRPC may specify one of the following two parameters.
-
-/**
- * The OAuth2 access token string. The string is prefixed with "Bearer " then used as value of the
- * request's "authorization" header field. This parameter should not be used simultaneously with
- * \a authTokenProvider.
- */
-@property(atomic, copy, readwrite) NSString *oauth2AccessToken;
-
-/**
- * The interface to get the OAuth2 access token string. gRPC will attempt to acquire token when
- * initiating the call. This parameter should not be used simultaneously with \a oauth2AccessToken.
- */
-@property(atomic, readwrite) id<GRPCAuthorizationProtocol> authTokenProvider;
-
 /**
  * Select the transport type to be used for this call.
  */
 @property(atomic, readwrite) GRPCTransportType transportType;
-
-/**
- * Effective only if \a transportType is set to GRPCTransportTypeCronet. Should be set to the global
- * Cronet engine.
- */
-@property(atomic, readwrite) struct stream_engine *cronetEngine;
 
 /**
  * Override the hostname during the TLS hostname validation process.

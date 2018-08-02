@@ -24,6 +24,7 @@
 #ifdef GRPC_COMPILE_WITH_CRONET
 
 #include <grpc/grpc_cronet.h>
+#import <Cronet/Cronet.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -31,8 +32,13 @@ NS_ASSUME_NONNULL_BEGIN
   stream_engine *_cronetEngine;
 }
 
-+ (nullable instancetype)factoryWithEngine:(stream_engine *)engine {
-  return [[self alloc] initWithEngine:engine];
++ (nullable instancetype)sharedInstance {
+  static GRPCCronetChannelFactory *instance;
+  static dispatch_once_t onceToken;
+  dispatch_once(&onceToken, ^{
+    instance = [[self alloc] initWithEngine:[Cronet getGlobalEngine]];
+  });
+  return instance;
 }
 
 - (nullable instancetype)initWithEngine:(stream_engine *)engine {
@@ -68,7 +74,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @implementation GRPCCronetChannelFactory
 
-+ (nullable instancetype)factoryWithEngine:(stream_engine *)engine {
++ (nullable instancetype)sharedInstance {
   [NSException raise:NSInvalidArgumentException
               format:@"Must enable macro GRPC_COMPILE_WITH_CRONET to build Cronet channel."];
   return nil;

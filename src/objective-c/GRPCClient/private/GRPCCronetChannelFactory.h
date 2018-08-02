@@ -24,7 +24,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface GRPCCronetChannelFactory : NSObject<GRPCChannelFactory>
 
-+ (nullable instancetype)factoryWithEngine:(stream_engine *)engine;
++ (nullable instancetype)sharedInstance;
 
 - (nullable grpc_channel *)createChannelWithHost:(NSString *)host
                                      channelArgs:(nullable NSMutableDictionary *)args;

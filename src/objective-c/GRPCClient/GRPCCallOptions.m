@@ -39,7 +39,6 @@ static NSString* const kDefaultPemCertChain = nil;
 static NSString* const kDefaultOauth2AccessToken = nil;
 static const id<GRPCAuthorizationProtocol> kDefaultAuthTokenProvider = nil;
 static const GRPCTransportType kDefaultTransportType = GRPCTransportTypeDefault;
-static struct stream_engine* const kDefaultCronetEngine = nil;
 static NSString* const kDefaultHostNameOverride = nil;
 static const id kDefaultLogContext = nil;
 
@@ -69,7 +68,6 @@ static const id kDefaultLogContext = nil;
     _oauth2AccessToken = kDefaultOauth2AccessToken;
     _authTokenProvider = kDefaultAuthTokenProvider;
     _transportType = kDefaultTransportType;
-    _cronetEngine = kDefaultCronetEngine;
     _logContext = kDefaultLogContext;
   }
   return self;
@@ -100,7 +98,6 @@ static const id kDefaultLogContext = nil;
   newOptions.pemCertChain = _pemCertChain;
   newOptions.hostNameOverride = _hostNameOverride;
   newOptions.transportType = _transportType;
-  newOptions.cronetEngine = _cronetEngine;
   newOptions.logContext = _logContext;
 
   return newOptions;
@@ -175,9 +172,6 @@ static const id kDefaultLogContext = nil;
   }
   if (options.transportType != kDefaultTransportType) {
     _transportType = options.transportType;
-  }
-  if (options.cronetEngine != kDefaultCronetEngine) {
-    _cronetEngine = options.cronetEngine;
   }
   if (options.logContext != kDefaultLogContext) {
     _logContext = options.logContext;
