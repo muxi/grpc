@@ -21,18 +21,48 @@
 
 #import "ProtoMethod.h"
 
-__attribute__((deprecated("Please use GRPCProtoCall."))) @interface ProtoRPC
-    : GRPCCall
+@class GPBMessage;
 
-      /**
-       * host parameter should not contain the scheme (http:// or https://), only the name or IP
-       * addr and the port number, for example @"localhost:5050".
-       */
-      -
-      (instancetype)initWithHost : (NSString *)host method
-    : (GRPCProtoMethod *)method requestsWriter : (GRXWriter *)requestsWriter responseClass
-    : (Class)responseClass responsesWriteable
-    : (id<GRXWriteable>)responsesWriteable NS_DESIGNATED_INITIALIZER;
+@interface GRPCUnaryProtoCall : NSObject
+
+- (instancetype)initWithRequest:(GRPCCallRequest *)request
+                        message:(GPBMessage *)message
+                        handler:(void (^)(NSDictionary *, id, NSDictionary *, NSError *))handler
+                        options:(GRPCCallOptions *)options
+                  responseClass:(Class)responseClass;
+
+- (void)start;
+- (void)startWithOptions:(GRPCCallOptions *)options;
+
+@end
+
+@interface GRPCStreamingProtoCall : NSObject
+
+- (instancetype)initWithRequest:(GRPCCallRequest *)request
+                        handler:(void (^)(NSDictionary *, id, NSDictionary *, NSError *))handler
+                        options:(GRPCCallOptions *)options
+                  responseClass:(Class)responseClass;
+
+- (void)start;
+- (void)startWithOptions:(GRPCCallOptions *)options;
+- (void)cancel;
+
+- (void)writeWithMessage:(GPBMessage *)message;
+- (void)finish;
+
+@end
+
+__attribute__((deprecated("Please use GRPCProtoCall."))) @interface ProtoRPC : GRPCCall
+
+/**
+ * host parameter should not contain the scheme (http:// or https://), only the name or IP
+ * addr and the port number, for example @"localhost:5050".
+ */
+- (instancetype)initWithHost:(NSString *)host
+                      method:(GRPCProtoMethod *)method
+              requestsWriter:(GRXWriter *)requestsWriter
+               responseClass:(Class)responseClass
+          responsesWriteable:(id<GRXWriteable>)responsesWriteable NS_DESIGNATED_INITIALIZER;
 
 - (void)start;
 @end

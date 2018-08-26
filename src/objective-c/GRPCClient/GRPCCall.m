@@ -22,6 +22,8 @@
 
 #import <RxLibrary/GRXConcurrentWriteable.h>
 #import <RxLibrary/GRXImmediateSingleWriter.h>
+#import <RxLibrary/GRXWriter+Immediate.h>
+#import <RxLibrary/GRXBufferedPipe.h>
 #include <grpc/grpc.h>
 #include <grpc/support/time.h>
 
@@ -51,6 +53,123 @@ static NSString *const kBearerPrefix = @"Bearer ";
 @property(atomic, strong) NSDictionary *responseHeaders;
 @property(atomic, strong) NSDictionary *responseTrailers;
 @property(atomic) BOOL isWaitingForToken;
+
+- (instancetype)initWithHost:(NSString *)host
+                        path:(NSString *)path
+                  callSafety:(GRPCCallSafety)safety
+              requestsWriter:(GRXWriter *)requestsWriter
+                     options:(GRPCCallOptions *)options;
+
+@end
+
+@implementation GRPCCallRequest
+
+- (id)copyWithZone:(NSZone *)zone {
+  GRPCCallRequest *request = [[GRPCCallRequest alloc] init];
+  request.host = [_host copy];
+  request.path = [_path copy];
+  request.safety = _safety;
+
+  return request;
+}
+
+@end
+
+@implementation GRPCCallNg {
+  GRPCCallOptions *_options;
+  GRPCCallRequest *_request;
+  void (^_handler)(NSDictionary *initialMetadata,
+                   NSData *message,
+                   NSDictionary *trailingMetadata,
+                   NSError *error);
+
+  GRPCCallRequest *_activeRequest;
+  GRPCCallOptions *_activeOptions;
+
+  GRPCCall *_call;
+  BOOL _initialMetadataPublished;
+  GRXBufferedPipe *_pipe;
+}
+
+- (instancetype)initWithRequest:(GRPCCallRequest *)request
+                        handler:(void (^)(NSDictionary *initialMetadata,
+                                          NSData *message,
+                                          NSDictionary *trailingMetadata,
+                                          NSError *error))handler
+                        options:(GRPCCallOptions *)options {
+  if (!request || !request.host || !request.path) {
+    [NSException raise:NSInvalidArgumentException format:@"Neither host nor path can be nil."];
+  }
+
+  if ((self = [super init])) {
+    _request = [request copy];
+    _options = [options copy];
+    _handler = handler;
+    _initialMetadataPublished = NO;
+    _pipe = [GRXBufferedPipe pipe];
+  }
+
+  return self;
+}
+
+- (instancetype)initWithRequest:(GRPCCallRequest *)request
+                        handler:(void (^)(NSDictionary *initialMetadata,
+                                          NSData *message,
+                                          NSDictionary *trailingMetadata,
+                                          NSError *error))handler {
+  return [self initWithRequest:request handler:handler options:nil];
+}
+
+- (void)start {
+  _activeOptions = [_options copy];
+  if (!_activeOptions) {
+    _activeOptions = [[GRPCCallOptions alloc] init];
+  }
+  _activeRequest = [_request copy];
+  if (_activeOptions.dispatchQueue == nil) {
+    _activeOptions.dispatchQueue = dispatch_get_main_queue();
+  }
+
+  _call = [[GRPCCall alloc] initWithHost:_activeRequest.host
+                                    path:_activeRequest.path
+                              callSafety:_activeRequest.safety
+                          requestsWriter:_pipe
+                                 options:_activeOptions];
+  id<GRXWriteable> responseWriteable = [[GRXWriteable alloc] initWithValueHandler:^(id value) {
+    NSDictionary *headers = nil;
+    if (!self->_initialMetadataPublished) {
+      headers = self->_call.responseHeaders;
+      self->_initialMetadataPublished = YES;
+    }
+    self->_handler(headers, (NSData *)value, nil, nil);
+  } completionHandler:^(NSError *errorOrNil) {
+    NSDictionary *headers = nil;
+    if (!self->_initialMetadataPublished) {
+      headers = self->_call.responseHeaders;
+      self->_initialMetadataPublished = YES;
+    }
+    dispatch_async(self->_activeOptions.dispatchQueue, ^{
+      self->_handler(headers, nil, self->_call.responseTrailers, errorOrNil);
+    });
+    [self finish];
+  }];
+  [_call startWithWriteable:responseWriteable];
+}
+
+- (void)cancel {
+  [_call cancel];
+  _call = nil;
+}
+
+- (void)writeWithData:(NSData *)data {
+  [_pipe writeValue:data];
+}
+
+- (void)finish {
+  [_pipe finishWithError:nil];
+  _call = nil;
+}
+
 @end
 
 // The following methods of a C gRPC call object aren't reentrant, and thus
@@ -74,6 +193,8 @@ static NSString *const kBearerPrefix = @"Bearer ";
 
   NSString *_host;
   NSString *_path;
+  GRPCCallSafety _callSafety;
+  GRPCCallOptions *_options;
   GRPCWrappedCall *_wrappedCall;
   GRPCConnectivityMonitor *_connectivityMonitor;
 
@@ -115,7 +236,6 @@ static NSString *const kBearerPrefix = @"Bearer ";
 }
 
 @synthesize state = _state;
-@synthesize options = _options;
 
 + (void)initialize {
   // Guarantees the code in {} block is invoked only once. See ref at:
@@ -156,6 +276,14 @@ static NSString *const kBearerPrefix = @"Bearer ";
 - (instancetype)initWithHost:(NSString *)host
                         path:(NSString *)path
               requestsWriter:(GRXWriter *)requestWriter {
+  return [self initWithHost:host path:path callSafety:GRPCCallSafetyDefault requestsWriter:requestWriter options:nil];
+}
+
+- (instancetype)initWithHost:(NSString *)host
+                        path:(NSString *)path
+                  callSafety:(GRPCCallSafety)safety
+              requestsWriter:(GRXWriter *)requestWriter
+                     options:(GRPCCallOptions *)options {
   if (!host || !path) {
     [NSException raise:NSInvalidArgumentException format:@"Neither host nor path can be nil."];
   }
@@ -166,6 +294,8 @@ static NSString *const kBearerPrefix = @"Bearer ";
   if ((self = [super init])) {
     _host = [host copy];
     _path = [path copy];
+    _callSafety = safety;
+    _options = [options copy];
 
     // Serial queue to invoke the non-reentrant methods of the grpc_call object.
     _callQueue = dispatch_queue_create("io.grpc.call", NULL);
@@ -180,11 +310,8 @@ static NSString *const kBearerPrefix = @"Bearer ";
     }
 
     _responseQueue = dispatch_get_main_queue();
-
-    _options = nil;
   }
-  return self;
-}
+  return self;}
 
 - (void)setResponseDispatchQueue:(dispatch_queue_t)queue {
   if (_state != GRXWriterStateNotStarted) {
@@ -320,7 +447,7 @@ static NSString *const kBearerPrefix = @"Bearer ";
 - (void)sendHeaders {
   // TODO (mxyan): Remove after deprecated methods are removed
   uint32_t callSafetyFlags;
-  switch (self.options.callSafety) {
+  switch (_callSafety) {
     case GRPCCallSafetyDefault:
       callSafetyFlags = 0;
       break;
@@ -333,13 +460,15 @@ static NSString *const kBearerPrefix = @"Bearer ";
     default:
       [NSException raise:NSInvalidArgumentException format:@"Invalid call safety value."];
   }
-  uint32_t callFlag = callSafetyFlags | self.options.callFlags;
+  uint32_t callFlag = callSafetyFlags;
 
-  NSMutableDictionary *headers = [_requestHeaders mutableCopy];
-  if (_options.oauth2AccessToken != nil) {
-    _requestHeaders[@"authorization"] = _options.oauth2AccessToken;
+  NSMutableDictionary *headers = [NSMutableDictionary dictionary];
+  if (_options.initialMetadata) {
+    [headers addEntriesFromDictionary:_options.initialMetadata];
   }
-  [headers addEntriesFromDictionary:self.options.additionalInitialMetadata];
+  if (_options.oauth2AccessToken != nil) {
+    headers[@"authorization"] = [kBearerPrefix stringByAppendingString:_options.oauth2AccessToken];
+  }
 
   // TODO(jcanizales): Add error handlers for async failures
   GRPCOpSendMetadata *op = [[GRPCOpSendMetadata alloc]
@@ -477,11 +606,11 @@ static NSString *const kBearerPrefix = @"Bearer ";
 
 #pragma mark GRXWriter implementation
 
-- (void)startCallWithWriteable:(id<GRXWriteable>)writeable options:(GRPCCallOptions *)options {
+- (void)startCallWithWriteable:(id<GRXWriteable>)writeable {
   _responseWriteable = [[GRXConcurrentWriteable alloc] initWithWriteable:writeable
-                                                           dispatchQueue:options.dispatchQueue];
+                                                           dispatchQueue:_options.dispatchQueue];
 
-  _wrappedCall = [[GRPCWrappedCall alloc] initWithHost:_host path:_path options:options];
+  _wrappedCall = [[GRPCWrappedCall alloc] initWithHost:_host path:_path options:_options];
   NSAssert(_wrappedCall, @"Error allocating RPC objects. Low memory?");
 
   [self sendHeaders];
@@ -504,58 +633,54 @@ static NSString *const kBearerPrefix = @"Bearer ";
   // that the life of the instance is determined by this retain cycle.
   _retainSelf = self;
 
-  // TODO (mxyan): Remove when GRPCHost is deprecated
-  GRPCCallOptions *options = nil;
-  if ([GRPCHost isHostConfigured:_host]) {
-    GRPCHost *hostConfig = [GRPCHost hostWithAddress:_host];
-    options = hostConfig.callOptions;
-    [options mergeWithHigherPriorityOptions:self.options];
-  } else {
-    options = self.options;
-  }
-  if (_serverName != nil && options.serverName == nil) {
-    options.serverName = _serverName;
-  }
-  if (_timeout != 0 && options.timeout == 0) {
-    options.timeout = _timeout;
-  }
-  uint32_t callFlags = [GRPCCall callFlagsForHost:_host path:_path];
-  if (callFlags != 0 && options.callSafety == GRPCCallSafetyDefault) {
-    if (callFlags == GRPC_INITIAL_METADATA_IDEMPOTENT_REQUEST) {
-      options.callSafety = GRPCCallSafetyIdempotentRequest;
-    } else if (callFlags == GRPC_INITIAL_METADATA_CACHEABLE_REQUEST) {
-      options.callSafety = GRPCCallSafetyCacheableRequest;
+  if (_options == nil) {
+    if ([GRPCHost isHostConfigured:_host]) {
+      GRPCHost *hostConfig = [GRPCHost hostWithAddress:_host];
+      _options = hostConfig.callOptions;
+    } else {
+      _options = [[GRPCCallOptions alloc] init];
+    }
+    if (_serverName != nil) {
+      _options.serverName = _serverName;
+    }
+    if (_timeout != 0) {
+      _options.timeout = _timeout;
+    }
+    uint32_t callFlags = [GRPCCall callFlagsForHost:_host path:_path];
+    if (callFlags != 0) {
+      if (callFlags == GRPC_INITIAL_METADATA_IDEMPOTENT_REQUEST) {
+        _callSafety = GRPCCallSafetyIdempotentRequest;
+      } else if (callFlags == GRPC_INITIAL_METADATA_CACHEABLE_REQUEST) {
+        _callSafety = GRPCCallSafetyCacheableRequest;
+      }
+    }
+    if (_responseQueue != dispatch_get_main_queue()) {
+      _options.dispatchQueue = _responseQueue;
+    }
+
+    id<GRPCAuthorizationProtocol> tokenProvider = self.tokenProvider;
+    if (tokenProvider != nil) {
+      _options.authTokenProvider = tokenProvider;
+    }
+    if ([_requestHeaders count] > 0) {
+      _options.initialMetadata = [_requestHeaders copy];
     }
   }
-  if (_responseQueue != dispatch_get_main_queue() &&
-      options.dispatchQueue == dispatch_get_main_queue()) {
-    options.dispatchQueue = _responseQueue;
-  }
-
-  id<GRPCAuthorizationProtocol> tokenProvider = self.tokenProvider;
-  if (tokenProvider == nil) {
-    tokenProvider = options.authTokenProvider;
-  }
-  if (tokenProvider != nil) {
+  if (_options.authTokenProvider != nil) {
     self.isWaitingForToken = YES;
     __weak typeof(self) weakSelf = self;
     [self.tokenProvider getTokenWithHandler:^(NSString *token) {
       typeof(self) strongSelf = weakSelf;
       if (strongSelf && strongSelf.isWaitingForToken) {
         if (token) {
-          NSString *t = [kBearerPrefix stringByAppendingString:token];
-          strongSelf.requestHeaders[kAuthorizationHeader] = t;
+          strongSelf->_options.oauth2AccessToken = token;
         }
-        [strongSelf startCallWithWriteable:writeable options:options];
+        [strongSelf startCallWithWriteable:writeable];
         strongSelf.isWaitingForToken = NO;
       }
     }];
-  } else if (options.oauth2AccessToken != nil) {
-    self.requestHeaders[kAuthorizationHeader] =
-        [kBearerPrefix stringByAppendingString:options.oauth2AccessToken];
-    [self startCallWithWriteable:writeable options:options];
   } else {
-    [self startCallWithWriteable:writeable options:options];
+    [self startCallWithWriteable:writeable];
   }
 }
 

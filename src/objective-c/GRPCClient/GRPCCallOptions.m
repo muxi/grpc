@@ -20,8 +20,7 @@
 
 static NSString* const kDefaultServerName = nil;
 static const NSTimeInterval kDefaultTimeout = 0;
-static const GRPCCallSafety kDefaultCallSafety = GRPCCallSafetyDefault;
-static NSDictionary* const kDefaultAdditionalInitialMetadata = nil;
+static NSDictionary* const kDefaultInitialMetadata = nil;
 static const uint32_t kDefaultCallFlags = 0;
 static NSString* const kDefaultUserAgentPrefix = nil;
 static const NSUInteger kDefaultResponseSizeLimit = 0;
@@ -48,9 +47,8 @@ static const id kDefaultLogContext = nil;
   if ((self = [super init])) {
     _serverName = kDefaultServerName;
     _timeout = kDefaultTimeout;
-    _callSafety = kDefaultCallSafety;
     _dispatchQueue = dispatch_get_main_queue();
-    _additionalInitialMetadata = kDefaultAdditionalInitialMetadata;
+    _initialMetadata = kDefaultInitialMetadata;
     _callFlags = kDefaultCallFlags;
     _userAgentPrefix = kDefaultUserAgentPrefix;
     _responseSizeLimit = kDefaultResponseSizeLimit;
@@ -77,9 +75,8 @@ static const id kDefaultLogContext = nil;
   GRPCCallOptions* newOptions = [[GRPCCallOptions alloc] init];
   newOptions.serverName = _serverName;
   newOptions.timeout = _timeout;
-  newOptions.callSafety = _callSafety;
   newOptions.dispatchQueue = _dispatchQueue;
-  newOptions.additionalInitialMetadata = [_additionalInitialMetadata copy];
+  newOptions.initialMetadata = [_initialMetadata copy];
   newOptions.oauth2AccessToken = _oauth2AccessToken;
   newOptions.authTokenProvider = _authTokenProvider;
 
@@ -101,81 +98,6 @@ static const id kDefaultLogContext = nil;
   newOptions.logContext = _logContext;
 
   return newOptions;
-}
-
-- (void)mergeWithHigherPriorityOptions:(GRPCCallOptions*)options {
-  if (options == nil) {
-    return;
-  }
-  if (options.serverName != kDefaultServerName) {
-    _serverName = options.serverName;
-  }
-  if (options.timeout != kDefaultTimeout) {
-    _timeout = options.timeout;
-  }
-  if (options.callSafety != kDefaultCallSafety) {
-    _callSafety = options.callSafety;
-  }
-  if (options.dispatchQueue != dispatch_get_main_queue()) {
-    _dispatchQueue = options.dispatchQueue;
-  }
-  if (options.additionalInitialMetadata != kDefaultAdditionalInitialMetadata) {
-    _additionalInitialMetadata = options.additionalInitialMetadata;
-  }
-  if (options.callFlags != kDefaultCallFlags) {
-    _callFlags = options.callFlags;
-  }
-  if (options.userAgentPrefix != kDefaultUserAgentPrefix) {
-    _userAgentPrefix = options.userAgentPrefix;
-  }
-  if (options.responseSizeLimit != kDefaultResponseSizeLimit) {
-    _responseSizeLimit = options.responseSizeLimit;
-  }
-  if (options.compressAlgorithm != kDefaultCompressAlgorithm) {
-    _compressAlgorithm = options.compressAlgorithm;
-  }
-  if (options.enableRetry != kDefaultEnableRetry) {
-    _enableRetry = options.enableRetry;
-  }
-  if (options.keepaliveTimeout != kDefaultKeepaliveTimeout) {
-    _keepaliveTimeout = options.keepaliveTimeout;
-  }
-  if (options.keepaliveInterval != kDefaultKeepaliveInterval) {
-    _keepaliveInterval = options.keepaliveInterval;
-  }
-  if (options.connectMinTimeout != kDefaultConnectMinTimeout) {
-    _connectMinTimeout = options.connectMinTimeout;
-  }
-  if (options.connectInitialBackoff != kDefaultConnectInitialBackoff) {
-    _connectInitialBackoff = options.connectInitialBackoff;
-  }
-  if (options.connectMaxBackoff != kDefaultConnectMaxBackoff) {
-    _connectMaxBackoff = options.connectMaxBackoff;
-  }
-  if (options.additionalChannelArgs != kDefaultAdditionalChannelArgs) {
-    _additionalChannelArgs = options.additionalChannelArgs;
-  }
-  if (options.pemRootCert != kDefaultPemRootCert) {
-    _pemRootCert = options.pemRootCert;
-  }
-  if (options.pemPrivateKey != kDefaultPemPrivateKey) {
-    _pemPrivateKey = options.pemPrivateKey;
-  }
-  if (options.pemCertChain != kDefaultPemCertChain) {
-    _pemCertChain = options.pemCertChain;
-  }
-  if (options.oauth2AccessToken != kDefaultOauth2AccessToken) {
-    _oauth2AccessToken = options.oauth2AccessToken;
-  }
-  if (options.authTokenProvider != kDefaultAuthTokenProvider) {
-    _authTokenProvider = options.authTokenProvider;
-  }
-  if (options.transportType != kDefaultTransportType) {
-    _transportType = options.transportType;
-  }
-  if (options.logContext != kDefaultLogContext) {
-    _logContext = options.logContext;
-  }
 }
 
 @end

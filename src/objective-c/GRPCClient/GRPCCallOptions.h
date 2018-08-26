@@ -72,22 +72,15 @@ typedef NS_ENUM(NSInteger, GRPCTransportType) {
 @property NSTimeInterval timeout;
 
 /**
- * Set the safety level for the call. For Default level, gRPC uses POST method for the call. For
- * Idempotent level, gRPC may use PUT method. For Cacheable method, gRPC may use GET method.
- *
- */
-@property(atomic, readwrite) GRPCCallSafety callSafety;
-
-/**
  * Set the dispatch queue to be used to schedule tasks processing responses and callbacks. The queue
  * must a serial dispatch queue.
  */
 @property(atomic, readwrite) dispatch_queue_t dispatchQueue;
 
 /**
- * Additional initial metadata key-value pairs that should be included in the call request.
+ * Initial metadata key-value pairs that should be included in the call request.
  */
-@property(atomic, copy, readwrite) NSDictionary *additionalInitialMetadata;
+@property(atomic, copy, readwrite) NSDictionary *initialMetadata;
 
 // OAuth2 parameters. Users of gRPC may specify one of the following two parameters.
 
@@ -189,7 +182,5 @@ typedef NS_ENUM(NSInteger, GRPCTransportType) {
  * Parameter used for internal logging.
  */
 @property(atomic, copy, readwrite) id logContext;
-
-- (void)mergeWithHigherPriorityOptions:(GRPCCallOptions *)options;
 
 @end

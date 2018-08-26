@@ -20,6 +20,7 @@
 
 #import <RxLibrary/GRXWriteable.h>
 #import <RxLibrary/GRXWriter.h>
+#import <GRPCClient/GRPCCall.h>
 
 #import "ProtoMethod.h"
 #import "ProtoRPC.h"
@@ -31,6 +32,7 @@
   NSString *_host;
   NSString *_packageName;
   NSString *_serviceName;
+  GRPCCallOptions *_options;
 }
 
 - (instancetype)init {
@@ -40,7 +42,8 @@
 // Designated initializer
 - (instancetype)initWithHost:(NSString *)host
                  packageName:(NSString *)packageName
-                 serviceName:(NSString *)serviceName {
+                 serviceName:(NSString *)serviceName
+                     options:(GRPCCallOptions *)options {
   if (!host || !serviceName) {
     [NSException raise:NSInvalidArgumentException
                 format:@"Neither host nor serviceName can be nil."];
@@ -49,9 +52,18 @@
     _host = [host copy];
     _packageName = [packageName copy];
     _serviceName = [serviceName copy];
-    _options = nil;
+    _options = [options copy];
   }
   return self;
+}
+
+- (instancetype)initWithHost:(NSString *)host
+                 packageName:(NSString *)packageName
+                 serviceName:(NSString *)serviceName {
+  return [self initWithHost:host
+                packageName:packageName
+                serviceName:serviceName
+                    options:nil];
 }
 
 - (GRPCProtoCall *)RPCToMethod:(NSString *)method
@@ -60,16 +72,50 @@
             responsesWriteable:(id<GRXWriteable>)responsesWriteable {
   GRPCProtoMethod *methodName =
       [[GRPCProtoMethod alloc] initWithPackage:_packageName service:_serviceName method:method];
-  GRPCProtoCall *rpc = [[GRPCProtoCall alloc] initWithHost:_host
-                                                    method:methodName
-                                            requestsWriter:requestsWriter
-                                             responseClass:responseClass
-                                        responsesWriteable:responsesWriteable];
-  if (_options != nil) {
-    rpc.options = _options;
-  }
-  return rpc;
+  return [[GRPCProtoCall alloc] initWithHost:_host
+                                      method:methodName
+                              requestsWriter:requestsWriter
+                               responseClass:responseClass
+                          responsesWriteable:responsesWriteable];
 }
+
+- (GRPCUnaryProtoCall *)RPCToMethod:(NSString *)method
+                            message:(id)message
+                   responsesHandler:(void (^)(NSDictionary *initialMetadata,
+                                              id message,
+                                              NSDictionary *trailingMetadata,
+                                              NSError *error))handler
+                      responseClass:(Class)responseClass {
+  GRPCProtoMethod *methodName = [[GRPCProtoMethod alloc] initWithPackage:_packageName service:_serviceName method:method];
+  GRPCCallRequest *request = [[GRPCCallRequest alloc] init];
+  request.host = _host;
+  request.path = methodName.HTTPPath;
+  request.safety = GRPCCallSafetyDefault;
+  return
+      [[GRPCUnaryProtoCall alloc] initWithRequest:request
+                                          message:message
+                                          handler:handler
+                                          options:_options
+                                    responseClass:responseClass];
+}
+
+- (GRPCStreamingProtoCall *)RPCToMethod:(NSString *)method
+                       responsesHandler:(void (^)(NSDictionary *initialMetadata,
+                                                  id message,
+                                                  NSDictionary *trailingMetadata,
+                                                  NSError *error))handler
+                          responseClass:(Class)responseClass {
+  GRPCProtoMethod *methodName = [[GRPCProtoMethod alloc] initWithPackage:_packageName service:_serviceName method:method];
+  GRPCCallRequest *request = [[GRPCCallRequest alloc] init];
+  request.host = _host;
+  request.path = methodName.HTTPPath;
+  request.safety = GRPCCallSafetyDefault;
+  return [[GRPCStreamingProtoCall alloc] initWithRequest:request
+                                         handler:handler
+                                         options:_options
+                                   responseClass:responseClass];
+}
+
 @end
 
 @implementation GRPCProtoService

@@ -150,7 +150,51 @@ typedef NS_ENUM(NSUInteger, GRPCErrorCode) {
 extern id const kGRPCHeadersKey;
 extern id const kGRPCTrailersKey;
 
+@interface GRPCCallRequest : NSObject<NSCopying>
+@property(atomic, copy, readwrite) NSString *host;
+@property(atomic, copy, readwrite) NSString *path;
+@property(atomic, readwrite) GRPCCallSafety safety;
+@end
+
 #pragma mark GRPCCall
+
+@interface GRPCCallNg : NSObject
+
+- (instancetype)init NS_UNAVAILABLE;
+
+- (instancetype)initWithRequest:(GRPCCallRequest *)request
+                        handler:(void (^)(NSDictionary *initialMetadata,
+                                          NSData *message,
+                                          NSDictionary *trailingMetadata,
+                                          NSError *error))handler
+                        options:(GRPCCallOptions *)options NS_DESIGNATED_INITIALIZER;
+
+- (instancetype)initWithRequest:(GRPCCallRequest *)request
+                        handler:(void (^)(NSDictionary *initialMetadata,
+                                          NSData *message,
+                                          NSDictionary *trailingMetadata,
+                                          NSError *error))handler;
+
+/**
+ * Starts the call. Can only be called once.
+ */
+- (void)start;
+
+/**
+ * Finishes the request side of this call, notifies the server that the RPC should be cancelled, and issue callback to handler with an error code CANCELED if the call is not finished.
+ */
+- (void)cancel;
+
+- (void)writeWithData:(NSData *)data;
+
+- (void)finish;
+
+@property(atomic, readonly, copy) GRPCCallOptions *options;
+@property(atomic, copy, readonly) NSString *host;
+@property(atomic, copy, readonly) NSString *path;
+@property(atomic, readonly) GRPCCallSafety safety;
+
+@end
 
 /** Represents a single gRPC remote call. */
 @interface GRPCCall : GRXWriter
@@ -214,7 +258,7 @@ extern id const kGRPCTrailersKey;
  */
 - (instancetype)initWithHost:(NSString *)host
                         path:(NSString *)path
-              requestsWriter:(GRXWriter *)requestsWriter NS_DESIGNATED_INITIALIZER;
+              requestsWriter:(GRXWriter *)requestWriter;
 
 /**
  * Finishes the request side of this call, notifies the server that the RPC should be cancelled, and
@@ -229,8 +273,6 @@ extern id const kGRPCTrailersKey;
 @property(atomic, copy, readwrite) NSString *serverName;
 @property NSTimeInterval timeout;
 - (void)setResponseDispatchQueue:(dispatch_queue_t)queue;
-
-@property(nonatomic, strong, readwrite) GRPCCallOptions *options;
 
 @end
 

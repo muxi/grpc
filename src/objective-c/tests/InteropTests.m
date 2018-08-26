@@ -126,6 +126,25 @@ BOOL isRemoteInteropTest(NSString *host) {
   [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];
 }
 
+- (void)testEmptyUnaryRPCWithNgAPI {
+  XCTAssertNotNil(self.class.host);
+  __weak XCTestExpectation *expectation = [self expectationWithDescription:@"EmptyUnary"];
+
+  GPBEmpty *request = [GPBEmpty message];
+
+  GRPCUnaryProtoCall *call = [_service emptyCallWithMessage:request
+                         handler:^(NSDictionary * _Nonnull initialMetadata, GPBEmpty * _Nonnull message, NSDictionary * _Nonnull trailingMetadata, NSError * _Nonnull error) {
+                           if (message) {
+                             XCTAssertNil(error, @"Unexpected error: %@", error);
+                             id expectedResponse = [GPBEmpty message];
+                             XCTAssertEqualObjects(message, expectedResponse);
+                             [expectation fulfill];
+                           }
+                         }];
+  [call start];
+  [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];
+}
+
 - (void)testLargeUnaryRPC {
   XCTAssertNotNil(self.class.host);
   __weak XCTestExpectation *expectation = [self expectationWithDescription:@"LargeUnary"];
@@ -372,6 +391,48 @@ BOOL isRemoteInteropTest(NSString *host) {
                                     [expectation fulfill];
                                   }
                                 }];
+  [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];
+}
+
+- (void)testPingPongRPCWithNgAPI {
+  XCTAssertNotNil(self.class.host);
+  __weak XCTestExpectation *expectation = [self expectationWithDescription:@"PingPong"];
+
+  NSArray *requests = @[ @27182, @8, @1828, @45904 ];
+  NSArray *responses = @[ @31415, @9, @2653, @58979 ];
+
+  __block int index = 0;
+
+  id request = [RMTStreamingOutputCallRequest messageWithPayloadSize:requests[index]
+                                               requestedResponseSize:responses[index]];
+
+  GRPCStreamingProtoCall *call = [_service fullDuplexCallWithHandler:^(NSDictionary * _Nonnull initialMetadata, RMTStreamingOutputCallResponse * _Nonnull message, NSDictionary * _Nonnull trailingMetadata, NSError * _Nonnull error) {
+    XCTAssertNil(error, @"Finished with unexpected error: %@", error);
+    if (message) {
+      XCTAssertLessThan(index, 4, @"More than 4 responses received.");
+      id expected = [RMTStreamingOutputCallResponse
+                     messageWithPayloadSize:responses[index]];
+      XCTAssertEqualObjects(message, expected);
+      index += 1;
+      if (index < 4) {
+        id request = [RMTStreamingOutputCallRequest
+                      messageWithPayloadSize:requests[index]
+                      requestedResponseSize:responses[index]];
+        [call writeWithMessage:request];
+      } else {
+        [call finish];
+      }
+    }
+    if (trailingMetadata) {
+      XCTAssertEqual(index, 4, @"Received %i responses instead of 4.",
+                     index);
+      [expectation fulfill];
+    }
+  }];
+
+  [call writeWithMessage:request];
+  [call start];
+
   [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];
 }
 

@@ -22,18 +22,41 @@
 @protocol GRXWriteable;
 @class GRXWriter;
 @class GRPCCallOptions;
+@class GRPCProtoCall;
+@class GRPCUnaryProtoCall;
+@class GRPCStreamingProtoCall;
 
 __attribute__((deprecated("Please use GRPCProtoService."))) @interface ProtoService
-    : NSObject -
-      (instancetype)initWithHost : (NSString *)host packageName
-    : (NSString *)packageName serviceName : (NSString *)serviceName NS_DESIGNATED_INITIALIZER;
+    : NSObject
+
+- (instancetype)initWithHost:(NSString *)host
+                 packageName:(NSString *)packageName
+                 serviceName:(NSString *)serviceName
+                     options:(GRPCCallOptions *)options NS_DESIGNATED_INITIALIZER;
+
+- (instancetype)initWithHost:(NSString *)host
+                 packageName:(NSString *)packageName
+                 serviceName:(NSString *)serviceName;
 
 - (GRPCProtoCall *)RPCToMethod:(NSString *)method
                 requestsWriter:(GRXWriter *)requestsWriter
                  responseClass:(Class)responseClass
             responsesWriteable:(id<GRXWriteable>)responsesWriteable;
 
-@property(atomic, copy, readwrite) GRPCCallOptions *options;
+- (GRPCUnaryProtoCall *)RPCToMethod:(NSString *)method
+          message:(id)message
+ responsesHandler:(void (^)(NSDictionary *initialMetadata,
+                            id message,
+                            NSDictionary *trailingMetadata,
+                            NSError *error))handler
+                      responseClass:(Class)responseClass;
+
+- (GRPCStreamingProtoCall *)RPCToMethod:(NSString *)method
+                       responsesHandler:(void (^)(NSDictionary *initialMetadata,
+                                                  id message,
+                                                  NSDictionary *trailingMetadata,
+                                                  NSError *error))handler
+                          responseClass:(Class)responseClass;
 
 @end
 

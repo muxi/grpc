@@ -26,6 +26,115 @@
 #import <RxLibrary/GRXWriteable.h>
 #import <RxLibrary/GRXWriter+Transformations.h>
 
+@implementation GRPCUnaryProtoCall {
+  GRPCStreamingProtoCall *_call;
+}
+
+- (instancetype)initWithRequest:(GRPCCallRequest *)request
+                        message:(GPBMessage *)message
+                        handler:(void (^)(NSDictionary *, id, NSDictionary *, NSError *))handler
+                        options:(GRPCCallOptions *)options
+                  responseClass:(Class)responseClass {
+  if (![responseClass respondsToSelector:@selector(parseFromData:error:)]) {
+    [NSException raise:NSInvalidArgumentException
+                format:@"A protobuf class to parse the responses must be provided."];
+  }
+  if ((self = [super init])) {
+    _call = [[GRPCStreamingProtoCall alloc] initWithRequest:request
+                                                    handler:handler
+                                                    options:options
+                                              responseClass:responseClass];
+    [_call writeWithMessage:message];
+  }
+  return self;
+}
+
+- (void)start {
+  [_call start];
+}
+
+- (void)startWithOptions:(GRPCCallOptions *)options {
+  [_call startWithOptions:options];
+}
+
+- (void)cancel {
+  [_call cancel];
+}
+
+@end
+
+@implementation GRPCStreamingProtoCall {
+  GRPCCallRequest *_request;
+  void (^_handler)(NSDictionary *, id, NSDictionary *, NSError *);
+  GRPCCallOptions *_options;
+  Class _responseClass;
+
+  GRPCCallNg *_call;
+}
+
+- (instancetype)initWithRequest:(GRPCCallRequest *)request
+                        handler:(void (^)(NSDictionary *, id, NSDictionary *, NSError *))handler
+                        options:(GRPCCallOptions *)options
+                  responseClass:(Class)responseClass {
+  if (![responseClass respondsToSelector:@selector(parseFromData:error:)]) {
+    [NSException raise:NSInvalidArgumentException
+                format:@"A protobuf class to parse the responses must be provided."];
+  }
+  if ((self = [super init])) {
+    _request = [request copy];
+    _handler = handler;
+    _options = [options copy];
+    _responseClass = responseClass;
+  }
+  return self;
+}
+
+- (void)start {
+  [self startWithOptions:_options];
+}
+
+- (void)startWithOptions:(GRPCCallOptions *)options {
+  void (^handler)(NSDictionary *, id, NSDictionary *, NSError *) = _handler;
+  Class responseClass = _responseClass;
+  _call = [[GRPCCallNg alloc] initWithRequest:_request
+                                      handler:^(NSDictionary *initialMetadata, NSData *message, NSDictionary *trailingMetadata, NSError *error) {
+                                        if (message) {
+                                          NSError *error = nil;
+                                          id parsed = [responseClass parseFromData:message
+                                                                              error:&error];
+                                          if (parsed) {
+                                            handler(initialMetadata,
+                                                     parsed, trailingMetadata, error);
+                                          } else {
+                                            handler(nil, nil, nil, error);
+                                          }
+                                        } else {
+                                          handler(initialMetadata, nil, trailingMetadata, error);
+                                        }
+                                      }
+                                      options:options];
+  [_call start];
+}
+
+- (void)cancel {
+  [_call cancel];
+}
+
+- (void)writeWithMessage:(GPBMessage *)message {
+  if (![message isKindOfClass:[GPBMessage class]]) {
+    [NSException raise:NSInvalidArgumentException
+                format:@"Data must be a valid protobuf type."];
+  }
+  GPBMessage *protoData = (GPBMessage *)message;
+  [_call writeWithData:[protoData data]];
+}
+
+- (void)finish {
+  [_call finish];
+}
+
+@end
+
 static NSError *ErrorForBadProto(id proto, Class expectedClass, NSError *parsingError) {
   NSDictionary *info = @{
     NSLocalizedDescriptionKey : @"Unable to parse response from the server",
