@@ -406,7 +406,7 @@ BOOL isRemoteInteropTest(NSString *host) {
   id request = [RMTStreamingOutputCallRequest messageWithPayloadSize:requests[index]
                                                requestedResponseSize:responses[index]];
 
-  GRPCStreamingProtoCall *call = [_service fullDuplexCallWithHandler:^(NSDictionary * _Nonnull initialMetadata, RMTStreamingOutputCallResponse * _Nonnull message, NSDictionary * _Nonnull trailingMetadata, NSError * _Nonnull error) {
+  __block GRPCStreamingProtoCall *call = [_service fullDuplexCallWithHandler:^(NSDictionary * _Nonnull initialMetadata, RMTStreamingOutputCallResponse * _Nonnull message, NSDictionary * _Nonnull trailingMetadata, NSError * _Nonnull error) {
     XCTAssertNil(error, @"Finished with unexpected error: %@", error);
     if (message) {
       XCTAssertLessThan(index, 4, @"More than 4 responses received.");

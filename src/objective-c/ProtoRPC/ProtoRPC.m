@@ -51,6 +51,7 @@
 
 - (void)start {
   [_call start];
+  [_call finish];
 }
 
 - (void)startWithOptions:(GRPCCallOptions *)options {
@@ -70,6 +71,8 @@
   Class _responseClass;
 
   GRPCCallNg *_call;
+  NSMutableArray *_messageBacklog;
+  BOOL _started;
 }
 
 - (instancetype)initWithRequest:(GRPCCallRequest *)request
@@ -85,6 +88,8 @@
     _handler = handler;
     _options = [options copy];
     _responseClass = responseClass;
+    _messageBacklog = [NSMutableArray array];
+    _started = NO;
   }
   return self;
 }
@@ -113,6 +118,13 @@
                                         }
                                       }
                                       options:options];
+  @synchronized(self) {
+    _started = YES;
+    for (id msg in _messageBacklog) {
+      [_call writeWithData:[msg data]];
+    }
+    _messageBacklog = nil;
+  }
   [_call start];
 }
 
@@ -124,6 +136,12 @@
   if (![message isKindOfClass:[GPBMessage class]]) {
     [NSException raise:NSInvalidArgumentException
                 format:@"Data must be a valid protobuf type."];
+  }
+  @synchronized(self) {
+    if (!_started) {
+      [_messageBacklog addObject:message];
+      return;
+    }
   }
   GPBMessage *protoData = (GPBMessage *)message;
   [_call writeWithData:[protoData data]];

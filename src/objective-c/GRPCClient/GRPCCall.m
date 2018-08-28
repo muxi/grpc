@@ -138,36 +138,46 @@ static NSString *const kBearerPrefix = @"Bearer ";
   id<GRXWriteable> responseWriteable = [[GRXWriteable alloc] initWithValueHandler:^(id value) {
     NSDictionary *headers = nil;
     if (!self->_initialMetadataPublished) {
-      headers = self->_call.responseHeaders;
-      self->_initialMetadataPublished = YES;
+      @synchronized(self) {
+        headers = self->_call.responseHeaders;
+        self->_initialMetadataPublished = YES;
+      }
     }
     self->_handler(headers, (NSData *)value, nil, nil);
   } completionHandler:^(NSError *errorOrNil) {
     NSDictionary *headers = nil;
     if (!self->_initialMetadataPublished) {
-      headers = self->_call.responseHeaders;
-      self->_initialMetadataPublished = YES;
+      @synchronized(self) {
+        headers = self->_call.responseHeaders;
+        self->_initialMetadataPublished = YES;
+      }
     }
     dispatch_async(self->_activeOptions.dispatchQueue, ^{
       self->_handler(headers, nil, self->_call.responseTrailers, errorOrNil);
+      self->_call = nil;
+      self->_pipe = nil;
     });
-    [self finish];
   }];
   [_call startWithWriteable:responseWriteable];
 }
 
 - (void)cancel {
-  [_call cancel];
-  _call = nil;
+  @synchronized(self) {
+    [_call cancel];
+    _call = nil;
+  }
 }
 
 - (void)writeWithData:(NSData *)data {
-  [_pipe writeValue:data];
+  @synchronized(self) {
+    [_pipe writeValue:data];
+  }
 }
 
 - (void)finish {
-  [_pipe finishWithError:nil];
-  _call = nil;
+  @synchronized(self) {
+    [_pipe finishWithError:nil];
+  }
 }
 
 @end
