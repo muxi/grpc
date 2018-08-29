@@ -25,6 +25,7 @@
 @class GRPCProtoCall;
 @class GRPCUnaryProtoCall;
 @class GRPCStreamingProtoCall;
+@protocol GRPCResponseCallbacks;
 
 __attribute__((deprecated("Please use GRPCProtoService."))) @interface ProtoService
     : NSObject
@@ -44,18 +45,12 @@ __attribute__((deprecated("Please use GRPCProtoService."))) @interface ProtoServ
             responsesWriteable:(id<GRXWriteable>)responsesWriteable;
 
 - (GRPCUnaryProtoCall *)RPCToMethod:(NSString *)method
-          message:(id)message
- responsesHandler:(void (^)(NSDictionary *initialMetadata,
-                            id message,
-                            NSDictionary *trailingMetadata,
-                            NSError *error))handler
+                            message:(id)message
+                  responseCallbacks:(id<GRPCResponseCallbacks>)callbacks
                       responseClass:(Class)responseClass;
 
 - (GRPCStreamingProtoCall *)RPCToMethod:(NSString *)method
-                       responsesHandler:(void (^)(NSDictionary *initialMetadata,
-                                                  id message,
-                                                  NSDictionary *trailingMetadata,
-                                                  NSError *error))handler
+                      responseCallbacks:(id<GRPCResponseCallbacks>)callbacks
                           responseClass:(Class)responseClass;
 
 @end

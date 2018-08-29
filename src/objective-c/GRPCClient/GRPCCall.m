@@ -78,10 +78,7 @@ static NSString *const kBearerPrefix = @"Bearer ";
 @implementation GRPCCallNg {
   GRPCCallOptions *_options;
   GRPCCallRequest *_request;
-  void (^_handler)(NSDictionary *initialMetadata,
-                   NSData *message,
-                   NSDictionary *trailingMetadata,
-                   NSError *error);
+  id<GRPCResponseCallbacks> _callbacks;
 
   GRPCCallRequest *_activeRequest;
   GRPCCallOptions *_activeOptions;
@@ -92,10 +89,7 @@ static NSString *const kBearerPrefix = @"Bearer ";
 }
 
 - (instancetype)initWithRequest:(GRPCCallRequest *)request
-                        handler:(void (^)(NSDictionary *initialMetadata,
-                                          NSData *message,
-                                          NSDictionary *trailingMetadata,
-                                          NSError *error))handler
+                      callbacks:(id<GRPCResponseCallbacks>)callbacks
                         options:(GRPCCallOptions *)options {
   if (!request || !request.host || !request.path) {
     [NSException raise:NSInvalidArgumentException format:@"Neither host nor path can be nil."];
@@ -104,7 +98,7 @@ static NSString *const kBearerPrefix = @"Bearer ";
   if ((self = [super init])) {
     _request = [request copy];
     _options = [options copy];
-    _handler = handler;
+    _callbacks = callbacks;
     _initialMetadataPublished = NO;
     _pipe = [GRXBufferedPipe pipe];
   }
@@ -113,11 +107,8 @@ static NSString *const kBearerPrefix = @"Bearer ";
 }
 
 - (instancetype)initWithRequest:(GRPCCallRequest *)request
-                        handler:(void (^)(NSDictionary *initialMetadata,
-                                          NSData *message,
-                                          NSDictionary *trailingMetadata,
-                                          NSError *error))handler {
-  return [self initWithRequest:request handler:handler options:nil];
+                      callbacks:(id<GRPCResponseCallbacks>)callbacks {
+  return [self initWithRequest:request callbacks:callbacks options:nil];
 }
 
 - (void)start {
@@ -137,23 +128,38 @@ static NSString *const kBearerPrefix = @"Bearer ";
                                  options:_activeOptions];
   id<GRXWriteable> responseWriteable = [[GRXWriteable alloc] initWithValueHandler:^(id value) {
     NSDictionary *headers = nil;
-    if (!self->_initialMetadataPublished) {
-      @synchronized(self) {
+    @synchronized(self) {
+      if (!self->_initialMetadataPublished) {
         headers = self->_call.responseHeaders;
         self->_initialMetadataPublished = YES;
       }
     }
-    self->_handler(headers, (NSData *)value, nil, nil);
+    if (headers) {
+      dispatch_async(self->_activeOptions.dispatchQueue, ^{
+        [self->_callbacks receivedInitialMetadata:headers];
+      });
+    }
+    if (value) {
+      dispatch_async(self->_activeOptions.dispatchQueue, ^{
+        [self->_callbacks receivedMessage:value];
+      });
+    }
   } completionHandler:^(NSError *errorOrNil) {
     NSDictionary *headers = nil;
-    if (!self->_initialMetadataPublished) {
-      @synchronized(self) {
+    @synchronized(self) {
+      if (!self->_initialMetadataPublished) {
         headers = self->_call.responseHeaders;
         self->_initialMetadataPublished = YES;
       }
     }
+    if (headers) {
+      dispatch_async(self->_activeOptions.dispatchQueue, ^{
+        [self->_callbacks receivedInitialMetadata:headers];
+      });
+    }
     dispatch_async(self->_activeOptions.dispatchQueue, ^{
-      self->_handler(headers, nil, self->_call.responseTrailers, errorOrNil);
+      [self->_callbacks closeWithTrailingMetadata:self->_call.responseTrailers
+                                            error:errorOrNil];
       self->_call = nil;
       self->_pipe = nil;
     });

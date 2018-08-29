@@ -72,6 +72,46 @@ BOOL isRemoteInteropTest(NSString *host) {
   return [host isEqualToString:@"grpc-test.sandbox.googleapis.com"];
 }
 
+// Convenience class to use blocks as callbacks
+@interface InteropTestsBlockCallbacks : NSObject<GRPCResponseCallbacks>
+
+- (instancetype)initWithInitialMetadataCallback:(void (^)(NSDictionary *))initialMetadataCallback
+                                messageCallback:(void (^)(id))messageCallback
+                                  closeCallback:(void (^)(NSDictionary *, NSError *))closeCallback;
+
+@end
+
+@implementation InteropTestsBlockCallbacks {
+  void (^_initialMetadataCallback)(NSDictionary *);
+  void (^_messageCallback)(id);
+  void (^_closeCallback)(NSDictionary *, NSError *);
+}
+
+- (instancetype)initWithInitialMetadataCallback:(void (^)(NSDictionary *))initialMetadataCallback
+                                messageCallback:(void (^)(id))messageCallback
+                                  closeCallback:(void (^)(NSDictionary *, NSError *))closeCallback {
+  if ((self = [super init])) {
+    _initialMetadataCallback = initialMetadataCallback;
+    _messageCallback = messageCallback;
+    _closeCallback = closeCallback;
+  }
+  return self;
+}
+
+- (void)receivedInitialMetadata:(NSDictionary *)initialMetadata {
+  _initialMetadataCallback(initialMetadata);
+}
+
+- (void)receivedMessage:(id)message {
+  _messageCallback(message);
+}
+
+- (void)closeWithTrailingMetadata:(NSDictionary *)trailingMetadata error:(NSError *)error {
+  _closeCallback(trailingMetadata, error);
+}
+
+@end
+
 #pragma mark Tests
 
 @implementation InteropTests {
@@ -132,15 +172,20 @@ BOOL isRemoteInteropTest(NSString *host) {
 
   GPBEmpty *request = [GPBEmpty message];
 
-  GRPCUnaryProtoCall *call = [_service emptyCallWithMessage:request
-                         handler:^(NSDictionary * _Nonnull initialMetadata, GPBEmpty * _Nonnull message, NSDictionary * _Nonnull trailingMetadata, NSError * _Nonnull error) {
+  GRPCUnaryProtoCall *call =
+      [_service emptyCallWithMessage:request
+                   responseCallbacks:[[InteropTestsBlockCallbacks alloc] initWithInitialMetadataCallback:nil
+                                                                             messageCallback:
+       ^(id message) {
                            if (message) {
-                             XCTAssertNil(error, @"Unexpected error: %@", error);
                              id expectedResponse = [GPBEmpty message];
                              XCTAssertEqualObjects(message, expectedResponse);
                              [expectation fulfill];
                            }
-                         }];
+                         }
+                                                                               closeCallback:^(NSDictionary *trailingMetadata, NSError *error) {
+                                                                                 XCTAssertNil(error, @"Unexpected error: %@", error);
+                                                                               }]];
   [call start];
   [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];
 }
@@ -406,29 +451,28 @@ BOOL isRemoteInteropTest(NSString *host) {
   id request = [RMTStreamingOutputCallRequest messageWithPayloadSize:requests[index]
                                                requestedResponseSize:responses[index]];
 
-  __block GRPCStreamingProtoCall *call = [_service fullDuplexCallWithHandler:^(NSDictionary * _Nonnull initialMetadata, RMTStreamingOutputCallResponse * _Nonnull message, NSDictionary * _Nonnull trailingMetadata, NSError * _Nonnull error) {
-    XCTAssertNil(error, @"Finished with unexpected error: %@", error);
-    if (message) {
-      XCTAssertLessThan(index, 4, @"More than 4 responses received.");
-      id expected = [RMTStreamingOutputCallResponse
-                     messageWithPayloadSize:responses[index]];
-      XCTAssertEqualObjects(message, expected);
-      index += 1;
-      if (index < 4) {
-        id request = [RMTStreamingOutputCallRequest
-                      messageWithPayloadSize:requests[index]
-                      requestedResponseSize:responses[index]];
-        [call writeWithMessage:request];
-      } else {
-        [call finish];
-      }
-    }
-    if (trailingMetadata) {
-      XCTAssertEqual(index, 4, @"Received %i responses instead of 4.",
-                     index);
-      [expectation fulfill];
-    }
-  }];
+  __block GRPCStreamingProtoCall *call = [_service fullDuplexCallWithResponseCallbacks:
+                                          [[InteropTestsBlockCallbacks alloc] initWithInitialMetadataCallback:nil
+                                                                                  messageCallback:^(id message) {
+                                                                                    XCTAssertLessThan(index, 4, @"More than 4 responses received.");
+                                                                                    id expected = [RMTStreamingOutputCallResponse
+                                                                                                   messageWithPayloadSize:responses[index]];
+                                                                                    XCTAssertEqualObjects(message, expected);
+                                                                                    index += 1;
+                                                                                    if (index < 4) {
+                                                                                      id request = [RMTStreamingOutputCallRequest
+                                                                                                    messageWithPayloadSize:requests[index]
+                                                                                                    requestedResponseSize:responses[index]];
+                                                                                      [call writeWithMessage:request];
+                                                                                    } else {
+                                                                                      [call finish];
+                                                                                    }
+                                                                                  } closeCallback:^(NSDictionary * trailingMetadata, NSError *error) {
+                                                                                    XCTAssertNil(error, @"Finished with unexpected error: %@", error);
+                                                                                    XCTAssertEqual(index, 4, @"Received %i responses instead of 4.",
+                                                                                                   index);
+                                                                                    [expectation fulfill];
+                                                                                  }]];
 
   [call writeWithMessage:request];
   [call start];

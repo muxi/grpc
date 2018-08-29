@@ -86,6 +86,46 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
 
 @end
 
+// Convenience class to use blocks as callbacks
+@interface ClientTestsBlockCallbacks : NSObject<GRPCResponseCallbacks>
+
+- (instancetype)initWithInitialMetadataCallback:(void (^)(NSDictionary *))initialMetadataCallback
+                                messageCallback:(void (^)(id))messageCallback
+                                  closeCallback:(void (^)(NSDictionary *, NSError *))closeCallback;
+
+@end
+
+@implementation ClientTestsBlockCallbacks {
+  void (^_initialMetadataCallback)(NSDictionary *);
+  void (^_messageCallback)(id);
+  void (^_closeCallback)(NSDictionary *, NSError *);
+}
+
+- (instancetype)initWithInitialMetadataCallback:(void (^)(NSDictionary *))initialMetadataCallback
+                                messageCallback:(void (^)(id))messageCallback
+                                  closeCallback:(void (^)(NSDictionary *, NSError *))closeCallback {
+  if ((self = [super init])) {
+    _initialMetadataCallback = initialMetadataCallback;
+    _messageCallback = messageCallback;
+    _closeCallback = closeCallback;
+  }
+  return self;
+}
+
+- (void)receivedInitialMetadata:(NSDictionary *)initialMetadata {
+  _initialMetadataCallback(initialMetadata);
+}
+
+- (void)receivedMessage:(id)message {
+  _messageCallback(message);
+}
+
+- (void)closeWithTrailingMetadata:(NSDictionary *)trailingMetadata error:(NSError *)error {
+  _closeCallback(trailingMetadata, error);
+}
+
+@end
+
 #pragma mark Tests
 
 /**
@@ -253,27 +293,23 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
   options.oauth2AccessToken = @"bogusToken";
   GRPCCallNg *call =
       [[GRPCCallNg alloc] initWithRequest:callRequest
-                                  handler:^(NSDictionary *initialMetadata, NSData *message, NSDictionary *trailingMetadata, NSError *error) {
-                                    if (initialMetadata) {
-                                      NSLog(@"init_md");
-                                      init_md = initialMetadata;
-                                    }
-                                    if (message) {
+                                callbacks:[[ClientTestsBlockCallbacks alloc] initWithInitialMetadataCallback:^(NSDictionary *initialMetadata) {
+                                 init_md = initialMetadata;
+      }
+                                                                                  messageCallback:^(id message) {
                                       XCTFail(@"Received unexpected response.");
                                     }
-                                    if (trailingMetadata) {
-                                      NSLog(@"trailing_md");
-                                      trailing_md = trailingMetadata;
-                                    }
-                                    if (error) {
-                                      XCTAssertEqual(error.code, 16, @"Finished with unexpected error: %@", error);
-                                      XCTAssertEqualObjects(init_md, error.userInfo[kGRPCHeadersKey]);
-                                      XCTAssertEqualObjects(trailing_md, error.userInfo[kGRPCTrailersKey]);
-                                      NSString *challengeHeader = init_md[@"www-authenticate"];
-                                      XCTAssertGreaterThan(challengeHeader.length, 0, @"No challenge in response headers %@", init_md);
-                                      [expectation fulfill];
-                                    }
-                                  }
+                                                                                    closeCallback:^(NSDictionary * trailingMetadata, NSError *error) {
+                                                                                      trailing_md = trailingMetadata;
+                                                                                      if (error) {
+                                                                                        XCTAssertEqual(error.code, 16, @"Finished with unexpected error: %@", error);
+                                                                                        XCTAssertEqualObjects(init_md, error.userInfo[kGRPCHeadersKey]);
+                                                                                        XCTAssertEqualObjects(trailing_md, error.userInfo[kGRPCTrailersKey]);
+                                                                                        NSString *challengeHeader = init_md[@"www-authenticate"];
+                                                                                        XCTAssertGreaterThan(challengeHeader.length, 0, @"No challenge in response headers %@", init_md);
+                                                                                        [expectation fulfill];
+                                                                                      }
+                                                                                    }]
                                   options:options];
 
   [call start];
@@ -387,8 +423,7 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
   GRPCCallOptions *options = [[GRPCCallOptions alloc] init];
   options.initialMetadata = headers;
   GRPCCallNg *call = [[GRPCCallNg alloc] initWithRequest:request
-                                                 handler:^(NSDictionary *initialMetadata, NSData *message, NSDictionary *trailingMetadata, NSError *error) {
-                                                   if (initialMetadata) {
+                                               callbacks:[[ClientTestsBlockCallbacks alloc] initWithInitialMetadataCallback:^(NSDictionary *initialMetadata) {
                                                      NSString *userAgent = initialMetadata[@"x-grpc-test-echo-useragent"];
                                                      // Test the regex is correct
                                                      NSString *expectedUserAgent = @"Foo grpc-objc/";
@@ -418,17 +453,17 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
                                                      XCTAssertEqualObjects(customUserAgent, @"Foo");
                                                      [recvInitialMd fulfill];
                                                    }
-                                                   if (message) {
-                                                     XCTAssertNotNil(message);
-                                                     XCTAssertEqual([message length], 0, @"Non-empty response received: %@", message);
-                                                   }
-                                                   if (trailingMetadata) {
-                                                     [completion fulfill];
-                                                   }
-                                                   if (error) {
-                                                     XCTFail(@"Finished with unexpected error: %@", error);
-                                                   }
-                                                 }
+                                                                                                 messageCallback:^(id message) {
+                                                                                                   XCTAssertNotNil(message);
+                                                                                                   XCTAssertEqual([message length], 0, @"Non-empty response received: %@", message);
+                                                                                                 }
+                                                                                                   closeCallback:^(NSDictionary *trailingMetadata, NSError *error) {
+                                                                                                     if (error) {
+                                                                                                       XCTFail(@"Finished with unexpected error: %@", error);
+                                                                                                     } else {
+                                                                                                       [completion fulfill];
+                                                                                                     }
+                                                                                                   }]
                                                  options:options];
 
   [call start];

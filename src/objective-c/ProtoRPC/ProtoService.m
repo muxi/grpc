@@ -81,10 +81,7 @@
 
 - (GRPCUnaryProtoCall *)RPCToMethod:(NSString *)method
                             message:(id)message
-                   responsesHandler:(void (^)(NSDictionary *initialMetadata,
-                                              id message,
-                                              NSDictionary *trailingMetadata,
-                                              NSError *error))handler
+                  responseCallbacks:(id<GRPCResponseCallbacks>)callbacks
                       responseClass:(Class)responseClass {
   GRPCProtoMethod *methodName = [[GRPCProtoMethod alloc] initWithPackage:_packageName service:_serviceName method:method];
   GRPCCallRequest *request = [[GRPCCallRequest alloc] init];
@@ -94,16 +91,13 @@
   return
       [[GRPCUnaryProtoCall alloc] initWithRequest:request
                                           message:message
-                                          handler:handler
+                                responseCallbacks:callbacks
                                           options:_options
                                     responseClass:responseClass];
 }
 
 - (GRPCStreamingProtoCall *)RPCToMethod:(NSString *)method
-                       responsesHandler:(void (^)(NSDictionary *initialMetadata,
-                                                  id message,
-                                                  NSDictionary *trailingMetadata,
-                                                  NSError *error))handler
+                      responseCallbacks:(id<GRPCResponseCallbacks>)callbacks
                           responseClass:(Class)responseClass {
   GRPCProtoMethod *methodName = [[GRPCProtoMethod alloc] initWithPackage:_packageName service:_serviceName method:method];
   GRPCCallRequest *request = [[GRPCCallRequest alloc] init];
@@ -111,9 +105,9 @@
   request.path = methodName.HTTPPath;
   request.safety = GRPCCallSafetyDefault;
   return [[GRPCStreamingProtoCall alloc] initWithRequest:request
-                                         handler:handler
-                                         options:_options
-                                   responseClass:responseClass];
+                                       responseCallbacks:callbacks
+                                                 options:_options
+                                           responseClass:responseClass];
 }
 
 @end

@@ -32,7 +32,7 @@
 
 - (instancetype)initWithRequest:(GRPCCallRequest *)request
                         message:(GPBMessage *)message
-                        handler:(void (^)(NSDictionary *, id, NSDictionary *, NSError *))handler
+              responseCallbacks:(id<GRPCResponseCallbacks>)callbacks
                         options:(GRPCCallOptions *)options
                   responseClass:(Class)responseClass {
   if (![responseClass respondsToSelector:@selector(parseFromData:error:)]) {
@@ -41,7 +41,7 @@
   }
   if ((self = [super init])) {
     _call = [[GRPCStreamingProtoCall alloc] initWithRequest:request
-                                                    handler:handler
+                                          responseCallbacks:callbacks
                                                     options:options
                                               responseClass:responseClass];
     [_call writeWithMessage:message];
@@ -64,9 +64,13 @@
 
 @end
 
+@interface GRPCStreamingProtoCall ()<GRPCResponseCallbacks>
+
+@end
+
 @implementation GRPCStreamingProtoCall {
   GRPCCallRequest *_request;
-  void (^_handler)(NSDictionary *, id, NSDictionary *, NSError *);
+  id<GRPCResponseCallbacks> _callbacks;
   GRPCCallOptions *_options;
   Class _responseClass;
 
@@ -76,7 +80,7 @@
 }
 
 - (instancetype)initWithRequest:(GRPCCallRequest *)request
-                        handler:(void (^)(NSDictionary *, id, NSDictionary *, NSError *))handler
+              responseCallbacks:(id<GRPCResponseCallbacks>)callbacks
                         options:(GRPCCallOptions *)options
                   responseClass:(Class)responseClass {
   if (![responseClass respondsToSelector:@selector(parseFromData:error:)]) {
@@ -85,7 +89,7 @@
   }
   if ((self = [super init])) {
     _request = [request copy];
-    _handler = handler;
+    _callbacks = callbacks;
     _options = [options copy];
     _responseClass = responseClass;
     _messageBacklog = [NSMutableArray array];
@@ -99,24 +103,9 @@
 }
 
 - (void)startWithOptions:(GRPCCallOptions *)options {
-  void (^handler)(NSDictionary *, id, NSDictionary *, NSError *) = _handler;
   Class responseClass = _responseClass;
   _call = [[GRPCCallNg alloc] initWithRequest:_request
-                                      handler:^(NSDictionary *initialMetadata, NSData *message, NSDictionary *trailingMetadata, NSError *error) {
-                                        if (message) {
-                                          NSError *error = nil;
-                                          id parsed = [responseClass parseFromData:message
-                                                                              error:&error];
-                                          if (parsed) {
-                                            handler(initialMetadata,
-                                                     parsed, trailingMetadata, error);
-                                          } else {
-                                            handler(nil, nil, nil, error);
-                                          }
-                                        } else {
-                                          handler(initialMetadata, nil, trailingMetadata, error);
-                                        }
-                                      }
+                                    callbacks:self
                                       options:options];
   @synchronized(self) {
     _started = YES;
@@ -149,6 +138,28 @@
 
 - (void)finish {
   [_call finish];
+}
+
+- (void)receivedInitialMetadata:(NSDictionary *)initialMetadata {
+  [_callbacks receivedInitialMetadata:initialMetadata];
+}
+
+- (void)receivedMessage:(NSData *)message {
+  NSError *error = nil;
+  id parsed = [_responseClass parseFromData:message
+                                      error:&error];
+  if (parsed) {
+    [_callbacks receivedInitialMetadata:parsed];
+  } else {
+    [_callbacks closeWithTrailingMetadata:nil error:error];
+  }
+}
+
+- (void)closeWithTrailingMetadata:(NSDictionary *)trailingMetadata
+                            error:(NSError *)error {
+  [_callbacks closeWithTrailingMetadata:trailingMetadata error:error];
+  _callbacks = nil;
+  _call = nil;
 }
 
 @end

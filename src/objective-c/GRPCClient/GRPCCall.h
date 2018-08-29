@@ -150,6 +150,13 @@ typedef NS_ENUM(NSUInteger, GRPCErrorCode) {
 extern id const kGRPCHeadersKey;
 extern id const kGRPCTrailersKey;
 
+@protocol GRPCResponseCallbacks
+@optional
+- (void)receivedInitialMetadata:(NSDictionary *)initialMetadata;
+- (void)receivedMessage:(id)message;
+- (void)closeWithTrailingMetadata:(NSDictionary *)trailingMetadata error:(NSError *)error;
+@end
+
 @interface GRPCCallRequest : NSObject<NSCopying>
 @property(atomic, copy, readwrite) NSString *host;
 @property(atomic, copy, readwrite) NSString *path;
@@ -163,17 +170,11 @@ extern id const kGRPCTrailersKey;
 - (instancetype)init NS_UNAVAILABLE;
 
 - (instancetype)initWithRequest:(GRPCCallRequest *)request
-                        handler:(void (^)(NSDictionary *initialMetadata,
-                                          NSData *message,
-                                          NSDictionary *trailingMetadata,
-                                          NSError *error))handler
+                      callbacks:(id<GRPCResponseCallbacks>)callbacks
                         options:(GRPCCallOptions *)options NS_DESIGNATED_INITIALIZER;
 
 - (instancetype)initWithRequest:(GRPCCallRequest *)request
-                        handler:(void (^)(NSDictionary *initialMetadata,
-                                          NSData *message,
-                                          NSDictionary *trailingMetadata,
-                                          NSError *error))handler;
+                      callbacks:(id<GRPCResponseCallbacks>)callbacks;
 
 /**
  * Starts the call. Can only be called once.
