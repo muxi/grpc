@@ -154,7 +154,11 @@ extern id const kGRPCTrailersKey;
 @optional
 - (void)receivedInitialMetadata:(NSDictionary *)initialMetadata;
 - (void)receivedMessage:(id)message;
-- (void)closeWithTrailingMetadata:(NSDictionary *)trailingMetadata error:(NSError *)error;
+- (void)closedWithTrailingMetadata:(NSDictionary *)trailingMetadata error:(NSError *)error;
+
+// The dispatch queue to be used for issuing the notifications.
+@property (atomic, readonly)dispatch_queue_t dispatchQueue;
+
 @end
 
 @interface GRPCCallRequest : NSObject<NSCopying>

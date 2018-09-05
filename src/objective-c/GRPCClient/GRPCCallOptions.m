@@ -18,19 +18,18 @@
 
 #import "GRPCCallOptions.h"
 
-static NSString* const kDefaultServerName = nil;
+static NSString* const kDefaultServerAuthority = nil;
 static const NSTimeInterval kDefaultTimeout = 0;
 static NSDictionary* const kDefaultInitialMetadata = nil;
-static const uint32_t kDefaultCallFlags = 0;
 static NSString* const kDefaultUserAgentPrefix = nil;
 static const NSUInteger kDefaultResponseSizeLimit = 0;
 static const GRPCCompressAlgorithm kDefaultCompressAlgorithm = GRPCCompressNone;
 static const BOOL kDefaultEnableRetry = YES;
-static const NSUInteger kDefaultKeepaliveInterval = 0;
-static const NSUInteger kDefaultKeepaliveTimeout = 0;
-static const NSUInteger kDefaultConnectMinTimeout = 0;
-static const NSUInteger kDefaultConnectInitialBackoff = 0;
-static const NSUInteger kDefaultConnectMaxBackoff = 0;
+static const NSTimeInterval kDefaultKeepaliveInterval = 0;
+static const NSTimeInterval kDefaultKeepaliveTimeout = 0;
+static const NSTimeInterval kDefaultConnectMinTimeout = 0;
+static const NSTimeInterval kDefaultConnectInitialBackoff = 0;
+static const NSTimeInterval kDefaultConnectMaxBackoff = 0;
 static NSDictionary* const kDefaultAdditionalChannelArgs = nil;
 static NSString* const kDefaultPemRootCert = nil;
 static NSString* const kDefaultPemPrivateKey = nil;
@@ -40,64 +39,442 @@ static const id<GRPCAuthorizationProtocol> kDefaultAuthTokenProvider = nil;
 static const GRPCTransportType kDefaultTransportType = GRPCTransportTypeDefault;
 static NSString* const kDefaultHostNameOverride = nil;
 static const id kDefaultLogContext = nil;
+static NSString *kDefaultChannelPoolDomain = nil;
+static NSUInteger kDefaultChannelId = 0;
 
-@implementation GRPCCallOptions
+@implementation GRPCCallOptions {
+@protected
+  NSString *_serverAuthority;
+  NSTimeInterval _timeout;
+  NSDictionary *_initialMetadata;
+  NSString *_oauth2AccessToken;
+  id<GRPCAuthorizationProtocol> _authTokenProvider;
+  NSString *_userAgentPrefix;
+  NSUInteger _responseSizeLimit;
+  GRPCCompressAlgorithm _compressAlgorithm;
+  BOOL _enableRetry;
+  NSTimeInterval _keepaliveInterval;
+  NSTimeInterval _keepaliveTimeout;
+  NSTimeInterval _connectMinTimeout;
+  NSTimeInterval _connectInitialBackoff;
+  NSTimeInterval _connectMaxBackoff;
+  NSDictionary *_additionalChannelArgs;
+  NSString *_pemRootCert;
+  NSString *_pemPrivateKey;
+  NSString *_pemCertChain;
+  GRPCTransportType _transportType;
+  NSString *_hostNameOverride;
+  id _logContext;
+  NSString *_channelPoolDomain;
+  NSUInteger _channelId;
+}
+
+@synthesize serverAuthority = _serverAuthority;
+@synthesize timeout = _timeout;
+@synthesize initialMetadata = _initialMetadata;
+@synthesize oauth2AccessToken = _oauth2AccessToken;
+@synthesize authTokenProvider = _authTokenProvider;
+@synthesize userAgentPrefix = _userAgentPrefix;
+@synthesize responseSizeLimit = _responseSizeLimit;
+@synthesize compressAlgorithm = _compressAlgorithm;
+@synthesize enableRetry = _enableRetry;
+@synthesize keepaliveInterval = _keepaliveInterval;
+@synthesize keepaliveTimeout = _keepaliveTimeout;
+@synthesize connectMinTimeout = _connectMinTimeout;
+@synthesize connectInitialBackoff = _connectInitialBackoff;
+@synthesize connectMaxBackoff = _connectMaxBackoff;
+@synthesize additionalChannelArgs = _additionalChannelArgs;
+@synthesize pemRootCert = _pemRootCert;
+@synthesize pemPrivateKey = _pemPrivateKey;
+@synthesize pemCertChain = _pemCertChain;
+@synthesize transportType = _transportType;
+@synthesize hostNameOverride = _hostNameOverride;
+@synthesize logContext = _logContext;
+@synthesize channelPoolDomain = _channelPoolDomain;
+@synthesize channelId = _channelId;
 
 - (instancetype)init {
+  return [self initWithServerAuthority:kDefaultServerAuthority
+                               timeout:kDefaultTimeout
+                       initialMetadata:kDefaultInitialMetadata
+                     oauth2AccessToken:kDefaultOauth2AccessToken
+                     authTokenProvider:kDefaultAuthTokenProvider
+                       userAgentPrefix:kDefaultUserAgentPrefix
+                     responseSizeLimit:kDefaultResponseSizeLimit
+                     compressAlgorithm:kDefaultCompressAlgorithm
+                           enableRetry:kDefaultEnableRetry
+                     keepaliveInterval:kDefaultKeepaliveInterval
+                      keepaliveTimeout:kDefaultKeepaliveTimeout
+                     connectMinTimeout:kDefaultConnectMinTimeout
+                 connectInitialBackoff:kDefaultConnectInitialBackoff
+                     connectMaxBackoff:kDefaultConnectMaxBackoff
+                 additionalChannelArgs:kDefaultAdditionalChannelArgs
+                           pemRootCert:kDefaultPemRootCert
+                         pemPrivateKey:kDefaultPemPrivateKey
+                          pemCertChain:kDefaultPemCertChain
+                         transportType:kDefaultTransportType
+                      hostNameOverride:kDefaultHostNameOverride
+                            logContext:kDefaultLogContext
+                     channelPoolDomain:kDefaultChannelPoolDomain
+                             channelId:kDefaultChannelId];
+}
+
+- (instancetype)initWithServerAuthority:(NSString *)serverAuthority
+                                timeout:(NSTimeInterval)timeout
+                        initialMetadata:(NSDictionary *)initialMetadata
+                      oauth2AccessToken:(NSString *)oauth2AccessToken
+                      authTokenProvider:(id<GRPCAuthorizationProtocol>)authTokenProvider
+                        userAgentPrefix:(NSString *)userAgentPrefix
+                      responseSizeLimit:(NSUInteger)responseSizeLimit
+                      compressAlgorithm:(GRPCCompressAlgorithm)compressAlgorithm
+                            enableRetry:(BOOL)enableRetry
+                      keepaliveInterval:(NSTimeInterval)keepaliveInterval
+                       keepaliveTimeout:(NSTimeInterval)keepaliveTimeout
+                      connectMinTimeout:(NSTimeInterval)connectMinTimeout
+                  connectInitialBackoff:(NSTimeInterval)connectInitialBackoff
+                      connectMaxBackoff:(NSTimeInterval)connectMaxBackoff
+                  additionalChannelArgs:(NSDictionary *)additionalChannelArgs
+                            pemRootCert:(NSString *)pemRootCert
+                          pemPrivateKey:(NSString *)pemPrivateKey
+                           pemCertChain:(NSString *)pemCertChain
+                          transportType:(GRPCTransportType)transportType
+                       hostNameOverride:(NSString *)hostNameOverride
+                             logContext:(id)logContext
+                      channelPoolDomain:(NSString *)channelPoolDomain
+                              channelId:(NSUInteger)channelId {
   if ((self = [super init])) {
-    _serverName = kDefaultServerName;
-    _timeout = kDefaultTimeout;
-    _dispatchQueue = dispatch_get_main_queue();
-    _initialMetadata = kDefaultInitialMetadata;
-    _callFlags = kDefaultCallFlags;
-    _userAgentPrefix = kDefaultUserAgentPrefix;
-    _responseSizeLimit = kDefaultResponseSizeLimit;
-    _compressAlgorithm = kDefaultCompressAlgorithm;
-    _enableRetry = kDefaultEnableRetry;
-    _keepaliveTimeout = kDefaultKeepaliveTimeout;
-    _keepaliveInterval = kDefaultKeepaliveInterval;
-    _connectMinTimeout = kDefaultConnectMinTimeout;
-    _connectInitialBackoff = kDefaultConnectInitialBackoff;
-    _connectMaxBackoff = kDefaultConnectMaxBackoff;
-    _additionalChannelArgs = kDefaultAdditionalChannelArgs;
-    _pemRootCert = kDefaultPemRootCert;
-    _pemPrivateKey = kDefaultPemPrivateKey;
-    _pemCertChain = kDefaultPemCertChain;
-    _oauth2AccessToken = kDefaultOauth2AccessToken;
-    _authTokenProvider = kDefaultAuthTokenProvider;
-    _transportType = kDefaultTransportType;
-    _logContext = kDefaultLogContext;
+    _serverAuthority = serverAuthority;
+    _timeout = timeout;
+    _initialMetadata = initialMetadata;
+    _oauth2AccessToken = oauth2AccessToken;
+    _authTokenProvider = authTokenProvider;
+    _userAgentPrefix = userAgentPrefix;
+    _responseSizeLimit = responseSizeLimit;
+    _compressAlgorithm = compressAlgorithm;
+    _enableRetry = enableRetry;
+    _keepaliveTimeout = keepaliveTimeout;
+    _keepaliveInterval = keepaliveInterval;
+    _connectMinTimeout = connectMinTimeout;
+    _connectInitialBackoff = connectInitialBackoff;
+    _connectMaxBackoff = connectMaxBackoff;
+    _additionalChannelArgs = additionalChannelArgs;
+    _pemRootCert = pemRootCert;
+    _pemPrivateKey = pemPrivateKey;
+    _pemCertChain = pemCertChain;
+    _transportType = transportType;
+    _logContext = logContext;
+    _channelPoolDomain = channelPoolDomain;
+    _channelId = channelId;
   }
   return self;
 }
 
 - (nonnull id)copyWithZone:(NSZone*)zone {
-  GRPCCallOptions* newOptions = [[GRPCCallOptions alloc] init];
-  newOptions.serverName = _serverName;
-  newOptions.timeout = _timeout;
-  newOptions.dispatchQueue = _dispatchQueue;
-  newOptions.initialMetadata = [_initialMetadata copy];
-  newOptions.oauth2AccessToken = _oauth2AccessToken;
-  newOptions.authTokenProvider = _authTokenProvider;
-
-  newOptions.userAgentPrefix = _userAgentPrefix;
-  newOptions.responseSizeLimit = _responseSizeLimit;
-  newOptions.compressAlgorithm = _compressAlgorithm;
-  newOptions.enableRetry = _enableRetry;
-  newOptions.keepaliveInterval = _keepaliveInterval;
-  newOptions.keepaliveTimeout = _keepaliveTimeout;
-  newOptions.connectMinTimeout = _connectMinTimeout;
-  newOptions.connectInitialBackoff = _connectInitialBackoff;
-  newOptions.connectMaxBackoff = _connectMaxBackoff;
-  newOptions.additionalChannelArgs = [_additionalChannelArgs copy];
-  newOptions.pemRootCert = _pemRootCert;
-  newOptions.pemPrivateKey = _pemPrivateKey;
-  newOptions.pemCertChain = _pemCertChain;
-  newOptions.hostNameOverride = _hostNameOverride;
-  newOptions.transportType = _transportType;
-  newOptions.logContext = _logContext;
-
+  GRPCCallOptions* newOptions =
+      [[GRPCCallOptions allocWithZone:zone] initWithServerAuthority:_serverAuthority
+                                                            timeout:_timeout
+                                                    initialMetadata:[_initialMetadata copy]
+                                                  oauth2AccessToken:_oauth2AccessToken
+                                                  authTokenProvider:_authTokenProvider
+                                                    userAgentPrefix:_userAgentPrefix
+                                                  responseSizeLimit:_responseSizeLimit
+                                                  compressAlgorithm:_compressAlgorithm
+                                                        enableRetry:_enableRetry
+                                                  keepaliveInterval:_keepaliveInterval
+                                                   keepaliveTimeout:_keepaliveTimeout
+                                                  connectMinTimeout:_connectMinTimeout
+                                              connectInitialBackoff:_connectInitialBackoff
+                                                  connectMaxBackoff:_connectMaxBackoff
+                                              additionalChannelArgs:[_additionalChannelArgs copy]
+                                                        pemRootCert:_pemRootCert
+                                                      pemPrivateKey:_pemPrivateKey
+                                                       pemCertChain:_pemCertChain
+                                                      transportType:_transportType
+                                                   hostNameOverride:_hostNameOverride
+                                                         logContext:_logContext
+                                                  channelPoolDomain:_channelPoolDomain
+                                                          channelId:_channelId];
   return newOptions;
+}
+
+- (nonnull id)mutableCopyWithZone:(NSZone *)zone {
+  GRPCMutableCallOptions* newOptions =
+      [[GRPCMutableCallOptions allocWithZone:zone] initWithServerAuthority:_serverAuthority
+                                                                   timeout:_timeout
+                                                           initialMetadata:[_initialMetadata copy]
+                                                         oauth2AccessToken:_oauth2AccessToken
+                                                         authTokenProvider:_authTokenProvider
+                                                           userAgentPrefix:_userAgentPrefix
+                                                         responseSizeLimit:_responseSizeLimit
+                                                         compressAlgorithm:_compressAlgorithm
+                                                               enableRetry:_enableRetry
+                                                         keepaliveInterval:_keepaliveInterval
+                                                          keepaliveTimeout:_keepaliveTimeout
+                                                         connectMinTimeout:_connectMinTimeout
+                                                     connectInitialBackoff:_connectInitialBackoff
+                                                         connectMaxBackoff:_connectMaxBackoff
+                                                     additionalChannelArgs:[_additionalChannelArgs copy]
+                                                               pemRootCert:_pemRootCert
+                                                             pemPrivateKey:_pemPrivateKey
+                                                              pemCertChain:_pemCertChain
+                                                             transportType:_transportType
+                                                          hostNameOverride:_hostNameOverride
+                                                                logContext:_logContext
+                                                         channelPoolDomain:_channelPoolDomain
+                                                                 channelId:_channelId];
+  return newOptions;
+}
+
+@end
+
+@implementation GRPCMutableCallOptions
+
+@dynamic serverAuthority;
+@dynamic timeout;
+@dynamic initialMetadata;
+@dynamic oauth2AccessToken;
+@dynamic authTokenProvider;
+@dynamic userAgentPrefix;
+@dynamic responseSizeLimit;
+@dynamic compressAlgorithm;
+@dynamic enableRetry;
+@dynamic keepaliveInterval;
+@dynamic keepaliveTimeout;
+@dynamic connectMinTimeout;
+@dynamic connectInitialBackoff;
+@dynamic connectMaxBackoff;
+@dynamic additionalChannelArgs;
+@dynamic pemRootCert;
+@dynamic pemPrivateKey;
+@dynamic pemCertChain;
+@dynamic transportType;
+@dynamic hostNameOverride;
+@dynamic logContext;
+@dynamic channelPoolDomain;
+@dynamic channelId;
+
+- (instancetype)init {
+  return [self initWithServerAuthority:kDefaultServerAuthority
+                               timeout:kDefaultTimeout
+                       initialMetadata:kDefaultInitialMetadata
+                     oauth2AccessToken:kDefaultOauth2AccessToken
+                     authTokenProvider:kDefaultAuthTokenProvider
+                       userAgentPrefix:kDefaultUserAgentPrefix
+                     responseSizeLimit:kDefaultResponseSizeLimit
+                     compressAlgorithm:kDefaultCompressAlgorithm
+                           enableRetry:kDefaultEnableRetry
+                     keepaliveInterval:kDefaultKeepaliveInterval
+                      keepaliveTimeout:kDefaultKeepaliveTimeout
+                     connectMinTimeout:kDefaultConnectMinTimeout
+                 connectInitialBackoff:kDefaultConnectInitialBackoff
+                     connectMaxBackoff:kDefaultConnectMaxBackoff
+                 additionalChannelArgs:kDefaultAdditionalChannelArgs
+                           pemRootCert:kDefaultPemRootCert
+                         pemPrivateKey:kDefaultPemPrivateKey
+                          pemCertChain:kDefaultPemCertChain
+                         transportType:kDefaultTransportType
+                      hostNameOverride:kDefaultHostNameOverride
+                            logContext:kDefaultLogContext
+                     channelPoolDomain:kDefaultChannelPoolDomain
+                             channelId:kDefaultChannelId];
+}
+
+- (instancetype)initWithServerAuthority:(NSString *)serverAuthority
+                                timeout:(NSTimeInterval)timeout
+                        initialMetadata:(NSDictionary *)initialMetadata
+                      oauth2AccessToken:(NSString *)oauth2AccessToken
+                      authTokenProvider:(id<GRPCAuthorizationProtocol>)authTokenProvider
+                        userAgentPrefix:(NSString *)userAgentPrefix
+                      responseSizeLimit:(NSUInteger)responseSizeLimit
+                      compressAlgorithm:(GRPCCompressAlgorithm)compressAlgorithm
+                            enableRetry:(BOOL)enableRetry
+                      keepaliveInterval:(NSTimeInterval)keepaliveInterval
+                       keepaliveTimeout:(NSTimeInterval)keepaliveTimeout
+                      connectMinTimeout:(NSTimeInterval)connectMinTimeout
+                  connectInitialBackoff:(NSTimeInterval)connectInitialBackoff
+                      connectMaxBackoff:(NSTimeInterval)connectMaxBackoff
+                  additionalChannelArgs:(NSDictionary *)additionalChannelArgs
+                            pemRootCert:(NSString *)pemRootCert
+                          pemPrivateKey:(NSString *)pemPrivateKey
+                           pemCertChain:(NSString *)pemCertChain
+                          transportType:(GRPCTransportType)transportType
+                       hostNameOverride:(NSString *)hostNameOverride
+                             logContext:(id)logContext
+                      channelPoolDomain:(NSString *)channelPoolDomain
+                              channelId:(NSUInteger)channelId {
+  if ((self = [super init])) {
+    _serverAuthority = serverAuthority;
+    _timeout = timeout;
+    _initialMetadata = initialMetadata;
+    _oauth2AccessToken = oauth2AccessToken;
+    _authTokenProvider = authTokenProvider;
+    _userAgentPrefix = userAgentPrefix;
+    _responseSizeLimit = responseSizeLimit;
+    _compressAlgorithm = compressAlgorithm;
+    _enableRetry = enableRetry;
+    _keepaliveTimeout = keepaliveTimeout;
+    _keepaliveInterval = keepaliveInterval;
+    _connectMinTimeout = connectMinTimeout;
+    _connectInitialBackoff = connectInitialBackoff;
+    _connectMaxBackoff = connectMaxBackoff;
+    _additionalChannelArgs = additionalChannelArgs;
+    _pemRootCert = pemRootCert;
+    _pemPrivateKey = pemPrivateKey;
+    _pemCertChain = pemCertChain;
+    _transportType = transportType;
+    _logContext = logContext;
+    _channelPoolDomain = channelPoolDomain;
+    _channelId = channelId;
+  }
+  return self;
+}
+
+- (nonnull id)copyWithZone:(NSZone*)zone {
+  GRPCCallOptions* newOptions =
+  [[GRPCCallOptions allocWithZone:zone] initWithServerAuthority:_serverAuthority
+                                                        timeout:_timeout
+                                                initialMetadata:[_initialMetadata copy]
+                                              oauth2AccessToken:_oauth2AccessToken
+                                              authTokenProvider:_authTokenProvider
+                                                userAgentPrefix:_userAgentPrefix
+                                              responseSizeLimit:_responseSizeLimit
+                                              compressAlgorithm:_compressAlgorithm
+                                                    enableRetry:_enableRetry
+                                              keepaliveInterval:_keepaliveInterval
+                                               keepaliveTimeout:_keepaliveTimeout
+                                              connectMinTimeout:_connectMinTimeout
+                                          connectInitialBackoff:_connectInitialBackoff
+                                              connectMaxBackoff:_connectMaxBackoff
+                                          additionalChannelArgs:[_additionalChannelArgs copy]
+                                                    pemRootCert:_pemRootCert
+                                                  pemPrivateKey:_pemPrivateKey
+                                                   pemCertChain:_pemCertChain
+                                                  transportType:_transportType
+                                               hostNameOverride:_hostNameOverride
+                                                     logContext:_logContext
+                                              channelPoolDomain:_channelPoolDomain
+                                                      channelId:_channelId];
+  return newOptions;
+}
+
+- (nonnull id)mutableCopyWithZone:(NSZone *)zone {
+  GRPCMutableCallOptions* newOptions =
+  [[GRPCMutableCallOptions allocWithZone:zone] initWithServerAuthority:_serverAuthority
+                                                               timeout:_timeout
+                                                       initialMetadata:[_initialMetadata copy]
+                                                     oauth2AccessToken:_oauth2AccessToken
+                                                     authTokenProvider:_authTokenProvider
+                                                       userAgentPrefix:_userAgentPrefix
+                                                     responseSizeLimit:_responseSizeLimit
+                                                     compressAlgorithm:_compressAlgorithm
+                                                           enableRetry:_enableRetry
+                                                     keepaliveInterval:_keepaliveInterval
+                                                      keepaliveTimeout:_keepaliveTimeout
+                                                     connectMinTimeout:_connectMinTimeout
+                                                 connectInitialBackoff:_connectInitialBackoff
+                                                     connectMaxBackoff:_connectMaxBackoff
+                                                 additionalChannelArgs:[_additionalChannelArgs copy]
+                                                           pemRootCert:_pemRootCert
+                                                         pemPrivateKey:_pemPrivateKey
+                                                          pemCertChain:_pemCertChain
+                                                         transportType:_transportType
+                                                      hostNameOverride:_hostNameOverride
+                                                            logContext:_logContext
+                                                     channelPoolDomain:_channelPoolDomain
+                                                             channelId:_channelId];
+  return newOptions;
+}
+
+- (void)setServerAuthority:(NSString *)serverAuthority {
+  _serverAuthority = serverAuthority;
+}
+
+- (void)setTimeout:(NSTimeInterval )timeout {
+  _timeout = timeout;
+}
+
+- (void)setInitialMetadata:(NSDictionary *)initialMetadata {
+  _initialMetadata = initialMetadata;
+}
+
+- (void)setOauth2AccessToken:(NSString *)oauth2AccessToken {
+  _oauth2AccessToken = oauth2AccessToken;
+}
+
+- (void)setAuthTokenProvider:(id<GRPCAuthorizationProtocol> )authTokenProvider {
+  _authTokenProvider = authTokenProvider;
+}
+
+- (void)setUserAgentPrefix:(NSString *)userAgentPrefix {
+  _userAgentPrefix = userAgentPrefix;
+}
+
+- (void)setResponseSizeLimit:(NSUInteger )responseSizeLimit {
+  _responseSizeLimit = responseSizeLimit;
+}
+
+- (void)setCompressAlgorithm:(GRPCCompressAlgorithm )compressAlgorithm {
+  _compressAlgorithm = compressAlgorithm;
+}
+
+- (void)setEnableRetry:(BOOL )enableRetry {
+  _enableRetry = enableRetry;
+}
+
+- (void)setKeepaliveInterval:(NSTimeInterval )keepaliveInterval {
+  _keepaliveInterval = keepaliveInterval;
+}
+
+- (void)setKeepaliveTimeout:(NSTimeInterval )keepaliveTimeout {
+  _keepaliveTimeout = keepaliveTimeout;
+}
+
+- (void)setConnectMinTimeout:(NSTimeInterval )connectMinTimeout {
+  _connectMinTimeout = connectMinTimeout;
+}
+
+- (void)setConnectInitialBackoff:(NSTimeInterval )connectInitialBackoff {
+  _connectInitialBackoff = connectInitialBackoff;
+}
+
+- (void)setConnectMaxBackoff:(NSTimeInterval )connectMaxBackoff {
+  _connectMaxBackoff = connectMaxBackoff;
+}
+
+- (void)setAdditionalChannelArgs:(NSDictionary *)additionalChannelArgs {
+  _additionalChannelArgs = additionalChannelArgs;
+}
+
+- (void)setPemRootCert:(NSString *)pemRootCert {
+  _pemRootCert = pemRootCert;
+}
+
+- (void)setPemPrivateKey:(NSString *)pemPrivateKey {
+  _pemPrivateKey = pemPrivateKey;
+}
+
+- (void)setPemCertChain:(NSString *)pemCertChain {
+  _pemCertChain = pemCertChain;
+}
+
+- (void)setTransportType:(GRPCTransportType )transportType {
+  _transportType = transportType;
+}
+
+- (void)setHostNameOverride:(NSString *)hostNameOverride {
+  _hostNameOverride = hostNameOverride;
+}
+
+- (void)setLogContext:(id )logContext {
+  _logContext = logContext;
+}
+
+- (void)setChannelPoolDomain:(NSString *)channelPoolDomain {
+  _channelPoolDomain = channelPoolDomain;
+}
+
+- (void)setChannelId:(NSUInteger )channelId {
+  _channelId = channelId;
 }
 
 @end

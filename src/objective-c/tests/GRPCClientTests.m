@@ -120,7 +120,7 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
   _messageCallback(message);
 }
 
-- (void)closeWithTrailingMetadata:(NSDictionary *)trailingMetadata error:(NSError *)error {
+- (void)closedWithTrailingMetadata:(NSDictionary *)trailingMetadata error:(NSError *)error {
   _closeCallback(trailingMetadata, error);
 }
 

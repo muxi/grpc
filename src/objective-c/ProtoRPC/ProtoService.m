@@ -81,8 +81,9 @@
 
 - (GRPCUnaryProtoCall *)RPCToMethod:(NSString *)method
                             message:(id)message
-                  responseCallbacks:(id<GRPCResponseCallbacks>)callbacks
-                      responseClass:(Class)responseClass {
+                  responseCallbacks:(id<GRPCProtoResponseCallbacks>)callbacks
+                      responseClass:(Class)responseClass
+                            options:(GRPCCallOptions *)options {
   GRPCProtoMethod *methodName = [[GRPCProtoMethod alloc] initWithPackage:_packageName service:_serviceName method:method];
   GRPCCallRequest *request = [[GRPCCallRequest alloc] init];
   request.host = _host;
@@ -92,13 +93,13 @@
       [[GRPCUnaryProtoCall alloc] initWithRequest:request
                                           message:message
                                 responseCallbacks:callbacks
-                                          options:_options
-                                    responseClass:responseClass];
+                                          options:options ?: _options];
 }
 
 - (GRPCStreamingProtoCall *)RPCToMethod:(NSString *)method
-                      responseCallbacks:(id<GRPCResponseCallbacks>)callbacks
-                          responseClass:(Class)responseClass {
+                      responseCallbacks:(id<GRPCProtoResponseCallbacks>)callbacks
+                          responseClass:(Class)responseClass
+                                options:(GRPCCallOptions *)options {
   GRPCProtoMethod *methodName = [[GRPCProtoMethod alloc] initWithPackage:_packageName service:_serviceName method:method];
   GRPCCallRequest *request = [[GRPCCallRequest alloc] init];
   request.host = _host;
@@ -106,8 +107,7 @@
   request.safety = GRPCCallSafetyDefault;
   return [[GRPCStreamingProtoCall alloc] initWithRequest:request
                                        responseCallbacks:callbacks
-                                                 options:_options
-                                           responseClass:responseClass];
+                                                 options:options ?: _options];
 }
 
 @end

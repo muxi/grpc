@@ -32,30 +32,16 @@
 
 - (instancetype)initWithRequest:(GRPCCallRequest *)request
                         message:(GPBMessage *)message
-              responseCallbacks:(id<GRPCResponseCallbacks>)callbacks
-                        options:(GRPCCallOptions *)options
-                  responseClass:(Class)responseClass {
-  if (![responseClass respondsToSelector:@selector(parseFromData:error:)]) {
-    [NSException raise:NSInvalidArgumentException
-                format:@"A protobuf class to parse the responses must be provided."];
-  }
+              responseCallbacks:(id<GRPCProtoResponseHandler>)callbacks
+                        options:(GRPCCallOptions *)options {
   if ((self = [super init])) {
     _call = [[GRPCStreamingProtoCall alloc] initWithRequest:request
                                           responseCallbacks:callbacks
-                                                    options:options
-                                              responseClass:responseClass];
+                                                    options:options];
     [_call writeWithMessage:message];
+    [_call finish];
   }
   return self;
-}
-
-- (void)start {
-  [_call start];
-  [_call finish];
-}
-
-- (void)startWithOptions:(GRPCCallOptions *)options {
-  [_call startWithOptions:options];
 }
 
 - (void)cancel {
@@ -70,9 +56,8 @@
 
 @implementation GRPCStreamingProtoCall {
   GRPCCallRequest *_request;
-  id<GRPCResponseCallbacks> _callbacks;
+  id<GRPCProtoResponseHandler> _callbacks;
   GRPCCallOptions *_options;
-  Class _responseClass;
 
   GRPCCallNg *_call;
   NSMutableArray *_messageBacklog;
@@ -80,33 +65,24 @@
 }
 
 - (instancetype)initWithRequest:(GRPCCallRequest *)request
-              responseCallbacks:(id<GRPCResponseCallbacks>)callbacks
-                        options:(GRPCCallOptions *)options
-                  responseClass:(Class)responseClass {
-  if (![responseClass respondsToSelector:@selector(parseFromData:error:)]) {
-    [NSException raise:NSInvalidArgumentException
-                format:@"A protobuf class to parse the responses must be provided."];
-  }
+              responseCallbacks:(id<GRPCProtoResponseHandler>)callbacks
+                        options:(GRPCCallOptions *)options {
   if ((self = [super init])) {
     _request = [request copy];
     _callbacks = callbacks;
     _options = [options copy];
-    _responseClass = responseClass;
     _messageBacklog = [NSMutableArray array];
     _started = NO;
+
+    [self start];
   }
   return self;
 }
 
 - (void)start {
-  [self startWithOptions:_options];
-}
-
-- (void)startWithOptions:(GRPCCallOptions *)options {
-  Class responseClass = _responseClass;
   _call = [[GRPCCallNg alloc] initWithRequest:_request
                                     callbacks:self
-                                      options:options];
+                                      options:_options];
   @synchronized(self) {
     _started = YES;
     for (id msg in _messageBacklog) {
@@ -146,18 +122,18 @@
 
 - (void)receivedMessage:(NSData *)message {
   NSError *error = nil;
-  id parsed = [_responseClass parseFromData:message
-                                      error:&error];
+  id parsed = [_callbacks.responseClass parseFromData:message
+                                                error:&error];
   if (parsed) {
     [_callbacks receivedInitialMetadata:parsed];
   } else {
-    [_callbacks closeWithTrailingMetadata:nil error:error];
+    [_callbacks closedWithTrailingMetadata:nil error:error];
   }
 }
 
-- (void)closeWithTrailingMetadata:(NSDictionary *)trailingMetadata
+- (void)closedWithTrailingMetadata:(NSDictionary *)trailingMetadata
                             error:(NSError *)error {
-  [_callbacks closeWithTrailingMetadata:trailingMetadata error:error];
+  [_callbacks closedWithTrailingMetadata:trailingMetadata error:error];
   _callbacks = nil;
   _call = nil;
 }

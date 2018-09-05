@@ -81,7 +81,6 @@ static NSString *const kBearerPrefix = @"Bearer ";
   id<GRPCResponseCallbacks> _callbacks;
 
   GRPCCallRequest *_activeRequest;
-  GRPCCallOptions *_activeOptions;
 
   GRPCCall *_call;
   BOOL _initialMetadataPublished;
@@ -97,7 +96,7 @@ static NSString *const kBearerPrefix = @"Bearer ";
 
   if ((self = [super init])) {
     _request = [request copy];
-    _options = [options copy];
+    _options = options;
     _callbacks = callbacks;
     _initialMetadataPublished = NO;
     _pipe = [GRXBufferedPipe pipe];
@@ -112,20 +111,16 @@ static NSString *const kBearerPrefix = @"Bearer ";
 }
 
 - (void)start {
-  _activeOptions = [_options copy];
-  if (!_activeOptions) {
-    _activeOptions = [[GRPCCallOptions alloc] init];
+  if (!_options) {
+    _options = [[GRPCCallOptions alloc] init];
   }
   _activeRequest = [_request copy];
-  if (_activeOptions.dispatchQueue == nil) {
-    _activeOptions.dispatchQueue = dispatch_get_main_queue();
-  }
 
   _call = [[GRPCCall alloc] initWithHost:_activeRequest.host
                                     path:_activeRequest.path
                               callSafety:_activeRequest.safety
                           requestsWriter:_pipe
-                                 options:_activeOptions];
+                                 options:_options];
   id<GRXWriteable> responseWriteable = [[GRXWriteable alloc] initWithValueHandler:^(id value) {
     NSDictionary *headers = nil;
     @synchronized(self) {
@@ -135,12 +130,12 @@ static NSString *const kBearerPrefix = @"Bearer ";
       }
     }
     if (headers) {
-      dispatch_async(self->_activeOptions.dispatchQueue, ^{
+      dispatch_async(self->_callbacks.dispatchQueue, ^{
         [self->_callbacks receivedInitialMetadata:headers];
       });
     }
     if (value) {
-      dispatch_async(self->_activeOptions.dispatchQueue, ^{
+      dispatch_async(self->_callbacks.dispatchQueue, ^{
         [self->_callbacks receivedMessage:value];
       });
     }
@@ -153,12 +148,12 @@ static NSString *const kBearerPrefix = @"Bearer ";
       }
     }
     if (headers) {
-      dispatch_async(self->_activeOptions.dispatchQueue, ^{
+      dispatch_async(self->_callbacks.dispatchQueue, ^{
         [self->_callbacks receivedInitialMetadata:headers];
       });
     }
-    dispatch_async(self->_activeOptions.dispatchQueue, ^{
-      [self->_callbacks closeWithTrailingMetadata:self->_call.responseTrailers
+    dispatch_async(self->_callbacks.dispatchQueue, ^{
+      [self->_callbacks closedWithTrailingMetadata:self->_call.responseTrailers
                                             error:errorOrNil];
       self->_call = nil;
       self->_pipe = nil;
@@ -249,6 +244,9 @@ static NSString *const kBearerPrefix = @"Bearer ";
 
   // Whether the call is finished. If it is, should not call finishWithError again.
   BOOL _finished;
+
+  // The OAuth2 token fetched from a token provider.
+  NSString *_fetchedOauth2AccessToken;
 }
 
 @synthesize state = _state;
@@ -482,7 +480,9 @@ static NSString *const kBearerPrefix = @"Bearer ";
   if (_options.initialMetadata) {
     [headers addEntriesFromDictionary:_options.initialMetadata];
   }
-  if (_options.oauth2AccessToken != nil) {
+  if (_fetchedOauth2AccessToken != nil) {
+    headers[@"authorization"] = [kBearerPrefix stringByAppendingString:_fetchedOauth2AccessToken];
+  } else if (_options.oauth2AccessToken != nil) {
     headers[@"authorization"] = [kBearerPrefix stringByAppendingString:_options.oauth2AccessToken];
   }
 
@@ -624,7 +624,7 @@ static NSString *const kBearerPrefix = @"Bearer ";
 
 - (void)startCallWithWriteable:(id<GRXWriteable>)writeable {
   _responseWriteable = [[GRXConcurrentWriteable alloc] initWithWriteable:writeable
-                                                           dispatchQueue:_options.dispatchQueue];
+                                                           dispatchQueue:_responseQueue];
 
   _wrappedCall = [[GRPCWrappedCall alloc] initWithHost:_host path:_path options:_options];
   NSAssert(_wrappedCall, @"Error allocating RPC objects. Low memory?");
@@ -650,17 +650,18 @@ static NSString *const kBearerPrefix = @"Bearer ";
   _retainSelf = self;
 
   if (_options == nil) {
+    GRPCMutableCallOptions *options;
     if ([GRPCHost isHostConfigured:_host]) {
       GRPCHost *hostConfig = [GRPCHost hostWithAddress:_host];
-      _options = hostConfig.callOptions;
+      options = hostConfig.callOptions;
     } else {
-      _options = [[GRPCCallOptions alloc] init];
+      options = [[GRPCMutableCallOptions alloc] init];
     }
     if (_serverName != nil) {
-      _options.serverName = _serverName;
+      options.serverAuthority = _serverName;
     }
     if (_timeout != 0) {
-      _options.timeout = _timeout;
+      options.timeout = _timeout;
     }
     uint32_t callFlags = [GRPCCall callFlagsForHost:_host path:_path];
     if (callFlags != 0) {
@@ -670,16 +671,13 @@ static NSString *const kBearerPrefix = @"Bearer ";
         _callSafety = GRPCCallSafetyCacheableRequest;
       }
     }
-    if (_responseQueue != dispatch_get_main_queue()) {
-      _options.dispatchQueue = _responseQueue;
-    }
 
     id<GRPCAuthorizationProtocol> tokenProvider = self.tokenProvider;
     if (tokenProvider != nil) {
-      _options.authTokenProvider = tokenProvider;
+      options.authTokenProvider = tokenProvider;
     }
     if ([_requestHeaders count] > 0) {
-      _options.initialMetadata = [_requestHeaders copy];
+      options.initialMetadata = [_requestHeaders copy];
     }
   }
   if (_options.authTokenProvider != nil) {
@@ -689,7 +687,7 @@ static NSString *const kBearerPrefix = @"Bearer ";
       typeof(self) strongSelf = weakSelf;
       if (strongSelf && strongSelf.isWaitingForToken) {
         if (token) {
-          strongSelf->_options.oauth2AccessToken = token;
+          strongSelf->_fetchedOauth2AccessToken = token;
         }
         [strongSelf startCallWithWriteable:writeable];
         strongSelf.isWaitingForToken = NO;

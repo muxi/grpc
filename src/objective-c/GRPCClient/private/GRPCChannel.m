@@ -112,8 +112,8 @@
   }
 
   if (_options.keepaliveInterval != 0) {
-    args[@GRPC_ARG_KEEPALIVE_TIME_MS] = [NSNumber numberWithUnsignedInteger:_options.keepaliveInterval];
-    args[@GRPC_ARG_KEEPALIVE_TIMEOUT_MS] = [NSNumber numberWithUnsignedInteger:_options.keepaliveTimeout];
+    args[@GRPC_ARG_KEEPALIVE_TIME_MS] = [NSNumber numberWithUnsignedInteger:(unsigned int)(_options.keepaliveInterval * 1000)];
+    args[@GRPC_ARG_KEEPALIVE_TIMEOUT_MS] = [NSNumber numberWithUnsignedInteger:(unsigned int)(_options.keepaliveTimeout * 1000)];
   }
 
   if (_options.enableRetry == NO) {
@@ -122,15 +122,15 @@
 
   if (_options.connectMinTimeout > 0) {
     args[@GRPC_ARG_MIN_RECONNECT_BACKOFF_MS] =
-        [NSNumber numberWithUnsignedInteger:_options.connectMinTimeout];
+        [NSNumber numberWithUnsignedInteger:(unsigned int)(_options.connectMinTimeout * 1000)];
   }
   if (_options.connectInitialBackoff > 0) {
     args[@GRPC_ARG_INITIAL_RECONNECT_BACKOFF_MS] =
-        [NSNumber numberWithUnsignedInteger:_options.connectInitialBackoff];
+        [NSNumber numberWithUnsignedInteger:(unsigned int)(_options.connectInitialBackoff * 1000)];
   }
   if (_options.connectMaxBackoff > 0) {
     args[@GRPC_ARG_MAX_RECONNECT_BACKOFF_MS] =
-        [NSNumber numberWithUnsignedInteger:_options.connectMaxBackoff];
+        [NSNumber numberWithUnsignedInteger:(unsigned int)(_options.connectMaxBackoff * 1000)];
   }
 
   if (_options.logContext != nil) {
@@ -179,6 +179,8 @@
     return NO;
   if (!(obj.options.transportType == _options.transportType)) return NO;
   if (!(obj.options.logContext == _options.logContext || [obj.options.logContext isEqual:_options.logContext])) return NO;
+  if (!(obj.options.channelPoolDomain == _options.channelPoolDomain || [obj.options.channelPoolDomain isEqualToString:_options.channelPoolDomain])) return NO;
+  if (!(obj.options.channelId == _options.channelId)) return NO;
 
   return YES;
 }
@@ -190,11 +192,11 @@
   result ^= _options.responseSizeLimit;
   result ^= _options.compressAlgorithm;
   result ^= _options.enableRetry;
-  result ^= _options.keepaliveInterval;
-  result ^= _options.keepaliveTimeout;
-  result ^= _options.connectMinTimeout;
-  result ^= _options.connectInitialBackoff;
-  result ^= _options.connectMaxBackoff;
+  result ^= (unsigned int)(_options.keepaliveInterval * 1000);
+  result ^= (unsigned int)(_options.keepaliveTimeout * 1000);
+  result ^= (unsigned int)(_options.connectMinTimeout * 1000);
+  result ^= (unsigned int)(_options.connectInitialBackoff * 1000);
+  result ^= (unsigned int)(_options.connectMaxBackoff * 1000);
   result ^= _options.additionalChannelArgs.hash;
   result ^= _options.pemRootCert.hash;
   result ^= _options.pemPrivateKey.hash;
@@ -202,6 +204,8 @@
   result ^= _options.hostNameOverride.hash;
   result ^= _options.transportType;
   result ^= [_options.logContext hash];
+  result ^= _options.channelPoolDomain.hash;
+  result ^= _options.channelId;
 
   return result;
 }
@@ -218,12 +222,12 @@
 - (grpc_call *)unmanagedCallWithPath:(NSString *)path
                      completionQueue:(nonnull GRPCCompletionQueue *)queue
                              options:(GRPCCallOptions *)options {
-  NSString *serverName = options.serverName;
+  NSString *serverAuthority = options.serverAuthority;
   NSTimeInterval timeout = options.timeout;
   GPR_ASSERT(timeout >= 0);
   grpc_slice host_slice = grpc_empty_slice();
-  if (serverName) {
-    host_slice = grpc_slice_from_copied_string(serverName.UTF8String);
+  if (serverAuthority) {
+    host_slice = grpc_slice_from_copied_string(serverAuthority.UTF8String);
   }
   grpc_slice path_slice = grpc_slice_from_copied_string(path.UTF8String);
   gpr_timespec deadline_ms =
@@ -232,8 +236,8 @@
                                   gpr_time_from_millis((int64_t)(timeout * 1000), GPR_TIMESPAN));
   grpc_call *call = grpc_channel_create_call(_unmanagedChannel, NULL, GRPC_PROPAGATE_DEFAULTS,
                                              queue.unmanagedQueue, path_slice,
-                                             serverName ? &host_slice : NULL, deadline_ms, NULL);
-  if (serverName) {
+                                             serverAuthority ? &host_slice : NULL, deadline_ms, NULL);
+  if (serverAuthority) {
     grpc_slice_unref(host_slice);
   }
   grpc_slice_unref(path_slice);
