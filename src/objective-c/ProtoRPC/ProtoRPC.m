@@ -32,11 +32,11 @@
 
 - (instancetype)initWithRequest:(GRPCCallRequest *)request
                         message:(GPBMessage *)message
-              responseCallbacks:(id<GRPCProtoResponseHandler>)callbacks
+                responseHandler:(id<GRPCProtoResponseHandler>)handler
                         options:(GRPCCallOptions *)options {
   if ((self = [super init])) {
     _call = [[GRPCStreamingProtoCall alloc] initWithRequest:request
-                                          responseCallbacks:callbacks
+                                          responseHandler:handler
                                                     options:options];
     [_call writeWithMessage:message];
     [_call finish];
@@ -56,7 +56,7 @@
 
 @implementation GRPCStreamingProtoCall {
   GRPCCallRequest *_request;
-  id<GRPCProtoResponseHandler> _callbacks;
+  id<GRPCProtoResponseHandler> _handler;
   GRPCCallOptions *_options;
 
   GRPCCallNg *_call;
@@ -65,11 +65,11 @@
 }
 
 - (instancetype)initWithRequest:(GRPCCallRequest *)request
-              responseCallbacks:(id<GRPCProtoResponseHandler>)callbacks
+                responseHandler:(id<GRPCProtoResponseHandler>)handler
                         options:(GRPCCallOptions *)options {
   if ((self = [super init])) {
     _request = [request copy];
-    _callbacks = callbacks;
+    _handler = handler;
     _options = [options copy];
     _messageBacklog = [NSMutableArray array];
     _started = NO;
@@ -81,7 +81,7 @@
 
 - (void)start {
   _call = [[GRPCCallNg alloc] initWithRequest:_request
-                                    callbacks:self
+                                      handler:self
                                       options:_options];
   @synchronized(self) {
     _started = YES;
@@ -117,24 +117,24 @@
 }
 
 - (void)receivedInitialMetadata:(NSDictionary *)initialMetadata {
-  [_callbacks receivedInitialMetadata:initialMetadata];
+  [_handler receivedInitialMetadata:initialMetadata];
 }
 
 - (void)receivedMessage:(NSData *)message {
   NSError *error = nil;
-  id parsed = [_callbacks.responseClass parseFromData:message
+  id parsed = [_handler.responseClass parseFromData:message
                                                 error:&error];
   if (parsed) {
-    [_callbacks receivedInitialMetadata:parsed];
+    [_handler receivedInitialMetadata:parsed];
   } else {
-    [_callbacks closedWithTrailingMetadata:nil error:error];
+    [_handler closedWithTrailingMetadata:nil error:error];
   }
 }
 
 - (void)closedWithTrailingMetadata:(NSDictionary *)trailingMetadata
                             error:(NSError *)error {
-  [_callbacks closedWithTrailingMetadata:trailingMetadata error:error];
-  _callbacks = nil;
+  [_handler closedWithTrailingMetadata:trailingMetadata error:error];
+  _handler = nil;
   _call = nil;
 }
 

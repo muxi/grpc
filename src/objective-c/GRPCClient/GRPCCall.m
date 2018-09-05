@@ -78,7 +78,7 @@ static NSString *const kBearerPrefix = @"Bearer ";
 @implementation GRPCCallNg {
   GRPCCallOptions *_options;
   GRPCCallRequest *_request;
-  id<GRPCResponseHandler> _callbacks;
+  id<GRPCResponseHandler> _handler;
 
   GRPCCallRequest *_activeRequest;
 
@@ -88,7 +88,7 @@ static NSString *const kBearerPrefix = @"Bearer ";
 }
 
 - (instancetype)initWithRequest:(GRPCCallRequest *)request
-                      callbacks:(id<GRPCResponseHandler>)callbacks
+                        handler:(id<GRPCResponseHandler>)handler
                         options:(GRPCCallOptions *)options {
   if (!request || !request.host || !request.path) {
     [NSException raise:NSInvalidArgumentException format:@"Neither host nor path can be nil."];
@@ -97,7 +97,7 @@ static NSString *const kBearerPrefix = @"Bearer ";
   if ((self = [super init])) {
     _request = [request copy];
     _options = options;
-    _callbacks = callbacks;
+    _handler = handler;
     _initialMetadataPublished = NO;
     _pipe = [GRXBufferedPipe pipe];
   }
@@ -106,8 +106,8 @@ static NSString *const kBearerPrefix = @"Bearer ";
 }
 
 - (instancetype)initWithRequest:(GRPCCallRequest *)request
-                      callbacks:(id<GRPCResponseHandler>)callbacks {
-  return [self initWithRequest:request callbacks:callbacks options:nil];
+                        handler:(id<GRPCResponseHandler>)handler {
+  return [self initWithRequest:request handler:handler options:nil];
 }
 
 - (void)start {
@@ -130,13 +130,13 @@ static NSString *const kBearerPrefix = @"Bearer ";
       }
     }
     if (headers) {
-      dispatch_async(self->_callbacks.dispatchQueue, ^{
-        [self->_callbacks receivedInitialMetadata:headers];
+      dispatch_async(self->_handler.dispatchQueue, ^{
+        [self->_handler receivedInitialMetadata:headers];
       });
     }
     if (value) {
-      dispatch_async(self->_callbacks.dispatchQueue, ^{
-        [self->_callbacks receivedMessage:value];
+      dispatch_async(self->_handler.dispatchQueue, ^{
+        [self->_handler receivedMessage:value];
       });
     }
   } completionHandler:^(NSError *errorOrNil) {
@@ -148,12 +148,12 @@ static NSString *const kBearerPrefix = @"Bearer ";
       }
     }
     if (headers) {
-      dispatch_async(self->_callbacks.dispatchQueue, ^{
-        [self->_callbacks receivedInitialMetadata:headers];
+      dispatch_async(self->_handler.dispatchQueue, ^{
+        [self->_handler receivedInitialMetadata:headers];
       });
     }
-    dispatch_async(self->_callbacks.dispatchQueue, ^{
-      [self->_callbacks closedWithTrailingMetadata:self->_call.responseTrailers
+    dispatch_async(self->_handler.dispatchQueue, ^{
+      [self->_handler closedWithTrailingMetadata:self->_call.responseTrailers
                                             error:errorOrNil];
       self->_call = nil;
       self->_pipe = nil;

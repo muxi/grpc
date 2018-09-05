@@ -34,7 +34,7 @@
 
 - (instancetype)initWithRequest:(GRPCCallRequest *)request
                         message:(GPBMessage *)message
-              responseCallbacks:(id<GRPCProtoResponseHandler>)callbacks
+                responseHandler:(id<GRPCProtoResponseHandler>)handler
                         options:(GRPCCallOptions *)options;
 
 - (void)cancel;
@@ -44,7 +44,7 @@
 @interface GRPCStreamingProtoCall : NSObject
 
 - (instancetype)initWithRequest:(GRPCCallRequest *)request
-              responseCallbacks:(id<GRPCProtoResponseHandler>)callbacks
+                responseHandler:(id<GRPCProtoResponseHandler>)handler
                         options:(GRPCCallOptions *)options;
 
 - (void)cancel;

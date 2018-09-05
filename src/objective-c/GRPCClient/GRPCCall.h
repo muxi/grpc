@@ -174,11 +174,11 @@ extern id const kGRPCTrailersKey;
 - (instancetype)init NS_UNAVAILABLE;
 
 - (instancetype)initWithRequest:(GRPCCallRequest *)request
-                      callbacks:(id<GRPCResponseHandler>)callbacks
+                        handler:(id<GRPCResponseHandler>)handler
                         options:(GRPCCallOptions *)options NS_DESIGNATED_INITIALIZER;
 
 - (instancetype)initWithRequest:(GRPCCallRequest *)request
-                      callbacks:(id<GRPCResponseHandler>)callbacks;
+                        handler:(id<GRPCResponseHandler>)handler;
 
 /**
  * Starts the call. Can only be called once.
