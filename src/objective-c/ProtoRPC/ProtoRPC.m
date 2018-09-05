@@ -50,7 +50,7 @@
 
 @end
 
-@interface GRPCStreamingProtoCall ()<GRPCResponseCallbacks>
+@interface GRPCStreamingProtoCall ()<GRPCResponseHandler>
 
 @end
 

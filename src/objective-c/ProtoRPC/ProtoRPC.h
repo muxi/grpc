@@ -23,7 +23,7 @@
 
 @class GPBMessage;
 
-@protocol GRPCProtoResponseHandler <GRPCResponseCallbacks>
+@protocol GRPCProtoResponseHandler <GRPCResponseHandler>
 
 // The proto message class which received serialized messages should be parsed into
 @property(readonly) Class responseClass;

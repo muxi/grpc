@@ -78,7 +78,7 @@ static NSString *const kBearerPrefix = @"Bearer ";
 @implementation GRPCCallNg {
   GRPCCallOptions *_options;
   GRPCCallRequest *_request;
-  id<GRPCResponseCallbacks> _callbacks;
+  id<GRPCResponseHandler> _callbacks;
 
   GRPCCallRequest *_activeRequest;
 
@@ -88,7 +88,7 @@ static NSString *const kBearerPrefix = @"Bearer ";
 }
 
 - (instancetype)initWithRequest:(GRPCCallRequest *)request
-                      callbacks:(id<GRPCResponseCallbacks>)callbacks
+                      callbacks:(id<GRPCResponseHandler>)callbacks
                         options:(GRPCCallOptions *)options {
   if (!request || !request.host || !request.path) {
     [NSException raise:NSInvalidArgumentException format:@"Neither host nor path can be nil."];
@@ -106,7 +106,7 @@ static NSString *const kBearerPrefix = @"Bearer ";
 }
 
 - (instancetype)initWithRequest:(GRPCCallRequest *)request
-                      callbacks:(id<GRPCResponseCallbacks>)callbacks {
+                      callbacks:(id<GRPCResponseHandler>)callbacks {
   return [self initWithRequest:request callbacks:callbacks options:nil];
 }
 

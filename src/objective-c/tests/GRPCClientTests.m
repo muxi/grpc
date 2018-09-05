@@ -87,7 +87,7 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
 @end
 
 // Convenience class to use blocks as callbacks
-@interface ClientTestsBlockCallbacks : NSObject<GRPCResponseCallbacks>
+@interface ClientTestsBlockCallbacks : NSObject<GRPCResponseHandler>
 
 - (instancetype)initWithInitialMetadataCallback:(void (^)(NSDictionary *))initialMetadataCallback
                                 messageCallback:(void (^)(id))messageCallback
