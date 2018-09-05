@@ -113,6 +113,26 @@ void PrintAdvancedSignature(Printer* printer, const MethodDescriptor* method,
   PrintMethodSignature(printer, method, vars);
 }
 
+void PrintNgSignature(Printer* printer, const MethodDescriptor* method,
+                      map< ::grpc::string, ::grpc::string> vars) {
+  PrintAllComments(method, printer);
+
+  if (method->client_streaming()) {
+    vars["return_type"] = "GRPCStreamingProtoCall *";
+  } else {
+    vars["return_type"] = "GRPCUnaryProtoCall *";
+  }
+  vars["method_name"] =
+      grpc_generator::LowercaseFirstLetter(vars["method_name"]);
+  printer->Print(vars, "- ($return_type$)$$method_name$With");
+  if (method->client_streaming()) {
+    printer->Print("ResponseHandler:(id<GRPCResponseHandler>)handler");
+  } else {
+    printer->Print("Message:($request_class$ *)message responseHandler:(id<GRPCResponseHandler>)handler");
+  }
+  printer->Print(" options:(GRPCCallOptions *)options");
+}
+
 inline map< ::grpc::string, ::grpc::string> GetMethodVars(
     const MethodDescriptor* method) {
   map< ::grpc::string, ::grpc::string> res;
@@ -133,6 +153,15 @@ void PrintMethodDeclarations(Printer* printer, const MethodDescriptor* method) {
   printer->Print(";\n\n");
   PrintAdvancedSignature(printer, method, vars);
   printer->Print(";\n\n\n");
+}
+
+void PrintNgMethodDeclarations(Printer* printer, const MethodDescriptor* method) {
+  map< ::grpc::string, ::grpc::string> vars = GetMethodVars(method);
+
+  PrintProtoRpcDeclarationAsPragma(printer, method, vars);
+
+  PrintNgSignature(printer, method, vars);
+  printer->Print(";\n\n");
 }
 
 void PrintSimpleImplementation(Printer* printer, const MethodDescriptor* method,
@@ -177,6 +206,22 @@ void PrintAdvancedImplementation(Printer* printer,
   printer->Print("}\n");
 }
 
+void PrintNgImplementation(Printer* printer,
+                                 const MethodDescriptor* method,
+                                 map< ::grpc::string, ::grpc::string> vars) {
+  printer->Print("{\n");
+  if (method->client_streaming()) {
+    printer->Print(vars, "  return [self RPCToMethod:@\"$method_name$\"\n");
+    printer->Print(      "           responseHandler:handler\n");
+    printer->Print(      "                   options:options];\n");
+  } else {
+    printer->Print(vars, "  return [self RPCToMethod:@\"$method_name$\"\n");
+    printer->Print(      "                   message:message\n");
+    printer->Print(      "           responseHandler:handler\n");
+    printer->Print(      "                   options:options];\n");
+  }
+}
+
 void PrintMethodImplementations(Printer* printer,
                                 const MethodDescriptor* method) {
   map< ::grpc::string, ::grpc::string> vars = GetMethodVars(method);
@@ -184,12 +229,16 @@ void PrintMethodImplementations(Printer* printer,
   PrintProtoRpcDeclarationAsPragma(printer, method, vars);
 
   // TODO(jcanizales): Print documentation from the method.
+  printer->Print("// Deprecated methods.\n");
   PrintSimpleSignature(printer, method, vars);
   PrintSimpleImplementation(printer, method, vars);
 
   printer->Print("// Returns a not-yet-started RPC object.\n");
   PrintAdvancedSignature(printer, method, vars);
   PrintAdvancedImplementation(printer, method, vars);
+
+  PrintNgSignature(printer, method, vars);
+  PrintNgImplementation(printer, method, vars);
 }
 
 }  // namespace
@@ -225,6 +274,25 @@ void PrintMethodImplementations(Printer* printer,
   printer.Print(vars, "@protocol $service_class$ <NSObject>\n\n");
   for (int i = 0; i < service->method_count(); i++) {
     PrintMethodDeclarations(&printer, service->method(i));
+  }
+  printer.Print("@end\n\n");
+
+  return output;
+}
+
+::grpc::string GetNgProtocol(const ServiceDescriptor* service) {
+  ::grpc::string output;
+
+  // Scope the output stream so it closes and finalizes output to the string.
+  grpc::protobuf::io::StringOutputStream output_stream(&output);
+  Printer printer(&output_stream, '$');
+
+  map< ::grpc::string, ::grpc::string> vars = {
+      {"service_class", ServiceClassName(service) + "Ng"}};
+
+  printer.Print(vars, "@protocol $service_class$ <NSObject>\n\n");
+  for (int i = 0; i < service->method_count(); i++) {
+    PrintNgMethodDeclarations(&printer, service->method(i));
   }
   printer.Print("@end\n\n");
 
