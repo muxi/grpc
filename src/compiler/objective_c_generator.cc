@@ -115,8 +115,6 @@ void PrintAdvancedSignature(Printer* printer, const MethodDescriptor* method,
 
 void PrintNgSignature(Printer* printer, const MethodDescriptor* method,
                       map< ::grpc::string, ::grpc::string> vars) {
-  PrintAllComments(method, printer);
-
   if (method->client_streaming()) {
     vars["return_type"] = "GRPCStreamingProtoCall *";
   } else {
@@ -124,11 +122,14 @@ void PrintNgSignature(Printer* printer, const MethodDescriptor* method,
   }
   vars["method_name"] =
       grpc_generator::LowercaseFirstLetter(vars["method_name"]);
-  printer->Print(vars, "- ($return_type$)$$method_name$With");
+
+  PrintAllComments(method, printer);
+
+  printer->Print(vars, "- ($return_type$)$method_name$With");
   if (method->client_streaming()) {
     printer->Print("ResponseHandler:(id<GRPCResponseHandler>)handler");
   } else {
-    printer->Print("Message:($request_class$ *)message responseHandler:(id<GRPCResponseHandler>)handler");
+    printer->Print(vars, "Message:($request_class$ *)message responseHandler:(id<GRPCResponseHandler>)handler");
   }
   printer->Print(" options:(GRPCCallOptions *)options");
 }
@@ -209,16 +210,16 @@ void PrintAdvancedImplementation(Printer* printer,
 void PrintNgImplementation(Printer* printer,
                                  const MethodDescriptor* method,
                                  map< ::grpc::string, ::grpc::string> vars) {
-  printer->Print("{\n");
+  printer->Print(" {\n");
   if (method->client_streaming()) {
     printer->Print(vars, "  return [self RPCToMethod:@\"$method_name$\"\n");
     printer->Print(      "           responseHandler:handler\n");
-    printer->Print(      "                   options:options];\n");
+    printer->Print(      "                   options:options];\n}\n\n");
   } else {
     printer->Print(vars, "  return [self RPCToMethod:@\"$method_name$\"\n");
     printer->Print(      "                   message:message\n");
     printer->Print(      "           responseHandler:handler\n");
-    printer->Print(      "                   options:options];\n");
+    printer->Print(      "                   options:options];\n}\n\n");
   }
 }
 
