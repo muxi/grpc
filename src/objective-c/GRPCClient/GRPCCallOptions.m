@@ -20,7 +20,6 @@
 
 static NSString* const kDefaultServerAuthority = nil;
 static const NSTimeInterval kDefaultTimeout = 0;
-static NSDictionary* const kDefaultInitialMetadata = nil;
 static NSString* const kDefaultUserAgentPrefix = nil;
 static const NSUInteger kDefaultResponseSizeLimit = 0;
 static const GRPCCompressAlgorithm kDefaultCompressAlgorithm = GRPCCompressNone;
@@ -46,7 +45,6 @@ static NSUInteger kDefaultChannelId = 0;
 @protected
   NSString *_serverAuthority;
   NSTimeInterval _timeout;
-  NSDictionary *_initialMetadata;
   NSString *_oauth2AccessToken;
   id<GRPCAuthorizationProtocol> _authTokenProvider;
   NSString *_userAgentPrefix;
@@ -71,7 +69,6 @@ static NSUInteger kDefaultChannelId = 0;
 
 @synthesize serverAuthority = _serverAuthority;
 @synthesize timeout = _timeout;
-@synthesize initialMetadata = _initialMetadata;
 @synthesize oauth2AccessToken = _oauth2AccessToken;
 @synthesize authTokenProvider = _authTokenProvider;
 @synthesize userAgentPrefix = _userAgentPrefix;
@@ -96,7 +93,6 @@ static NSUInteger kDefaultChannelId = 0;
 - (instancetype)init {
   return [self initWithServerAuthority:kDefaultServerAuthority
                                timeout:kDefaultTimeout
-                       initialMetadata:kDefaultInitialMetadata
                      oauth2AccessToken:kDefaultOauth2AccessToken
                      authTokenProvider:kDefaultAuthTokenProvider
                        userAgentPrefix:kDefaultUserAgentPrefix
@@ -121,7 +117,6 @@ static NSUInteger kDefaultChannelId = 0;
 
 - (instancetype)initWithServerAuthority:(NSString *)serverAuthority
                                 timeout:(NSTimeInterval)timeout
-                        initialMetadata:(NSDictionary *)initialMetadata
                       oauth2AccessToken:(NSString *)oauth2AccessToken
                       authTokenProvider:(id<GRPCAuthorizationProtocol>)authTokenProvider
                         userAgentPrefix:(NSString *)userAgentPrefix
@@ -145,7 +140,6 @@ static NSUInteger kDefaultChannelId = 0;
   if ((self = [super init])) {
     _serverAuthority = serverAuthority;
     _timeout = timeout;
-    _initialMetadata = initialMetadata;
     _oauth2AccessToken = oauth2AccessToken;
     _authTokenProvider = authTokenProvider;
     _userAgentPrefix = userAgentPrefix;
@@ -173,7 +167,6 @@ static NSUInteger kDefaultChannelId = 0;
   GRPCCallOptions* newOptions =
       [[GRPCCallOptions allocWithZone:zone] initWithServerAuthority:_serverAuthority
                                                             timeout:_timeout
-                                                    initialMetadata:[_initialMetadata copy]
                                                   oauth2AccessToken:_oauth2AccessToken
                                                   authTokenProvider:_authTokenProvider
                                                     userAgentPrefix:_userAgentPrefix
@@ -201,7 +194,6 @@ static NSUInteger kDefaultChannelId = 0;
   GRPCMutableCallOptions* newOptions =
       [[GRPCMutableCallOptions allocWithZone:zone] initWithServerAuthority:_serverAuthority
                                                                    timeout:_timeout
-                                                           initialMetadata:[_initialMetadata copy]
                                                          oauth2AccessToken:_oauth2AccessToken
                                                          authTokenProvider:_authTokenProvider
                                                            userAgentPrefix:_userAgentPrefix
@@ -231,7 +223,6 @@ static NSUInteger kDefaultChannelId = 0;
 
 @dynamic serverAuthority;
 @dynamic timeout;
-@dynamic initialMetadata;
 @dynamic oauth2AccessToken;
 @dynamic authTokenProvider;
 @dynamic userAgentPrefix;
@@ -256,7 +247,6 @@ static NSUInteger kDefaultChannelId = 0;
 - (instancetype)init {
   return [self initWithServerAuthority:kDefaultServerAuthority
                                timeout:kDefaultTimeout
-                       initialMetadata:kDefaultInitialMetadata
                      oauth2AccessToken:kDefaultOauth2AccessToken
                      authTokenProvider:kDefaultAuthTokenProvider
                        userAgentPrefix:kDefaultUserAgentPrefix
@@ -281,7 +271,6 @@ static NSUInteger kDefaultChannelId = 0;
 
 - (instancetype)initWithServerAuthority:(NSString *)serverAuthority
                                 timeout:(NSTimeInterval)timeout
-                        initialMetadata:(NSDictionary *)initialMetadata
                       oauth2AccessToken:(NSString *)oauth2AccessToken
                       authTokenProvider:(id<GRPCAuthorizationProtocol>)authTokenProvider
                         userAgentPrefix:(NSString *)userAgentPrefix
@@ -305,7 +294,6 @@ static NSUInteger kDefaultChannelId = 0;
   if ((self = [super init])) {
     _serverAuthority = serverAuthority;
     _timeout = timeout;
-    _initialMetadata = initialMetadata;
     _oauth2AccessToken = oauth2AccessToken;
     _authTokenProvider = authTokenProvider;
     _userAgentPrefix = userAgentPrefix;
@@ -333,7 +321,6 @@ static NSUInteger kDefaultChannelId = 0;
   GRPCCallOptions* newOptions =
   [[GRPCCallOptions allocWithZone:zone] initWithServerAuthority:_serverAuthority
                                                         timeout:_timeout
-                                                initialMetadata:[_initialMetadata copy]
                                               oauth2AccessToken:_oauth2AccessToken
                                               authTokenProvider:_authTokenProvider
                                                 userAgentPrefix:_userAgentPrefix
@@ -361,7 +348,6 @@ static NSUInteger kDefaultChannelId = 0;
   GRPCMutableCallOptions* newOptions =
   [[GRPCMutableCallOptions allocWithZone:zone] initWithServerAuthority:_serverAuthority
                                                                timeout:_timeout
-                                                       initialMetadata:[_initialMetadata copy]
                                                      oauth2AccessToken:_oauth2AccessToken
                                                      authTokenProvider:_authTokenProvider
                                                        userAgentPrefix:_userAgentPrefix
@@ -391,10 +377,6 @@ static NSUInteger kDefaultChannelId = 0;
 
 - (void)setTimeout:(NSTimeInterval )timeout {
   _timeout = timeout;
-}
-
-- (void)setInitialMetadata:(NSDictionary *)initialMetadata {
-  _initialMetadata = initialMetadata;
 }
 
 - (void)setOauth2AccessToken:(NSString *)oauth2AccessToken {

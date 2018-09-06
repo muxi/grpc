@@ -162,9 +162,15 @@ extern id const kGRPCTrailersKey;
 @end
 
 @interface GRPCCallRequest : NSObject<NSCopying>
-@property(atomic, copy, readwrite) NSString *host;
-@property(atomic, copy, readwrite) NSString *path;
-@property(atomic, readwrite) GRPCCallSafety safety;
+@property(copy, readwrite) NSString *host;
+@property(copy, readwrite) NSString *path;
+@property(readwrite) GRPCCallSafety safety;
+
+/**
+ * Initial metadata key-value pairs that should be included in the call request.
+ */
+@property(copy, readwrite) NSDictionary *initialMetadata;
+
 @end
 
 #pragma mark GRPCCall

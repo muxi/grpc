@@ -71,11 +71,6 @@ typedef NS_ENUM(NSInteger, GRPCTransportType) {
  */
 @property(readonly) NSTimeInterval timeout;
 
-/**
- * Initial metadata key-value pairs that should be included in the call request.
- */
-@property(copy, readonly) NSDictionary *initialMetadata;
-
 // OAuth2 parameters. Users of gRPC may specify one of the following two parameters.
 
 /**
@@ -204,11 +199,6 @@ typedef NS_ENUM(NSInteger, GRPCTransportType) {
  * within \a timeout seconds. A negative value is not allowed.
  */
 @property(readwrite) NSTimeInterval timeout;
-
-/**
- * Initial metadata key-value pairs that should be included in the call request.
- */
-@property(copy, readwrite) NSDictionary *initialMetadata;
 
 // OAuth2 parameters. Users of gRPC may specify one of the following two parameters.
 

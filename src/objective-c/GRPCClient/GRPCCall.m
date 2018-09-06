@@ -476,10 +476,7 @@ static NSString *const kBearerPrefix = @"Bearer ";
   }
   uint32_t callFlag = callSafetyFlags;
 
-  NSMutableDictionary *headers = [NSMutableDictionary dictionary];
-  if (_options.initialMetadata) {
-    [headers addEntriesFromDictionary:_options.initialMetadata];
-  }
+  NSMutableDictionary *headers = _requestHeaders;
   if (_fetchedOauth2AccessToken != nil) {
     headers[@"authorization"] = [kBearerPrefix stringByAppendingString:_fetchedOauth2AccessToken];
   } else if (_options.oauth2AccessToken != nil) {
@@ -675,9 +672,6 @@ static NSString *const kBearerPrefix = @"Bearer ";
     id<GRPCAuthorizationProtocol> tokenProvider = self.tokenProvider;
     if (tokenProvider != nil) {
       options.authTokenProvider = tokenProvider;
-    }
-    if ([_requestHeaders count] > 0) {
-      options.initialMetadata = [_requestHeaders copy];
     }
   }
   if (_options.authTokenProvider != nil) {
