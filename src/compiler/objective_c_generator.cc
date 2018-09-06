@@ -214,12 +214,12 @@ void PrintNgImplementation(Printer* printer,
   if (method->client_streaming()) {
     printer->Print(vars, "  return [self RPCToMethod:@\"$method_name$\"\n");
     printer->Print(      "           responseHandler:handler\n");
-    printer->Print(      "                   options:options];\n}\n\n");
+    printer->Print(      "                   options:options ?: _options];\n}\n\n");
   } else {
     printer->Print(vars, "  return [self RPCToMethod:@\"$method_name$\"\n");
     printer->Print(      "                   message:message\n");
     printer->Print(      "           responseHandler:handler\n");
-    printer->Print(      "                   options:options];\n}\n\n");
+    printer->Print(      "                   options:options ?: _options];\n}\n\n");
   }
 }
 
@@ -321,7 +321,7 @@ void PrintMethodImplementations(Printer* printer,
   printer.Print(
       "- (instancetype)initWithHost:(NSString *)host"
       " NS_DESIGNATED_INITIALIZER;\n");
-  printer.Print("+ (instancetype)serviceWithHost:(NSString *)host;\n");
+  printer.Print("+ (instancetype)serviceWithHost:(NSString *)host options:(GRPCCallOptions *)options;\n");
   printer.Print("@end\n");
 
   return output;

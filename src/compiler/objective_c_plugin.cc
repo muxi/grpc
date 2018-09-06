@@ -93,7 +93,13 @@ class ObjectiveCGrpcGenerator : public grpc::protobuf::compiler::CodeGenerator {
                                       SystemImport("RxLibrary/GRXWriteable.h") +
                                       SystemImport("RxLibrary/GRXWriter.h");
 
-      ::grpc::string forward_declarations = "@class GRPCProtoCall;\n\n";
+      ::grpc::string forward_declarations =
+          "@class GRPCProtoCall;\n"
+          "@class GRPCUnaryProtoCall;\n"
+          "@class GRPCStreamingProtoCall;\n"
+          "@class GRPCCallOptions;\n"
+          "@protocol GRPCResponseHandler;\n"
+          "\n";
 
       ::grpc::string class_declarations =
           grpc_objective_c_generator::GetAllMessageClasses(file);
