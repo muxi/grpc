@@ -342,6 +342,10 @@ typedef struct {
   "grpc.disable_client_authority_filter"
 /** If set to zero, disables use of http proxies. Enabled by default. */
 #define GRPC_ARG_ENABLE_HTTP_PROXY "grpc.enable_http_proxy"
+/** gRPC Objective-C channel pooling domain string. */
+#define GRPC_ARG_CHANNEL_POOL_DOMAIN "grpc.channel_pooling_domain"
+/** gRPC Objective-C channel pooling id. */
+#define GRPC_ARG_CHANNEL_ID "grpc.channel_id"
 /** \} */
 
 /** Result of a grpc call. If the caller satisfies the prerequisites of a
