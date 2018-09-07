@@ -69,6 +69,7 @@ static NSString *const kBearerPrefix = @"Bearer ";
   request.host = [_host copy];
   request.path = [_path copy];
   request.safety = _safety;
+  request.initialMetadata = [_initialMetadata copy];
 
   return request;
 }
@@ -121,6 +122,9 @@ static NSString *const kBearerPrefix = @"Bearer ";
                               callSafety:_activeRequest.safety
                           requestsWriter:_pipe
                                  options:_options];
+  if (_activeRequest.initialMetadata) {
+    [_call.requestHeaders addEntriesFromDictionary:_activeRequest.initialMetadata];
+  }
   id<GRXWriteable> responseWriteable = [[GRXWriteable alloc] initWithValueHandler:^(id value) {
     NSDictionary *headers = nil;
     @synchronized(self) {
@@ -155,8 +159,6 @@ static NSString *const kBearerPrefix = @"Bearer ";
     dispatch_async(self->_handler.dispatchQueue, ^{
       [self->_handler closedWithTrailingMetadata:self->_call.responseTrailers
                                             error:errorOrNil];
-      self->_call = nil;
-      self->_pipe = nil;
     });
   }];
   [_call startWithWriteable:responseWriteable];
@@ -177,7 +179,7 @@ static NSString *const kBearerPrefix = @"Bearer ";
 
 - (void)finish {
   @synchronized(self) {
-    [_pipe finishWithError:nil];
+    [_pipe writesFinishedWithError:nil];
   }
 }
 
@@ -673,6 +675,7 @@ static NSString *const kBearerPrefix = @"Bearer ";
     if (tokenProvider != nil) {
       options.authTokenProvider = tokenProvider;
     }
+    _options = options;
   }
   if (_options.authTokenProvider != nil) {
     self.isWaitingForToken = YES;

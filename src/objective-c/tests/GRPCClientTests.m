@@ -99,6 +99,7 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
   void (^_initialMetadataCallback)(NSDictionary *);
   void (^_messageCallback)(id);
   void (^_closeCallback)(NSDictionary *, NSError *);
+  dispatch_queue_t _dispatchQueue;
 }
 
 - (instancetype)initWithInitialMetadataCallback:(void (^)(NSDictionary *))initialMetadataCallback
@@ -108,6 +109,7 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
     _initialMetadataCallback = initialMetadataCallback;
     _messageCallback = messageCallback;
     _closeCallback = closeCallback;
+    _dispatchQueue = dispatch_queue_create(nil, DISPATCH_QUEUE_SERIAL);
   }
   return self;
 }
@@ -122,6 +124,10 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
 
 - (void)closedWithTrailingMetadata:(NSDictionary *)trailingMetadata error:(NSError *)error {
   _closeCallback(trailingMetadata, error);
+}
+
+- (dispatch_queue_t)dispatchQueue {
+  return _dispatchQueue;
 }
 
 @end
@@ -289,11 +295,11 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
   callRequest.path = kUnaryCallMethod.HTTPPath;
   __block NSDictionary *init_md;
   __block NSDictionary *trailing_md;
-  GRPCCallOptions *options = [[GRPCCallOptions alloc] init];
+  GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
   options.oauth2AccessToken = @"bogusToken";
   GRPCCallNg *call =
       [[GRPCCallNg alloc] initWithRequest:callRequest
-                                callbacks:[[ClientTestsBlockCallbacks alloc] initWithInitialMetadataCallback:^(NSDictionary *initialMetadata) {
+                                  handler:[[ClientTestsBlockCallbacks alloc] initWithInitialMetadataCallback:^(NSDictionary *initialMetadata) {
                                  init_md = initialMetadata;
       }
                                                                                   messageCallback:^(id message) {
@@ -419,11 +425,13 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
   request.host = kHostAddress;
   request.path = kEmptyCallMethod.HTTPPath;
   NSDictionary *headers =
-  [NSDictionary dictionaryWithObjectsAndKeys:@"", @"x-grpc-test-echo-useragent", nil];
-  GRPCCallOptions *options = [[GRPCCallOptions alloc] init];
-  options.initialMetadata = headers;
+      [NSDictionary dictionaryWithObjectsAndKeys:@"", @"x-grpc-test-echo-useragent", nil];
+  request.initialMetadata = headers;
+  GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
+  options.transportType = GRPCTransportTypeInsecure;
+  options.userAgentPrefix = @"Foo";
   GRPCCallNg *call = [[GRPCCallNg alloc] initWithRequest:request
-                                               callbacks:[[ClientTestsBlockCallbacks alloc] initWithInitialMetadataCallback:^(NSDictionary *initialMetadata) {
+                                                 handler:[[ClientTestsBlockCallbacks alloc] initWithInitialMetadataCallback:^(NSDictionary *initialMetadata) {
                                                      NSString *userAgent = initialMetadata[@"x-grpc-test-echo-useragent"];
                                                      // Test the regex is correct
                                                      NSString *expectedUserAgent = @"Foo grpc-objc/";
@@ -465,7 +473,7 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
                                                                                                      }
                                                                                                    }]
                                                  options:options];
-
+  [call writeWithData:[NSData data]];
   [call start];
 
   [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];

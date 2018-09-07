@@ -269,54 +269,6 @@ static NSUInteger kDefaultChannelId = 0;
                              channelId:kDefaultChannelId];
 }
 
-- (instancetype)initWithServerAuthority:(NSString *)serverAuthority
-                                timeout:(NSTimeInterval)timeout
-                      oauth2AccessToken:(NSString *)oauth2AccessToken
-                      authTokenProvider:(id<GRPCAuthorizationProtocol>)authTokenProvider
-                        userAgentPrefix:(NSString *)userAgentPrefix
-                      responseSizeLimit:(NSUInteger)responseSizeLimit
-                      compressAlgorithm:(GRPCCompressAlgorithm)compressAlgorithm
-                            enableRetry:(BOOL)enableRetry
-                      keepaliveInterval:(NSTimeInterval)keepaliveInterval
-                       keepaliveTimeout:(NSTimeInterval)keepaliveTimeout
-                      connectMinTimeout:(NSTimeInterval)connectMinTimeout
-                  connectInitialBackoff:(NSTimeInterval)connectInitialBackoff
-                      connectMaxBackoff:(NSTimeInterval)connectMaxBackoff
-                  additionalChannelArgs:(NSDictionary *)additionalChannelArgs
-                            pemRootCert:(NSString *)pemRootCert
-                          pemPrivateKey:(NSString *)pemPrivateKey
-                           pemCertChain:(NSString *)pemCertChain
-                          transportType:(GRPCTransportType)transportType
-                       hostNameOverride:(NSString *)hostNameOverride
-                             logContext:(id)logContext
-                      channelPoolDomain:(NSString *)channelPoolDomain
-                              channelId:(NSUInteger)channelId {
-  if ((self = [super init])) {
-    _serverAuthority = serverAuthority;
-    _timeout = timeout;
-    _oauth2AccessToken = oauth2AccessToken;
-    _authTokenProvider = authTokenProvider;
-    _userAgentPrefix = userAgentPrefix;
-    _responseSizeLimit = responseSizeLimit;
-    _compressAlgorithm = compressAlgorithm;
-    _enableRetry = enableRetry;
-    _keepaliveTimeout = keepaliveTimeout;
-    _keepaliveInterval = keepaliveInterval;
-    _connectMinTimeout = connectMinTimeout;
-    _connectInitialBackoff = connectInitialBackoff;
-    _connectMaxBackoff = connectMaxBackoff;
-    _additionalChannelArgs = additionalChannelArgs;
-    _pemRootCert = pemRootCert;
-    _pemPrivateKey = pemPrivateKey;
-    _pemCertChain = pemCertChain;
-    _transportType = transportType;
-    _logContext = logContext;
-    _channelPoolDomain = channelPoolDomain;
-    _channelId = channelId;
-  }
-  return self;
-}
-
 - (nonnull id)copyWithZone:(NSZone*)zone {
   GRPCCallOptions* newOptions =
   [[GRPCCallOptions allocWithZone:zone] initWithServerAuthority:_serverAuthority
