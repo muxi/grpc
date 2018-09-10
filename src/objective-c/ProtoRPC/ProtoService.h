@@ -47,11 +47,13 @@ __attribute__((deprecated("Please use GRPCProtoService."))) @interface ProtoServ
 - (GRPCUnaryProtoCall *)RPCToMethod:(NSString *)method
                             message:(id)message
                     responseHandler:(id<GRPCProtoResponseCallbacks>)handler
-                            options:(GRPCCallOptions *)options;
+                            options:(GRPCCallOptions *)options
+                      responseClass:(Class)responseClass;
 
 - (GRPCStreamingProtoCall *)RPCToMethod:(NSString *)method
                         responseHandler:(id<GRPCProtoResponseCallbacks>)handler
-                                options:(GRPCCallOptions *)options;
+                                options:(GRPCCallOptions *)options
+                          responseClass:(Class)responseClass;
 
 @end
 

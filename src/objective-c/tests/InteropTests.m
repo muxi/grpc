@@ -85,6 +85,7 @@ BOOL isRemoteInteropTest(NSString *host) {
   void (^_initialMetadataCallback)(NSDictionary *);
   void (^_messageCallback)(id);
   void (^_closeCallback)(NSDictionary *, NSError *);
+  dispatch_queue_t _dispatchQueue;
 }
 
 - (instancetype)initWithInitialMetadataCallback:(void (^)(NSDictionary *))initialMetadataCallback
@@ -94,20 +95,31 @@ BOOL isRemoteInteropTest(NSString *host) {
     _initialMetadataCallback = initialMetadataCallback;
     _messageCallback = messageCallback;
     _closeCallback = closeCallback;
+    _dispatchQueue = dispatch_queue_create(nil, DISPATCH_QUEUE_SERIAL);
   }
   return self;
 }
 
 - (void)receivedInitialMetadata:(NSDictionary *)initialMetadata {
-  _initialMetadataCallback(initialMetadata);
+  if (_initialMetadataCallback) {
+    _initialMetadataCallback(initialMetadata);
+  }
 }
 
 - (void)receivedMessage:(id)message {
-  _messageCallback(message);
+  if (_messageCallback) {
+    _messageCallback(message);
+  }
 }
 
 - (void)closedWithTrailingMetadata:(NSDictionary *)trailingMetadata error:(NSError *)error {
-  _closeCallback(trailingMetadata, error);
+  if (_closeCallback) {
+    _closeCallback(trailingMetadata, error);
+  }
+}
+
+- (dispatch_queue_t)dispatchQueue {
+  return _dispatchQueue;
 }
 
 @end
@@ -172,21 +184,20 @@ BOOL isRemoteInteropTest(NSString *host) {
 
   GPBEmpty *request = [GPBEmpty message];
 
-  GRPCUnaryProtoCall *call =
-      [_service emptyCallWithMessage:request
-                   responseCallbacks:[[InteropTestsBlockCallbacks alloc] initWithInitialMetadataCallback:nil
-                                                                             messageCallback:
-       ^(id message) {
-                           if (message) {
-                             id expectedResponse = [GPBEmpty message];
-                             XCTAssertEqualObjects(message, expectedResponse);
-                             [expectation fulfill];
-                           }
-                         }
-                                                                               closeCallback:^(NSDictionary *trailingMetadata, NSError *error) {
-                                                                                 XCTAssertNil(error, @"Unexpected error: %@", error);
-                                                                               }]];
-  [call start];
+  [_service emptyCallWithMessage:request
+                 responseHandler:[[InteropTestsBlockCallbacks alloc] initWithInitialMetadataCallback:nil
+                                                                                     messageCallback:
+                                  ^(id message) {
+                                    if (message) {
+                                      id expectedResponse = [GPBEmpty message];
+                                      XCTAssertEqualObjects(message, expectedResponse);
+                                      [expectation fulfill];
+                                    }
+                                  }
+                                                                                       closeCallback:^(NSDictionary *trailingMetadata, NSError *error) {
+                                                                                         XCTAssertNil(error, @"Unexpected error: %@", error);
+                                                                                       }]
+                         options:nil];
   [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];
 }
 
@@ -451,7 +462,7 @@ BOOL isRemoteInteropTest(NSString *host) {
   id request = [RMTStreamingOutputCallRequest messageWithPayloadSize:requests[index]
                                                requestedResponseSize:responses[index]];
 
-  __block GRPCStreamingProtoCall *call = [_service fullDuplexCallWithResponseCallbacks:
+  __block GRPCStreamingProtoCall *call = [_service fullDuplexCallWithResponseHandler:
                                           [[InteropTestsBlockCallbacks alloc] initWithInitialMetadataCallback:nil
                                                                                   messageCallback:^(id message) {
                                                                                     XCTAssertLessThan(index, 4, @"More than 4 responses received.");
@@ -472,10 +483,9 @@ BOOL isRemoteInteropTest(NSString *host) {
                                                                                     XCTAssertEqual(index, 4, @"Received %i responses instead of 4.",
                                                                                                    index);
                                                                                     [expectation fulfill];
-                                                                                  }]];
-
+                                                                                  }]
+                                                                     options:nil];
   [call writeWithMessage:request];
-  [call start];
 
   [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];
 }

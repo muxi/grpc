@@ -32,12 +32,14 @@
 
 - (instancetype)initWithRequest:(GRPCCallRequest *)request
                         message:(GPBMessage *)message
-                responseHandler:(id<GRPCProtoResponseHandler>)handler
-                        options:(GRPCCallOptions *)options {
+                responseHandler:(id<GRPCResponseHandler>)handler
+                        options:(GRPCCallOptions *)options
+                  responseClass:(Class)responseClass {
   if ((self = [super init])) {
     _call = [[GRPCStreamingProtoCall alloc] initWithRequest:request
                                           responseHandler:handler
-                                                    options:options];
+                                                    options:options
+                                              responseClass:responseClass];
     [_call writeWithMessage:message];
     [_call finish];
   }
@@ -56,23 +58,28 @@
 
 @implementation GRPCStreamingProtoCall {
   GRPCCallRequest *_request;
-  id<GRPCProtoResponseHandler> _handler;
+  id<GRPCResponseHandler> _handler;
   GRPCCallOptions *_options;
+  Class _responseClass;
 
   GRPCCallNg *_call;
   NSMutableArray *_messageBacklog;
   BOOL _started;
+  dispatch_queue_t _dispatchQueue;
 }
 
 - (instancetype)initWithRequest:(GRPCCallRequest *)request
-                responseHandler:(id<GRPCProtoResponseHandler>)handler
-                        options:(GRPCCallOptions *)options {
+                responseHandler:(id<GRPCResponseHandler>)handler
+                        options:(GRPCCallOptions *)options
+                  responseClass:(Class)responseClass {
   if ((self = [super init])) {
     _request = [request copy];
     _handler = handler;
     _options = [options copy];
+    _responseClass = responseClass;
     _messageBacklog = [NSMutableArray array];
     _started = NO;
+    _dispatchQueue = dispatch_queue_create(nil, DISPATCH_QUEUE_SERIAL);
 
     [self start];
   }
@@ -122,10 +129,10 @@
 
 - (void)receivedMessage:(NSData *)message {
   NSError *error = nil;
-  id parsed = [_handler.responseClass parseFromData:message
-                                                error:&error];
+  id parsed = [_responseClass parseFromData:message
+                                      error:&error];
   if (parsed) {
-    [_handler receivedInitialMetadata:parsed];
+    [_handler receivedMessage:parsed];
   } else {
     [_handler closedWithTrailingMetadata:nil error:error];
   }
@@ -136,6 +143,10 @@
   [_handler closedWithTrailingMetadata:trailingMetadata error:error];
   _handler = nil;
   _call = nil;
+}
+
+- (dispatch_queue_t)dispatchQueue {
+  return _dispatchQueue;
 }
 
 @end

@@ -82,7 +82,8 @@
 - (GRPCUnaryProtoCall *)RPCToMethod:(NSString *)method
                             message:(id)message
                     responseHandler:(id<GRPCProtoResponseCallbacks>)handler
-                            options:(GRPCCallOptions *)options {
+                            options:(GRPCCallOptions *)options
+                      responseClass:(Class)responseClass {
   GRPCProtoMethod *methodName = [[GRPCProtoMethod alloc] initWithPackage:_packageName service:_serviceName method:method];
   GRPCCallRequest *request = [[GRPCCallRequest alloc] init];
   request.host = _host;
@@ -92,12 +93,14 @@
       [[GRPCUnaryProtoCall alloc] initWithRequest:request
                                           message:message
                                   responseHandler:handler
-                                          options:options ?: _options];
+                                          options:options ?: _options
+                                    responseClass:responseClass];
 }
 
 - (GRPCStreamingProtoCall *)RPCToMethod:(NSString *)method
                         responseHandler:(id<GRPCProtoResponseCallbacks>)handler
-                                options:(GRPCCallOptions *)options {
+                                options:(GRPCCallOptions *)options
+                          responseClass:(Class)responseClass {
   GRPCProtoMethod *methodName = [[GRPCProtoMethod alloc] initWithPackage:_packageName service:_serviceName method:method];
   GRPCCallRequest *request = [[GRPCCallRequest alloc] init];
   request.host = _host;
@@ -105,7 +108,8 @@
   request.safety = GRPCCallSafetyDefault;
   return [[GRPCStreamingProtoCall alloc] initWithRequest:request
                                        responseHandler:handler
-                                                 options:options ?: _options];
+                                                 options:options ?: _options
+                                           responseClass:responseClass];
 }
 
 @end

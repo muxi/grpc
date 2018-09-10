@@ -23,19 +23,13 @@
 
 @class GPBMessage;
 
-@protocol GRPCProtoResponseHandler <GRPCResponseHandler>
-
-// The proto message class which received serialized messages should be parsed into
-@property(readonly) Class responseClass;
-
-@end
-
 @interface GRPCUnaryProtoCall : NSObject
 
 - (instancetype)initWithRequest:(GRPCCallRequest *)request
                         message:(GPBMessage *)message
-                responseHandler:(id<GRPCProtoResponseHandler>)handler
-                        options:(GRPCCallOptions *)options;
+                responseHandler:(id<GRPCResponseHandler>)handler
+                        options:(GRPCCallOptions *)options
+                  responseClass:(Class)responseClass;
 
 - (void)cancel;
 
@@ -44,8 +38,9 @@
 @interface GRPCStreamingProtoCall : NSObject
 
 - (instancetype)initWithRequest:(GRPCCallRequest *)request
-                responseHandler:(id<GRPCProtoResponseHandler>)handler
-                        options:(GRPCCallOptions *)options;
+                responseHandler:(id<GRPCResponseHandler>)handler
+                        options:(GRPCCallOptions *)options
+                  responseClass:(Class)responseClass;
 
 - (void)cancel;
 
