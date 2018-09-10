@@ -576,7 +576,6 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
   [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];
 }
 
-/*
 - (void)testIdempotentProtoRPCWithOptions {
   __weak XCTestExpectation *response = [self expectationWithDescription:@"Expected response."];
   __weak XCTestExpectation *completion = [self expectationWithDescription:@"RPC completed."];
@@ -585,35 +584,37 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
   request.responseSize = 100;
   request.fillUsername = YES;
   request.fillOauthScope = YES;
-  GRXWriter *requestsWriter = [GRXWriter writerWithValue:[request data]];
+  GRPCCallRequest *requestOptions = [[GRPCCallRequest alloc] init];
+  requestOptions.host = kHostAddress;
+  requestOptions.path = kUnaryCallMethod.HTTPPath;
+  requestOptions.safety = GRPCCallSafetyIdempotentRequest;
 
-  GRPCCall *call = [[GRPCCall alloc] initWithHost:kHostAddress
-                                             path:kUnaryCallMethod.HTTPPath
-                                   requestsWriter:requestsWriter];
-  GRPCCallOptions *options = call.options;
-  options.callSafety = GRPCCallSafetyIdempotentRequest;
-  call.options = options;
+  GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
+  options.transportType = GRPCTransportTypeInsecure;
+  GRPCCallNg *call = [[GRPCCallNg alloc] initWithRequest:requestOptions
+                                                 handler:[[ClientTestsBlockCallbacks alloc] initWithInitialMetadataCallback:nil
+                                                                                                            messageCallback:^(id message) {
+                                                                                                              NSData *data = (NSData *)message;
+                                                                                                              XCTAssertNotNil(data, @"nil value received as response.");
+                                                                                                              XCTAssertGreaterThan(data.length, 0, @"Empty response received.");
+                                                                                                              RMTSimpleResponse *responseProto = [RMTSimpleResponse parseFromData:data error:NULL];
+                                                                                                              // We expect empty strings, not nil:
+                                                                                                              XCTAssertNotNil(responseProto.username, @"Response's username is nil.");
+                                                                                                              XCTAssertNotNil(responseProto.oauthScope, @"Response's OAuth scope is nil.");
+                                                                                                              [response fulfill];
+                                                                                                            }
+                                                                                                              closeCallback:^(NSDictionary * trailingMetadata, NSError *error) {
+                                                                                                                XCTAssertNil(error, @"Finished with unexpected error: %@", error);
+                                                                                                                [completion fulfill];
+                                                                                                              }]
+                                                 options:options];
 
-  id<GRXWriteable> responsesWriteable =
-      [[GRXWriteable alloc] initWithValueHandler:^(NSData *value) {
-        XCTAssertNotNil(value, @"nil value received as response.");
-        XCTAssertGreaterThan(value.length, 0, @"Empty response received.");
-        RMTSimpleResponse *responseProto = [RMTSimpleResponse parseFromData:value error:NULL];
-        // We expect empty strings, not nil:
-        XCTAssertNotNil(responseProto.username, @"Response's username is nil.");
-        XCTAssertNotNil(responseProto.oauthScope, @"Response's OAuth scope is nil.");
-        [response fulfill];
-      }
-          completionHandler:^(NSError *errorOrNil) {
-            XCTAssertNil(errorOrNil, @"Finished with unexpected error: %@", errorOrNil);
-            [completion fulfill];
-          }];
-
-  [call startWithWriteable:responsesWriteable];
+  [call start];
+  [call writeWithData:[request data]];
+  [call finish];
 
   [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];
 }
- */
 
 - (void)testAlternateDispatchQueue {
   const int32_t kPayloadSize = 100;
@@ -679,73 +680,6 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
   [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];
 }
 
-/*
-- (void)testAlternateDispatchQueueWithOptions {
-  const int32_t kPayloadSize = 100;
-  RMTSimpleRequest *request = [RMTSimpleRequest message];
-  request.responseSize = kPayloadSize;
-
-  __weak XCTestExpectation *expectation1 =
-      [self expectationWithDescription:@"AlternateDispatchQueue1"];
-
-  // Use default (main) dispatch queue
-  NSString *main_queue_label =
-      [NSString stringWithUTF8String:dispatch_queue_get_label(dispatch_get_main_queue())];
-
-  GRXWriter *requestsWriter1 = [GRXWriter writerWithValue:[request data]];
-
-  GRPCCall *call1 = [[GRPCCall alloc] initWithHost:kHostAddress
-                                              path:kUnaryCallMethod.HTTPPath
-                                    requestsWriter:requestsWriter1];
-
-  id<GRXWriteable> responsesWriteable1 =
-      [[GRXWriteable alloc] initWithValueHandler:^(NSData *value) {
-        NSString *label =
-            [NSString stringWithUTF8String:dispatch_queue_get_label(DISPATCH_CURRENT_QUEUE_LABEL)];
-        XCTAssert([label isEqualToString:main_queue_label]);
-
-        [expectation1 fulfill];
-      }
-                               completionHandler:^(NSError *errorOrNil){
-                               }];
-
-  [call1 startWithWriteable:responsesWriteable1];
-
-  [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];
-
-  // Use a custom  queue
-  __weak XCTestExpectation *expectation2 =
-      [self expectationWithDescription:@"AlternateDispatchQueue2"];
-
-  NSString *queue_label = @"test.queue1";
-  dispatch_queue_t queue = dispatch_queue_create([queue_label UTF8String], DISPATCH_QUEUE_SERIAL);
-
-  GRXWriter *requestsWriter2 = [GRXWriter writerWithValue:[request data]];
-
-  GRPCCall *call2 = [[GRPCCall alloc] initWithHost:kHostAddress
-                                              path:kUnaryCallMethod.HTTPPath
-                                    requestsWriter:requestsWriter2];
-
-  GRPCCallOptions *options = call2.options;
-  options.dispatchQueue = queue;
-  call2.options = options;
-
-  id<GRXWriteable> responsesWriteable2 =
-      [[GRXWriteable alloc] initWithValueHandler:^(NSData *value) {
-        NSString *label =
-            [NSString stringWithUTF8String:dispatch_queue_get_label(DISPATCH_CURRENT_QUEUE_LABEL)];
-        XCTAssert([label isEqualToString:queue_label]);
-
-        [expectation2 fulfill];
-      }
-                               completionHandler:^(NSError *errorOrNil){
-                               }];
-
-  [call2 startWithWriteable:responsesWriteable2];
-
-  [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];
-} */
-
 - (void)testTimeout {
   __weak XCTestExpectation *completion = [self expectationWithDescription:@"RPC completed."];
 
@@ -771,35 +705,33 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
   [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];
 }
 
-/*
 - (void)testTimeoutWithOptions {
   __weak XCTestExpectation *completion = [self expectationWithDescription:@"RPC completed."];
 
-  GRXBufferedPipe *pipe = [GRXBufferedPipe pipe];
-  GRPCCall *call = [[GRPCCall alloc] initWithHost:kHostAddress
-                                             path:kFullDuplexCallMethod.HTTPPath
-                                   requestsWriter:pipe];
-
-  id<GRXWriteable> responsesWriteable =
-      [[GRXWriteable alloc] initWithValueHandler:^(NSData *value) {
-        XCTAssert(0, @"Failure: response received; Expect: no response received.");
-      }
-          completionHandler:^(NSError *errorOrNil) {
-            XCTAssertNotNil(errorOrNil,
-                            @"Failure: no error received; Expect: receive deadline exceeded.");
-            XCTAssertEqual(errorOrNil.code, GRPCErrorCodeDeadlineExceeded);
-            [completion fulfill];
-          }];
-
-  GRPCCallOptions *options = call.options;
+  GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
   options.timeout = 0.001;
-  call.options = options;
+  GRPCCallRequest *requestOptions = [[GRPCCallRequest alloc] init];
+  requestOptions.host = kHostAddress;
+  requestOptions.path = kFullDuplexCallMethod.HTTPPath;
 
-  [call startWithWriteable:responsesWriteable];
+  GRPCCallNg *call = [[GRPCCallNg alloc] initWithRequest:requestOptions
+                                                 handler:[[ClientTestsBlockCallbacks alloc] initWithInitialMetadataCallback:nil
+                                                                                                            messageCallback:^(id data) {
+                                                                                                              XCTFail(@"Failure: response received; Expect: no response received.");
+                                                                                                            }
+                                                                                                              closeCallback:^(NSDictionary *trailingMetadata, NSError *error) {
+                                                                                                                XCTAssertNotNil(error,
+                                                                                                                                @"Failure: no error received; Expect: receive deadline exceeded.");
+                                                                                                                XCTAssertEqual(error.code, GRPCErrorCodeDeadlineExceeded);
+                                                                                                                [completion fulfill];
+                                                                                                              }]
+                                                 options:options];
+
+
+  [call start];
 
   [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];
 }
-*/
 
 - (int)findFreePort {
   struct sockaddr_in addr;
@@ -872,51 +804,49 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
   [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];
 }
 
-/*
 - (void)testTimeoutBackoffWithOptionsWithTimeout:(double)timeout Backoff:(double)backoff {
   const double maxConnectTime = timeout > backoff ? timeout : backoff;
   const double kMargin = 0.1;
 
   __weak XCTestExpectation *completion = [self expectationWithDescription:@"Timeout in a second."];
   NSString *const kDummyAddress = [NSString stringWithFormat:@"8.8.8.8:1"];
-  GRPCCall *call = [[GRPCCall alloc] initWithHost:kDummyAddress
-                                             path:@""
-                                   requestsWriter:[GRXWriter writerWithValue:[NSData data]]];
-  GRPCCallOptions *options = call.options;
-  options.connectMinTimeout = timeout * 1000;
-  options.connectInitialBackoff = backoff * 1000;
+  GRPCCallRequest *requestOptions = [[GRPCCallRequest alloc] init];
+  requestOptions.host = kDummyAddress;
+  requestOptions.path = @"";
+  GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
+  options.connectMinTimeout = timeout;
+  options.connectInitialBackoff = backoff;
   options.connectMaxBackoff = 0;
-  call.options = options;
-  NSDate *startTime = [NSDate date];
-  id<GRXWriteable> responsesWriteable = [[GRXWriteable alloc] initWithValueHandler:^(id value) {
-    XCTAssert(NO, @"Received message. Should not reach here");
-  }
-      completionHandler:^(NSError *errorOrNil) {
-        XCTAssertNotNil(errorOrNil, @"Finished with no error");
-        // The call must fail before maxConnectTime. However there is no lower bound on the time
-        // taken for connection. A shorter time happens when connection is actively refused
-        // by 8.8.8.8:1 before maxConnectTime elapsed.
-        XCTAssertLessThan([[NSDate date] timeIntervalSinceDate:startTime],
-                          maxConnectTime + kMargin);
-        [completion fulfill];
-      }];
 
-  [call startWithWriteable:responsesWriteable];
+  NSDate *startTime = [NSDate date];
+  GRPCCallNg *call = [[GRPCCallNg alloc] initWithRequest:requestOptions
+                                                 handler:[[ClientTestsBlockCallbacks alloc] initWithInitialMetadataCallback:nil
+                                                                                                            messageCallback:^(id data) {
+                                                                                                              XCTFail(@"Received message. Should not reach here.");
+                                                                                                            }
+                                                                                                              closeCallback:^(NSDictionary *trailingMetadata, NSError *error) {
+                                                                                                                XCTAssertNotNil(error, @"Finished with no error; expecting error");
+                                                                                                                XCTAssertLessThan([[NSDate date] timeIntervalSinceDate:startTime], maxConnectTime + kMargin);
+                                                                                                                [completion fulfill];
+                                                                                                              }]
+                                                 options:options];
+
+  [call start];
 
   [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];
-}*/
+}
 
 // The numbers of the following three tests are selected to be smaller than the default values of
 // initial backoff (1s) and min_connect_timeout (20s), so that if they fail we know the default
 // values fail to be overridden by the channel args.
 - (void)testTimeoutBackoff1 {
   [self testTimeoutBackoffWithTimeout:0.7 Backoff:0.3];
-  //[self testTimeoutBackoffWithOptionsWithTimeout:0.7 Backoff:0.4];
+  [self testTimeoutBackoffWithOptionsWithTimeout:0.7 Backoff:0.4];
 }
 
 - (void)testTimeoutBackoff2 {
   [self testTimeoutBackoffWithTimeout:0.3 Backoff:0.7];
-  //[self testTimeoutBackoffWithOptionsWithTimeout:0.3 Backoff:0.8];
+  [self testTimeoutBackoffWithOptionsWithTimeout:0.3 Backoff:0.8];
 }
 
 - (void)testErrorDebugInformation {
