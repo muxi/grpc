@@ -20,12 +20,8 @@ cd $(dirname $0)/../../..
 
 source tools/internal_ci/helper_scripts/prepare_build_macos_rc
 
-tools/run_tests/run_tests_matrix.py $RUN_TESTS_FLAGS || FAILED="true"
+src/objective-c/tests/build_tests.sh
 
-# kill port_server.py to prevent the build from hanging
-ps aux | grep port_server\\.py | awk '{print $2}' | xargs kill -9
-
-tools/internal_ci/helper_scripts/delete_nonartifacts.sh || true
 
 if [ "$FAILED" != "" ]
 then
