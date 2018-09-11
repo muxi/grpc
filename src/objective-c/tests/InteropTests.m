@@ -528,6 +528,25 @@ BOOL isRemoteInteropTest(NSString *host) {
   [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];
 }
 
+- (void)testCancelAfterBeginRPCWithOptions {
+  XCTAssertNotNil(self.class.host);
+  __weak XCTestExpectation *expectation = [self expectationWithDescription:@"CancelAfterBegin"];
+
+  // A buffered pipe to which we never write any value acts as a writer that just hangs.
+  __block GRPCStreamingProtoCall *call = [_service streamingInputCallWithResponseHandler:[[InteropTestsBlockCallbacks alloc] initWithInitialMetadataCallback:nil
+                                                                                                                                          messageCallback:^(id message) {
+                                                                                                                                            XCTFail(@"Not expected to receive message");
+                                                                                                                                          }
+                                                                                                                                            closeCallback:^(NSDictionary *trailingMetadata, NSError *error) {
+                                                                                                                                              XCTAssertEqual(error.code, GRPC_STATUS_CANCELLED);
+                                                                                                                                              [expectation fulfill];
+                                                                                                                                            }]
+                                                                              options:nil];
+  [call cancel];
+
+  [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];
+}
+
 - (void)testCancelAfterFirstResponseRPC {
   XCTAssertNotNil(self.class.host);
   __weak XCTestExpectation *expectation =
@@ -561,6 +580,36 @@ BOOL isRemoteInteropTest(NSString *host) {
                                  }
                                }];
   [call start];
+  [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];
+}
+
+- (void)testCancelAfterFirstResponseRPCWithOptions {
+  XCTAssertNotNil(self.class.host);
+  __weak XCTestExpectation *completionExpectation =
+      [self expectationWithDescription:@"Call completed."];
+  __weak XCTestExpectation *responseExpectation =
+      [self expectationWithDescription:@"Received response."];
+
+  __block BOOL receivedResponse = NO;
+
+  id request =
+  [RMTStreamingOutputCallRequest messageWithPayloadSize:@21782 requestedResponseSize:@31415];
+
+  __block GRPCStreamingProtoCall *call = [_service
+                                 fullDuplexCallWithResponseHandler:[[InteropTestsBlockCallbacks alloc] initWithInitialMetadataCallback:nil
+                                                                                                                            messageCallback:^(id message) {
+                                                                                                                              XCTAssertFalse(receivedResponse);
+                                                                                                                              receivedResponse = YES;
+                                                                                                                              [call cancel];
+                                                                                                                              [responseExpectation fulfill];
+                                                                                                                            }
+                                                                                                                              closeCallback:^(NSDictionary *trailingMetadata, NSError *error) {
+                                                                                                                                XCTAssertEqual(error.code, GRPC_STATUS_CANCELLED);
+                                                                                                                                [completionExpectation fulfill];
+                                                                                                                              }]
+                                 options:nil];
+
+  [call writeWithMessage:request];
   [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];
 }
 
