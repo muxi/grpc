@@ -21,6 +21,12 @@ set -e
 # CocoaPods requires the terminal to be using UTF-8 encoding.
 export LANG=en_US.UTF-8
 
+echo "TIME:  $(date)"
+
+cd $(dirname $0)/../../..
+
+source tools/internal_ci/helper_scripts/prepare_build_macos_rc
+
 cd $(dirname $0)
 
 hash pod 2>/dev/null || { echo >&2 "Cocoapods needs to be installed."; exit 1; }
