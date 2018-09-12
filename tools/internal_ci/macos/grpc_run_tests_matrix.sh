@@ -20,8 +20,7 @@ cd $(dirname $0)/../../..
 
 source tools/internal_ci/helper_scripts/prepare_build_macos_rc
 
-src/objective-c/tests/build_tests.sh
-
+CONFIG=opt src/objective-c/tests/build_tests.sh
 
 if [ "$FAILED" != "" ]
 then
