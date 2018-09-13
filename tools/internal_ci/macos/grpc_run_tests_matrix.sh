@@ -26,6 +26,10 @@ CONFIG=opt SCHEME=HelloWorld EXAMPLE_PATH=examples/objective-c/helloworld src/ob
 
 echo "TIME!:  $(date)"
 
+CONFIG=opt SCHEME=RouteGuideClient EXAMPLE_PATH=examples/objective-c/route_guide src/objective-c/tests/build_one_example.sh
+
+echo "TIME!:  $(date)"
+
 if [ "$FAILED" != "" ]
 then
   exit 1
