@@ -85,7 +85,7 @@
                             options:(GRPCCallOptions *)options
                       responseClass:(Class)responseClass {
   GRPCProtoMethod *methodName = [[GRPCProtoMethod alloc] initWithPackage:_packageName service:_serviceName method:method];
-  GRPCCallRequest *request = [[GRPCCallRequest alloc] init];
+  GRPCRequestOptions *request = [[GRPCRequestOptions alloc] init];
   request.host = _host;
   request.path = methodName.HTTPPath;
   request.safety = GRPCCallSafetyDefault;
@@ -102,7 +102,7 @@
                                 options:(GRPCCallOptions *)options
                           responseClass:(Class)responseClass {
   GRPCProtoMethod *methodName = [[GRPCProtoMethod alloc] initWithPackage:_packageName service:_serviceName method:method];
-  GRPCCallRequest *request = [[GRPCCallRequest alloc] init];
+  GRPCRequestOptions *request = [[GRPCRequestOptions alloc] init];
   request.host = _host;
   request.path = methodName.HTTPPath;
   request.safety = GRPCCallSafetyDefault;

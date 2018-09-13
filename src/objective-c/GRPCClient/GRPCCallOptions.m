@@ -20,6 +20,7 @@
 
 static NSString* const kDefaultServerAuthority = nil;
 static const NSTimeInterval kDefaultTimeout = 0;
+static NSDictionary* const kDefaultInitialMetadata = nil;
 static NSString* const kDefaultUserAgentPrefix = nil;
 static const NSUInteger kDefaultResponseSizeLimit = 0;
 static const GRPCCompressAlgorithm kDefaultCompressAlgorithm = GRPCCompressNone;
@@ -47,6 +48,7 @@ static NSUInteger kDefaultChannelId = 0;
   NSTimeInterval _timeout;
   NSString *_oauth2AccessToken;
   id<GRPCAuthorizationProtocol> _authTokenProvider;
+  NSDictionary *_initialMetadata;
   NSString *_userAgentPrefix;
   NSUInteger _responseSizeLimit;
   GRPCCompressAlgorithm _compressAlgorithm;
@@ -71,6 +73,7 @@ static NSUInteger kDefaultChannelId = 0;
 @synthesize timeout = _timeout;
 @synthesize oauth2AccessToken = _oauth2AccessToken;
 @synthesize authTokenProvider = _authTokenProvider;
+@synthesize initialMetadata = _initialMetadata;
 @synthesize userAgentPrefix = _userAgentPrefix;
 @synthesize responseSizeLimit = _responseSizeLimit;
 @synthesize compressAlgorithm = _compressAlgorithm;
@@ -95,6 +98,7 @@ static NSUInteger kDefaultChannelId = 0;
                                timeout:kDefaultTimeout
                      oauth2AccessToken:kDefaultOauth2AccessToken
                      authTokenProvider:kDefaultAuthTokenProvider
+                       initialMetadata:kDefaultInitialMetadata
                        userAgentPrefix:kDefaultUserAgentPrefix
                      responseSizeLimit:kDefaultResponseSizeLimit
                      compressAlgorithm:kDefaultCompressAlgorithm
@@ -119,6 +123,7 @@ static NSUInteger kDefaultChannelId = 0;
                                 timeout:(NSTimeInterval)timeout
                       oauth2AccessToken:(NSString *)oauth2AccessToken
                       authTokenProvider:(id<GRPCAuthorizationProtocol>)authTokenProvider
+                        initialMetadata:(NSDictionary *)initialMetadata
                         userAgentPrefix:(NSString *)userAgentPrefix
                       responseSizeLimit:(NSUInteger)responseSizeLimit
                       compressAlgorithm:(GRPCCompressAlgorithm)compressAlgorithm
@@ -142,6 +147,7 @@ static NSUInteger kDefaultChannelId = 0;
     _timeout = timeout;
     _oauth2AccessToken = oauth2AccessToken;
     _authTokenProvider = authTokenProvider;
+    _initialMetadata = initialMetadata;
     _userAgentPrefix = userAgentPrefix;
     _responseSizeLimit = responseSizeLimit;
     _compressAlgorithm = compressAlgorithm;
@@ -169,6 +175,7 @@ static NSUInteger kDefaultChannelId = 0;
                                                             timeout:_timeout
                                                   oauth2AccessToken:_oauth2AccessToken
                                                   authTokenProvider:_authTokenProvider
+                                                    initialMetadata:_initialMetadata
                                                     userAgentPrefix:_userAgentPrefix
                                                   responseSizeLimit:_responseSizeLimit
                                                   compressAlgorithm:_compressAlgorithm
@@ -196,6 +203,7 @@ static NSUInteger kDefaultChannelId = 0;
                                                                    timeout:_timeout
                                                          oauth2AccessToken:_oauth2AccessToken
                                                          authTokenProvider:_authTokenProvider
+                                                           initialMetadata:_initialMetadata
                                                            userAgentPrefix:_userAgentPrefix
                                                          responseSizeLimit:_responseSizeLimit
                                                          compressAlgorithm:_compressAlgorithm
@@ -225,6 +233,7 @@ static NSUInteger kDefaultChannelId = 0;
 @dynamic timeout;
 @dynamic oauth2AccessToken;
 @dynamic authTokenProvider;
+@dynamic initialMetadata;
 @dynamic userAgentPrefix;
 @dynamic responseSizeLimit;
 @dynamic compressAlgorithm;
@@ -249,6 +258,7 @@ static NSUInteger kDefaultChannelId = 0;
                                timeout:kDefaultTimeout
                      oauth2AccessToken:kDefaultOauth2AccessToken
                      authTokenProvider:kDefaultAuthTokenProvider
+                       initialMetadata:kDefaultInitialMetadata
                        userAgentPrefix:kDefaultUserAgentPrefix
                      responseSizeLimit:kDefaultResponseSizeLimit
                      compressAlgorithm:kDefaultCompressAlgorithm
@@ -275,6 +285,7 @@ static NSUInteger kDefaultChannelId = 0;
                                                         timeout:_timeout
                                               oauth2AccessToken:_oauth2AccessToken
                                               authTokenProvider:_authTokenProvider
+                                                initialMetadata:_initialMetadata
                                                 userAgentPrefix:_userAgentPrefix
                                               responseSizeLimit:_responseSizeLimit
                                               compressAlgorithm:_compressAlgorithm
@@ -302,6 +313,7 @@ static NSUInteger kDefaultChannelId = 0;
                                                                timeout:_timeout
                                                      oauth2AccessToken:_oauth2AccessToken
                                                      authTokenProvider:_authTokenProvider
+                                                       initialMetadata:_initialMetadata
                                                        userAgentPrefix:_userAgentPrefix
                                                      responseSizeLimit:_responseSizeLimit
                                                      compressAlgorithm:_compressAlgorithm
@@ -337,6 +349,10 @@ static NSUInteger kDefaultChannelId = 0;
 
 - (void)setAuthTokenProvider:(id<GRPCAuthorizationProtocol> )authTokenProvider {
   _authTokenProvider = authTokenProvider;
+}
+
+- (void)setInitialMetadata:(NSDictionary *)initialMetadata {
+  _initialMetadata = initialMetadata;
 }
 
 - (void)setUserAgentPrefix:(NSString *)userAgentPrefix {

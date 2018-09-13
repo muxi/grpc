@@ -161,15 +161,10 @@ extern id const kGRPCTrailersKey;
 
 @end
 
-@interface GRPCCallRequest : NSObject<NSCopying>
+@interface GRPCRequestOptions : NSObject<NSCopying>
 @property(copy, readwrite) NSString *host;
 @property(copy, readwrite) NSString *path;
 @property(readwrite) GRPCCallSafety safety;
-
-/**
- * Initial metadata key-value pairs that should be included in the call request.
- */
-@property(copy, readwrite) NSDictionary *initialMetadata;
 
 @end
 
@@ -179,11 +174,11 @@ extern id const kGRPCTrailersKey;
 
 - (instancetype)init NS_UNAVAILABLE;
 
-- (instancetype)initWithRequest:(GRPCCallRequest *)request
+- (instancetype)initWithRequest:(GRPCRequestOptions *)request
                         handler:(id<GRPCResponseHandler>)handler
                         options:(GRPCCallOptions *)options NS_DESIGNATED_INITIALIZER;
 
-- (instancetype)initWithRequest:(GRPCCallRequest *)request
+- (instancetype)initWithRequest:(GRPCRequestOptions *)request
                         handler:(id<GRPCResponseHandler>)handler;
 
 /**

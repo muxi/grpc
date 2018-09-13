@@ -30,7 +30,7 @@
   GRPCStreamingProtoCall *_call;
 }
 
-- (instancetype)initWithRequest:(GRPCCallRequest *)request
+- (instancetype)initWithRequest:(GRPCRequestOptions *)request
                         message:(GPBMessage *)message
                 responseHandler:(id<GRPCResponseHandler>)handler
                         options:(GRPCCallOptions *)options
@@ -57,7 +57,7 @@
 @end
 
 @implementation GRPCStreamingProtoCall {
-  GRPCCallRequest *_request;
+  GRPCRequestOptions *_request;
   id<GRPCResponseHandler> _handler;
   GRPCCallOptions *_options;
   Class _responseClass;
@@ -68,7 +68,7 @@
   dispatch_queue_t _dispatchQueue;
 }
 
-- (instancetype)initWithRequest:(GRPCCallRequest *)request
+- (instancetype)initWithRequest:(GRPCRequestOptions *)request
                 responseHandler:(id<GRPCResponseHandler>)handler
                         options:(GRPCCallOptions *)options
                   responseClass:(Class)responseClass {

@@ -86,6 +86,11 @@ typedef NS_ENUM(NSInteger, GRPCTransportType) {
  */
 @property(readonly) id<GRPCAuthorizationProtocol> authTokenProvider;
 
+/**
+ * Initial metadata key-value pairs that should be included in the request.
+ */
+@property(copy, readwrite) NSDictionary *initialMetadata;
+
 // Channel parameters; take into account of channel signature.
 
 /**

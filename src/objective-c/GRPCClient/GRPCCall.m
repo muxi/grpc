@@ -62,14 +62,13 @@ static NSString *const kBearerPrefix = @"Bearer ";
 
 @end
 
-@implementation GRPCCallRequest
+@implementation GRPCRequestOptions
 
 - (id)copyWithZone:(NSZone *)zone {
-  GRPCCallRequest *request = [[GRPCCallRequest alloc] init];
+  GRPCRequestOptions *request = [[GRPCRequestOptions alloc] init];
   request.host = [_host copy];
   request.path = [_path copy];
   request.safety = _safety;
-  request.initialMetadata = [_initialMetadata copy];
 
   return request;
 }
@@ -78,17 +77,17 @@ static NSString *const kBearerPrefix = @"Bearer ";
 
 @implementation GRPCCallNg {
   GRPCCallOptions *_options;
-  GRPCCallRequest *_request;
+  GRPCRequestOptions *_request;
   id<GRPCResponseHandler> _handler;
 
-  GRPCCallRequest *_activeRequest;
+  GRPCRequestOptions *_activeRequest;
 
   GRPCCall *_call;
   BOOL _initialMetadataPublished;
   GRXBufferedPipe *_pipe;
 }
 
-- (instancetype)initWithRequest:(GRPCCallRequest *)request
+- (instancetype)initWithRequest:(GRPCRequestOptions *)request
                         handler:(id<GRPCResponseHandler>)handler
                         options:(GRPCCallOptions *)options {
   if (!request || !request.host || !request.path) {
@@ -106,7 +105,7 @@ static NSString *const kBearerPrefix = @"Bearer ";
   return self;
 }
 
-- (instancetype)initWithRequest:(GRPCCallRequest *)request
+- (instancetype)initWithRequest:(GRPCRequestOptions *)request
                         handler:(id<GRPCResponseHandler>)handler {
   return [self initWithRequest:request handler:handler options:nil];
 }
@@ -122,8 +121,8 @@ static NSString *const kBearerPrefix = @"Bearer ";
                               callSafety:_activeRequest.safety
                           requestsWriter:_pipe
                                  options:_options];
-  if (_activeRequest.initialMetadata) {
-    [_call.requestHeaders addEntriesFromDictionary:_activeRequest.initialMetadata];
+  if (_options.initialMetadata) {
+    [_call.requestHeaders addEntriesFromDictionary:_options.initialMetadata];
   }
   id<GRXWriteable> responseWriteable = [[GRXWriteable alloc] initWithValueHandler:^(id value) {
     NSDictionary *headers = nil;
