@@ -20,7 +20,15 @@ cd $(dirname $0)/../../..
 
 source tools/internal_ci/helper_scripts/prepare_build_macos_rc
 
+echo "TIME:  $(date)"
+
 CONFIG=opt src/objective-c/tests/build_tests.sh
+
+echo "TIME:  $(date)"
+
+CONFIG=opt src/objective-c/tests/run_tests.sh
+
+echo "TIME:  $(date)"
 
 if [ "$FAILED" != "" ]
 then

@@ -21,8 +21,6 @@ set -e
 # CocoaPods requires the terminal to be using UTF-8 encoding.
 export LANG=en_US.UTF-8
 
-echo "TIME:  $(date)"
-
 cd $(dirname $0)
 
 hash pod 2>/dev/null || { echo >&2 "Cocoapods needs to be installed."; exit 1; }
@@ -38,5 +36,3 @@ rm -f Podfile.lock
 rm -f RemoteTestClient/*.{h,m}
 
 pod install --verbose | gawk '{ print strftime("%Y-%m-%d %H:%M:%S"), $0; fflush(); }'
-
-echo "TIME:  $(date)"
