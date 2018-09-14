@@ -26,7 +26,11 @@ CONFIG=opt src/objective-c/tests/build_tests.sh
 
 echo "TIME:  $(date)"
 
-CONFIG=opt src/objective-c/tests/run_tests.sh
+CONFIG=opt make interop_server
+
+echo "TIME:  $(date)"
+
+CONFIG=opt src/objective-c/tests/run_tests.sh | gawk '{ print strftime("%Y-%m-%d %H:%M:%S"), $0; fflush(); }'
 
 echo "TIME:  $(date)"
 
