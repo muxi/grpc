@@ -26,6 +26,10 @@ CONFIG=opt make interop_server
 
 echo "TIME:  $(date)"
 
+tools/run_tests/start_port_server.py
+
+echo "TIME:  $(date)"
+
 CONFIG=opt src/objective-c/tests/build_tests.sh
 
 echo "TIME:  $(date)"
