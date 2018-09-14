@@ -96,3 +96,5 @@ ln -s /tmpfs/Build-ios-binary-size src/objective-c/examples/Sample/Build
 mkdir /tmpfs/DerivedData
 rm -rf ~/Library/Developer/Xcode/DerivedData
 ln -s /tmpfs/DerivedData ~/Library/Developer/Xcode/DerivedData
+
+brew install gawk

@@ -37,6 +37,6 @@ rm -rf Tests.xcworkspace
 rm -f Podfile.lock
 rm -f RemoteTestClient/*.{h,m}
 
-pod install
+pod install --verbose | gawk '{ print strftime("%Y-%m-%d %H:%M:%S"), $0; fflush(); }'
 
 echo "TIME:  $(date)"
