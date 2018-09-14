@@ -22,11 +22,11 @@ source tools/internal_ci/helper_scripts/prepare_build_macos_rc
 
 echo "TIME:  $(date)"
 
-CONFIG=opt src/objective-c/tests/build_tests.sh
+CONFIG=opt make interop_server
 
 echo "TIME:  $(date)"
 
-CONFIG=opt make interop_server
+CONFIG=opt src/objective-c/tests/build_tests.sh
 
 echo "TIME:  $(date)"
 
