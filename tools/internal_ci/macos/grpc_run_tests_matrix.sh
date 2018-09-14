@@ -20,11 +20,7 @@ cd $(dirname $0)/../../..
 
 source tools/internal_ci/helper_scripts/prepare_build_macos_rc
 
-echo "TIME!:  $(date)"
-
-CONFIG=opt SCHEME=HelloWorld EXAMPLE_PATH=examples/objective-c/helloworld src/objective-c/tests/build_one_example.sh
-
-echo "TIME!:  $(date)"
+CONFIG=opt src/objective-c/tests/build_tests.sh
 
 if [ "$FAILED" != "" ]
 then
