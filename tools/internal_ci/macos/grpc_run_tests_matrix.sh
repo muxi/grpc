@@ -22,19 +22,7 @@ source tools/internal_ci/helper_scripts/prepare_build_macos_rc
 
 echo "TIME:  $(date)"
 
-CONFIG=opt make interop_server
-
-echo "TIME:  $(date)"
-
-tools/run_tests/start_port_server.py
-
-echo "TIME:  $(date)"
-
-CONFIG=opt src/objective-c/tests/build_tests.sh
-
-echo "TIME:  $(date)"
-
-CONFIG=opt src/objective-c/tests/run_tests.sh | gawk '{ print strftime("%Y-%m-%d %H:%M:%S"), $0; fflush(); }'
+CONFIG=opt SCHEME=HelloWorld EXAMPLE_PATH=examples/objective-c/helloworld src/objective-c/tests/build_one_example.sh
 
 echo "TIME:  $(date)"
 

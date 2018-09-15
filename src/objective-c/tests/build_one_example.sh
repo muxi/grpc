@@ -34,7 +34,7 @@ rm -rf Pods
 rm -rf $SCHEME.xcworkspace
 rm -f Podfile.lock
 
-pod install
+pod install | gawk '{ print strftime("%Y-%m-%d %H:%M:%S"), $0; fflush(); }'
 
 set -o pipefail
 XCODEBUILD_FILTER='(^CompileC |^Ld |^.*clang |^ *cd |^ *export |^Libtool |^.*libtool |^CpHeader |^ *builtin-copy )'
@@ -47,4 +47,4 @@ xcodebuild \
     CODE_SIGN_IDENTITY="" \
     CODE_SIGNING_REQUIRED=NO \
     | egrep -v "$XCODEBUILD_FILTER" \
-    | egrep -v "^$" -
+    | egrep -v "^$" -  | gawk '{ print strftime("%Y-%m-%d %H:%M:%S"), $0; fflush(); }'
