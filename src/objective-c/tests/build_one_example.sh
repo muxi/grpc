@@ -36,8 +36,13 @@ rm -f Podfile.lock
 
 pod install | gawk '{ print strftime("%Y-%m-%d %H:%M:%S"), $0; fflush(); }'
 
+echo "TIME:  $(date)"
+
 set -o pipefail
 XCODEBUILD_FILTER='(^CompileC |^Ld |^.*clang |^ *cd |^ *export |^Libtool |^.*libtool |^CpHeader |^ *builtin-copy )'
+
+echo "TIME:  $(date)"
+
 xcodebuild \
     build \
     -workspace *.xcworkspace \
