@@ -31,6 +31,7 @@ static grpc_error* recursively_find_error_with_field(grpc_error* error,
     return error;
   }
   if (grpc_error_is_special(error)) return nullptr;
+  GPR_ASSERT(error != nullptr);
   // Otherwise, search through its children.
   uint8_t slot = error->first_err;
   while (slot != UINT8_MAX) {
