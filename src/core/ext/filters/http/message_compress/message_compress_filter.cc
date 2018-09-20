@@ -124,8 +124,7 @@ static grpc_error* process_send_initial_metadata(
       gpr_free(val);
       calld->message_compression_algorithm = GRPC_MESSAGE_COMPRESS_NONE;
       stream_compression_algorithm = GRPC_STREAM_COMPRESS_NONE;
-    }
-    if (GPR_UNLIKELY(!GPR_BITGET(channeld->enabled_algorithms_bitset,
+    } else if (GPR_UNLIKELY(!GPR_BITGET(channeld->enabled_algorithms_bitset,
                                  compression_algorithm))) {
       char* val = grpc_slice_to_c_string(GRPC_MDVALUE(md));
       gpr_log(GPR_ERROR,
@@ -135,17 +134,18 @@ static grpc_error* process_send_initial_metadata(
       gpr_free(val);
       calld->message_compression_algorithm = GRPC_MESSAGE_COMPRESS_NONE;
       stream_compression_algorithm = GRPC_STREAM_COMPRESS_NONE;
+    } else {
+      *has_compression_algorithm = true;
+      grpc_metadata_batch_remove(
+          initial_metadata,
+          initial_metadata->idx.named.grpc_internal_encoding_request);
+      calld->message_compression_algorithm =
+          grpc_compression_algorithm_to_message_compression_algorithm(
+              compression_algorithm);
+      stream_compression_algorithm =
+          grpc_compression_algorithm_to_stream_compression_algorithm(
+              compression_algorithm);
     }
-    *has_compression_algorithm = true;
-    grpc_metadata_batch_remove(
-        initial_metadata,
-        initial_metadata->idx.named.grpc_internal_encoding_request);
-    calld->message_compression_algorithm =
-        grpc_compression_algorithm_to_message_compression_algorithm(
-            compression_algorithm);
-    stream_compression_algorithm =
-        grpc_compression_algorithm_to_stream_compression_algorithm(
-            compression_algorithm);
   } else {
     /* If no algorithm was found in the metadata and we aren't
      * exceptionally skipping compression, fall back to the channel
