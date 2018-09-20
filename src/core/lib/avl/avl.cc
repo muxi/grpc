@@ -180,6 +180,7 @@ static grpc_avl_node* rotate_right_left(const grpc_avl_vtable* vtable,
 static grpc_avl_node* rebalance(const grpc_avl_vtable* vtable, void* key,
                                 void* value, grpc_avl_node* left,
                                 grpc_avl_node* right, void* user_data) {
+  assert(left != nullptr);
   switch (node_height(left) - node_height(right)) {
     case 2:
       if (node_height(left->left) - node_height(left->right) == -1) {
