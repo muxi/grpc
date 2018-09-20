@@ -649,9 +649,11 @@ static void close_transport_locked(grpc_chttp2_transport* t,
 
 #ifndef NDEBUG
 void grpc_chttp2_stream_ref(grpc_chttp2_stream* s, const char* reason) {
+  GPR_ASSERT(s != nullptr);
   grpc_stream_ref(s->refcount, reason);
 }
 void grpc_chttp2_stream_unref(grpc_chttp2_stream* s, const char* reason) {
+  GPR_ASSERT(s != nullptr);
   grpc_stream_unref(s->refcount, reason);
 }
 #else
