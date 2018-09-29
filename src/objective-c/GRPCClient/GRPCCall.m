@@ -85,6 +85,7 @@ static NSString *const kBearerPrefix = @"Bearer ";
   GRPCCall *_call;
   BOOL _initialMetadataPublished;
   GRXBufferedPipe *_pipe;
+  dispatch_queue_t _dispatchQueue;
 }
 
 - (instancetype)initWithRequest:(GRPCRequestOptions *)request
@@ -100,6 +101,7 @@ static NSString *const kBearerPrefix = @"Bearer ";
     _handler = handler;
     _initialMetadataPublished = NO;
     _pipe = [GRXBufferedPipe pipe];
+    _dispatchQueue = dispatch_queue_create(NULL, DISPATCH_QUEUE_SERIAL);
   }
 
   return self;
@@ -111,75 +113,97 @@ static NSString *const kBearerPrefix = @"Bearer ";
 }
 
 - (void)start {
-  if (!_options) {
-    _options = [[GRPCCallOptions alloc] init];
-  }
-  _activeRequest = [_request copy];
+  dispatch_async(_dispatchQueue, ^{
+    if (!self->_options) {
+      self->_options = [[GRPCCallOptions alloc] init];
+    }
+    self->_activeRequest = [self->_request copy];
 
-  _call = [[GRPCCall alloc] initWithHost:_activeRequest.host
-                                    path:_activeRequest.path
-                              callSafety:_activeRequest.safety
-                          requestsWriter:_pipe
-                                 options:_options];
-  if (_options.initialMetadata) {
-    [_call.requestHeaders addEntriesFromDictionary:_options.initialMetadata];
-  }
-  id<GRXWriteable> responseWriteable = [[GRXWriteable alloc] initWithValueHandler:^(id value) {
-    NSDictionary *headers = nil;
-    @synchronized(self) {
-      if (!self->_initialMetadataPublished) {
-        headers = self->_call.responseHeaders;
-        self->_initialMetadataPublished = YES;
-      }
+    self->_call = [[GRPCCall alloc] initWithHost:self->_activeRequest.host
+                                            path:self->_activeRequest.path
+                                      callSafety:self->_activeRequest.safety
+                                  requestsWriter:self->_pipe
+                                         options:self->_options];
+    if (self->_options.initialMetadata) {
+      [self->_call.requestHeaders addEntriesFromDictionary:self->_options.initialMetadata];
     }
-    if (headers) {
-      dispatch_async(self->_handler.dispatchQueue, ^{
-        [self->_handler receivedInitialMetadata:headers];
+    id<GRXWriteable> responseWriteable = [[GRXWriteable alloc] initWithValueHandler:^(id value) {
+      dispatch_async(self->_dispatchQueue, ^{
+        if (self->_handler) {
+          id<GRPCResponseHandler> handler = self->_handler;
+          NSDictionary *headers = nil;
+          if (!self->_initialMetadataPublished) {
+            headers = self->_call.responseHeaders;
+            self->_initialMetadataPublished = YES;
+          }
+          if (headers) {
+            dispatch_async(handler.dispatchQueue, ^{
+              [handler receivedInitialMetadata:headers];
+            });
+          }
+          if (value) {
+            dispatch_async(handler.dispatchQueue, ^{
+              [handler receivedMessage:value];
+            });
+          }
+        }
       });
-    }
-    if (value) {
-      dispatch_async(self->_handler.dispatchQueue, ^{
-        [self->_handler receivedMessage:value];
+    } completionHandler:^(NSError *errorOrNil) {
+      dispatch_async(self->_dispatchQueue, ^{
+        if (self->_handler) {
+          id<GRPCResponseHandler> handler = self->_handler;
+          NSDictionary *headers = nil;
+          if (!self->_initialMetadataPublished) {
+            headers = self->_call.responseHeaders;
+            self->_initialMetadataPublished = YES;
+          }
+          if (headers) {
+            dispatch_async(handler.dispatchQueue, ^{
+              [handler receivedInitialMetadata:headers];
+            });
+          }
+          dispatch_async(handler.dispatchQueue, ^{
+            [handler closedWithTrailingMetadata:self->_call.responseTrailers
+                                          error:errorOrNil];
+          });
+        }
       });
-    }
-  } completionHandler:^(NSError *errorOrNil) {
-    NSDictionary *headers = nil;
-    @synchronized(self) {
-      if (!self->_initialMetadataPublished) {
-        headers = self->_call.responseHeaders;
-        self->_initialMetadataPublished = YES;
-      }
-    }
-    if (headers) {
-      dispatch_async(self->_handler.dispatchQueue, ^{
-        [self->_handler receivedInitialMetadata:headers];
-      });
-    }
-    dispatch_async(self->_handler.dispatchQueue, ^{
-      [self->_handler closedWithTrailingMetadata:self->_call.responseTrailers
-                                            error:errorOrNil];
-    });
-  }];
-  [_call startWithWriteable:responseWriteable];
+    }];
+    [self->_call startWithWriteable:responseWriteable];
+  });
 }
 
 - (void)cancel {
-  @synchronized(self) {
-    [_call cancel];
-    _call = nil;
-  }
+  dispatch_async(_dispatchQueue, ^{
+    if (self->_call) {
+      [self->_call cancel];
+      self->_call = nil;
+    }
+    if (self->_handler) {
+      id<GRPCResponseHandler> handler = self->_handler;
+      dispatch_async(handler.dispatchQueue, ^{
+        [handler closedWithTrailingMetadata:nil error:[NSError
+                                                       errorWithDomain:kGRPCErrorDomain
+                                                       code:GRPCErrorCodeCancelled
+                                                       userInfo:@{NSLocalizedDescriptionKey : @"Canceled by app"}]];
+      });
+      self->_handler = nil;
+    }
+  });
 }
 
 - (void)writeWithData:(NSData *)data {
-  @synchronized(self) {
-    [_pipe writeValue:data];
-  }
+  dispatch_async(_dispatchQueue, ^{
+    [self->_pipe writeValue:data];
+  });
 }
 
 - (void)finish {
-  @synchronized(self) {
-    [_pipe writesFinishedWithError:nil];
-  }
+  dispatch_async(_dispatchQueue, ^{
+    if (self->_call) {
+      [self->_pipe writesFinishedWithError:nil];
+    }
+  });
 }
 
 @end

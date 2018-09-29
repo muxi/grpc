@@ -48,6 +48,7 @@
 
 - (void)cancel {
   [_call cancel];
+  _call = nil;
 }
 
 @end
@@ -63,8 +64,6 @@
   Class _responseClass;
 
   GRPCCallNg *_call;
-  NSMutableArray *_messageBacklog;
-  BOOL _started;
   dispatch_queue_t _dispatchQueue;
 }
 
@@ -77,8 +76,6 @@
     _handler = handler;
     _options = [options copy];
     _responseClass = responseClass;
-    _messageBacklog = [NSMutableArray array];
-    _started = NO;
     _dispatchQueue = dispatch_queue_create(nil, DISPATCH_QUEUE_SERIAL);
 
     [self start];
@@ -90,18 +87,26 @@
   _call = [[GRPCCallNg alloc] initWithRequest:_request
                                       handler:self
                                       options:_options];
-  @synchronized(self) {
-    _started = YES;
-    for (id msg in _messageBacklog) {
-      [_call writeWithData:[msg data]];
-    }
-    _messageBacklog = nil;
-  }
   [_call start];
 }
 
 - (void)cancel {
-  [_call cancel];
+  dispatch_async(_dispatchQueue, ^{
+    if (_call) {
+      [_call cancel];
+      _call = nil;
+    }
+    if (_handler) {
+      id<GRPCResponseHandler> handler = _handler;
+      dispatch_async(handler.dispatchQueue, ^{
+        [handler closedWithTrailingMetadata:nil error:[NSError
+                                                        errorWithDomain:kGRPCErrorDomain
+                                                        code:GRPCErrorCodeCancelled
+                                                        userInfo:@{NSLocalizedDescriptionKey : @"Canceled by app"}]];
+      });
+      _handler = nil;
+    }
+  });
 }
 
 - (void)writeWithMessage:(GPBMessage *)message {
@@ -109,40 +114,66 @@
     [NSException raise:NSInvalidArgumentException
                 format:@"Data must be a valid protobuf type."];
   }
-  @synchronized(self) {
-    if (!_started) {
-      [_messageBacklog addObject:message];
-      return;
+
+  dispatch_async(_dispatchQueue, ^{
+    if (_call) {
+      [_call writeWithData:[message data]];
     }
-  }
-  GPBMessage *protoData = (GPBMessage *)message;
-  [_call writeWithData:[protoData data]];
+  });
 }
 
 - (void)finish {
-  [_call finish];
+  dispatch_async(_dispatchQueue, ^{
+    if (_call) {
+      [_call finish];
+      _call = nil;
+    }
+  });
 }
 
 - (void)receivedInitialMetadata:(NSDictionary *)initialMetadata {
-  [_handler receivedInitialMetadata:initialMetadata];
+  if (_handler) {
+    id<GRPCResponseHandler> handler = _handler;
+    dispatch_async(handler.dispatchQueue, ^{
+      [handler receivedInitialMetadata:initialMetadata];
+    });
+  }
 }
 
 - (void)receivedMessage:(NSData *)message {
-  NSError *error = nil;
-  id parsed = [_responseClass parseFromData:message
-                                      error:&error];
-  if (parsed) {
-    [_handler receivedMessage:parsed];
-  } else {
-    [_handler closedWithTrailingMetadata:nil error:error];
+  if (_handler) {
+    id<GRPCResponseHandler> handler = _handler;
+    NSError *error = nil;
+    id parsed = [_responseClass parseFromData:message
+                                        error:&error];
+    if (parsed) {
+      dispatch_async(handler.dispatchQueue, ^{
+        [handler receivedMessage:parsed];
+      });
+    } else {
+      dispatch_async(handler.dispatchQueue, ^{
+        [handler closedWithTrailingMetadata:nil error:error];
+      });
+      handler = nil;
+      [_call cancel];
+      _call = nil;
+    }
   }
 }
 
 - (void)closedWithTrailingMetadata:(NSDictionary *)trailingMetadata
                             error:(NSError *)error {
-  [_handler closedWithTrailingMetadata:trailingMetadata error:error];
-  _handler = nil;
-  _call = nil;
+  if (_handler) {
+    id<GRPCResponseHandler> handler = _handler;
+    dispatch_async(handler.dispatchQueue, ^{
+      [handler closedWithTrailingMetadata:trailingMetadata error:error];
+    });
+    _handler = nil;
+  }
+  if (_call) {
+    [_call cancel];
+    _call = nil;
+  }
 }
 
 - (dispatch_queue_t)dispatchQueue {
