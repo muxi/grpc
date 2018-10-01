@@ -25,11 +25,10 @@
 
 @end
 
-@protocol GRPCProtoCallNg
+@protocol GRPCProtoCall2
 
 - (void)start;
 - (void)startWithOptions:(GRPCCallOptions *)options;
 - (void)cancel;
 
 @end
-

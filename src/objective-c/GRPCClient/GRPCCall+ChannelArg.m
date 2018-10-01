@@ -18,8 +18,8 @@
 
 #import "GRPCCall+ChannelArg.h"
 
-#import "private/GRPCHost.h"
 #import "private/GRPCChannel.h"
+#import "private/GRPCHost.h"
 
 #import <grpc/impl/codegen/compression_types.h>
 

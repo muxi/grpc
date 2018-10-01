@@ -112,7 +112,7 @@ class ObjectiveCGrpcGenerator : public grpc::protobuf::compiler::CodeGenerator {
       ::grpc::string ng_protocols;
       for (int i = 0; i < file->service_count(); i++) {
         const grpc::protobuf::ServiceDescriptor* service = file->service(i);
-        ng_protocols += grpc_objective_c_generator::GetNgProtocol(service);
+        ng_protocols += grpc_objective_c_generator::GetV2Protocol(service);
       }
 
       ::grpc::string protocols;
@@ -133,8 +133,9 @@ class ObjectiveCGrpcGenerator : public grpc::protobuf::compiler::CodeGenerator {
                 class_declarations + "\n" +
                 PreprocIfNot(kForwardDeclare, class_imports) + "\n" +
                 forward_declarations + "\n" + kNonNullBegin + "\n" +
-                ng_protocols + protocols + "\n" + PreprocIfNot(kProtocolOnly,
-                interfaces) + "\n" + kNonNullEnd + "\n");
+                ng_protocols + protocols + "\n" +
+                PreprocIfNot(kProtocolOnly, interfaces) + "\n" + kNonNullEnd +
+                "\n");
     }
 
     {

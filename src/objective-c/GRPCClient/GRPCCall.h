@@ -157,7 +157,7 @@ extern id const kGRPCTrailersKey;
 - (void)closedWithTrailingMetadata:(NSDictionary *)trailingMetadata error:(NSError *)error;
 
 // The dispatch queue to be used for issuing the notifications.
-@property (atomic, readonly)dispatch_queue_t dispatchQueue;
+@property(atomic, readonly) dispatch_queue_t dispatchQueue;
 
 @end
 
@@ -170,7 +170,7 @@ extern id const kGRPCTrailersKey;
 
 #pragma mark GRPCCall
 
-@interface GRPCCallNg : NSObject
+@interface GRPCCall2 : NSObject
 
 - (instancetype)init NS_UNAVAILABLE;
 
@@ -187,7 +187,8 @@ extern id const kGRPCTrailersKey;
 - (void)start;
 
 /**
- * Finishes the request side of this call, notifies the server that the RPC should be cancelled, and issue callback to handler with an error code CANCELED if the call is not finished.
+ * Finishes the request side of this call, notifies the server that the RPC should be cancelled, and
+ * issue callback to handler with an error code CANCELED if the call is not finished.
  */
 - (void)cancel;
 

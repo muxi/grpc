@@ -18,10 +18,10 @@
 
 #import "GRPCCallOptions.h"
 
-static NSString* const kDefaultServerAuthority = nil;
+static NSString *const kDefaultServerAuthority = nil;
 static const NSTimeInterval kDefaultTimeout = 0;
-static NSDictionary* const kDefaultInitialMetadata = nil;
-static NSString* const kDefaultUserAgentPrefix = nil;
+static NSDictionary *const kDefaultInitialMetadata = nil;
+static NSString *const kDefaultUserAgentPrefix = nil;
 static const NSUInteger kDefaultResponseSizeLimit = 0;
 static const GRPCCompressAlgorithm kDefaultCompressAlgorithm = GRPCCompressNone;
 static const BOOL kDefaultEnableRetry = YES;
@@ -30,20 +30,20 @@ static const NSTimeInterval kDefaultKeepaliveTimeout = 0;
 static const NSTimeInterval kDefaultConnectMinTimeout = 0;
 static const NSTimeInterval kDefaultConnectInitialBackoff = 0;
 static const NSTimeInterval kDefaultConnectMaxBackoff = 0;
-static NSDictionary* const kDefaultAdditionalChannelArgs = nil;
-static NSString* const kDefaultPemRootCert = nil;
-static NSString* const kDefaultPemPrivateKey = nil;
-static NSString* const kDefaultPemCertChain = nil;
-static NSString* const kDefaultOauth2AccessToken = nil;
+static NSDictionary *const kDefaultAdditionalChannelArgs = nil;
+static NSString *const kDefaultPemRootCert = nil;
+static NSString *const kDefaultPemPrivateKey = nil;
+static NSString *const kDefaultPemCertChain = nil;
+static NSString *const kDefaultOauth2AccessToken = nil;
 static const id<GRPCAuthorizationProtocol> kDefaultAuthTokenProvider = nil;
 static const GRPCTransportType kDefaultTransportType = GRPCTransportTypeDefault;
-static NSString* const kDefaultHostNameOverride = nil;
+static NSString *const kDefaultHostNameOverride = nil;
 static const id kDefaultLogContext = nil;
 static NSString *kDefaultChannelPoolDomain = nil;
 static NSUInteger kDefaultChannelId = 0;
 
 @implementation GRPCCallOptions {
-@protected
+ @protected
   NSString *_serverAuthority;
   NSTimeInterval _timeout;
   NSString *_oauth2AccessToken;
@@ -169,8 +169,8 @@ static NSUInteger kDefaultChannelId = 0;
   return self;
 }
 
-- (nonnull id)copyWithZone:(NSZone*)zone {
-  GRPCCallOptions* newOptions =
+- (nonnull id)copyWithZone:(NSZone *)zone {
+  GRPCCallOptions *newOptions =
       [[GRPCCallOptions allocWithZone:zone] initWithServerAuthority:_serverAuthority
                                                             timeout:_timeout
                                                   oauth2AccessToken:_oauth2AccessToken
@@ -198,30 +198,30 @@ static NSUInteger kDefaultChannelId = 0;
 }
 
 - (nonnull id)mutableCopyWithZone:(NSZone *)zone {
-  GRPCMutableCallOptions* newOptions =
-      [[GRPCMutableCallOptions allocWithZone:zone] initWithServerAuthority:_serverAuthority
-                                                                   timeout:_timeout
-                                                         oauth2AccessToken:_oauth2AccessToken
-                                                         authTokenProvider:_authTokenProvider
-                                                           initialMetadata:_initialMetadata
-                                                           userAgentPrefix:_userAgentPrefix
-                                                         responseSizeLimit:_responseSizeLimit
-                                                         compressAlgorithm:_compressAlgorithm
-                                                               enableRetry:_enableRetry
-                                                         keepaliveInterval:_keepaliveInterval
-                                                          keepaliveTimeout:_keepaliveTimeout
-                                                         connectMinTimeout:_connectMinTimeout
-                                                     connectInitialBackoff:_connectInitialBackoff
-                                                         connectMaxBackoff:_connectMaxBackoff
-                                                     additionalChannelArgs:[_additionalChannelArgs copy]
-                                                               pemRootCert:_pemRootCert
-                                                             pemPrivateKey:_pemPrivateKey
-                                                              pemCertChain:_pemCertChain
-                                                             transportType:_transportType
-                                                          hostNameOverride:_hostNameOverride
-                                                                logContext:_logContext
-                                                         channelPoolDomain:_channelPoolDomain
-                                                                 channelId:_channelId];
+  GRPCMutableCallOptions *newOptions = [[GRPCMutableCallOptions allocWithZone:zone]
+      initWithServerAuthority:_serverAuthority
+                      timeout:_timeout
+            oauth2AccessToken:_oauth2AccessToken
+            authTokenProvider:_authTokenProvider
+              initialMetadata:_initialMetadata
+              userAgentPrefix:_userAgentPrefix
+            responseSizeLimit:_responseSizeLimit
+            compressAlgorithm:_compressAlgorithm
+                  enableRetry:_enableRetry
+            keepaliveInterval:_keepaliveInterval
+             keepaliveTimeout:_keepaliveTimeout
+            connectMinTimeout:_connectMinTimeout
+        connectInitialBackoff:_connectInitialBackoff
+            connectMaxBackoff:_connectMaxBackoff
+        additionalChannelArgs:[_additionalChannelArgs copy]
+                  pemRootCert:_pemRootCert
+                pemPrivateKey:_pemPrivateKey
+                 pemCertChain:_pemCertChain
+                transportType:_transportType
+             hostNameOverride:_hostNameOverride
+                   logContext:_logContext
+            channelPoolDomain:_channelPoolDomain
+                    channelId:_channelId];
   return newOptions;
 }
 
@@ -279,59 +279,59 @@ static NSUInteger kDefaultChannelId = 0;
                              channelId:kDefaultChannelId];
 }
 
-- (nonnull id)copyWithZone:(NSZone*)zone {
-  GRPCCallOptions* newOptions =
-  [[GRPCCallOptions allocWithZone:zone] initWithServerAuthority:_serverAuthority
-                                                        timeout:_timeout
-                                              oauth2AccessToken:_oauth2AccessToken
-                                              authTokenProvider:_authTokenProvider
-                                                initialMetadata:_initialMetadata
-                                                userAgentPrefix:_userAgentPrefix
-                                              responseSizeLimit:_responseSizeLimit
-                                              compressAlgorithm:_compressAlgorithm
-                                                    enableRetry:_enableRetry
-                                              keepaliveInterval:_keepaliveInterval
-                                               keepaliveTimeout:_keepaliveTimeout
-                                              connectMinTimeout:_connectMinTimeout
-                                          connectInitialBackoff:_connectInitialBackoff
-                                              connectMaxBackoff:_connectMaxBackoff
-                                          additionalChannelArgs:[_additionalChannelArgs copy]
-                                                    pemRootCert:_pemRootCert
-                                                  pemPrivateKey:_pemPrivateKey
-                                                   pemCertChain:_pemCertChain
-                                                  transportType:_transportType
-                                               hostNameOverride:_hostNameOverride
-                                                     logContext:_logContext
-                                              channelPoolDomain:_channelPoolDomain
-                                                      channelId:_channelId];
+- (nonnull id)copyWithZone:(NSZone *)zone {
+  GRPCCallOptions *newOptions =
+      [[GRPCCallOptions allocWithZone:zone] initWithServerAuthority:_serverAuthority
+                                                            timeout:_timeout
+                                                  oauth2AccessToken:_oauth2AccessToken
+                                                  authTokenProvider:_authTokenProvider
+                                                    initialMetadata:_initialMetadata
+                                                    userAgentPrefix:_userAgentPrefix
+                                                  responseSizeLimit:_responseSizeLimit
+                                                  compressAlgorithm:_compressAlgorithm
+                                                        enableRetry:_enableRetry
+                                                  keepaliveInterval:_keepaliveInterval
+                                                   keepaliveTimeout:_keepaliveTimeout
+                                                  connectMinTimeout:_connectMinTimeout
+                                              connectInitialBackoff:_connectInitialBackoff
+                                                  connectMaxBackoff:_connectMaxBackoff
+                                              additionalChannelArgs:[_additionalChannelArgs copy]
+                                                        pemRootCert:_pemRootCert
+                                                      pemPrivateKey:_pemPrivateKey
+                                                       pemCertChain:_pemCertChain
+                                                      transportType:_transportType
+                                                   hostNameOverride:_hostNameOverride
+                                                         logContext:_logContext
+                                                  channelPoolDomain:_channelPoolDomain
+                                                          channelId:_channelId];
   return newOptions;
 }
 
 - (nonnull id)mutableCopyWithZone:(NSZone *)zone {
-  GRPCMutableCallOptions* newOptions =
-  [[GRPCMutableCallOptions allocWithZone:zone] initWithServerAuthority:_serverAuthority
-                                                               timeout:_timeout
-                                                     oauth2AccessToken:_oauth2AccessToken
-                                                     authTokenProvider:_authTokenProvider
-                                                       initialMetadata:_initialMetadata
-                                                       userAgentPrefix:_userAgentPrefix
-                                                     responseSizeLimit:_responseSizeLimit
-                                                     compressAlgorithm:_compressAlgorithm
-                                                           enableRetry:_enableRetry
-                                                     keepaliveInterval:_keepaliveInterval
-                                                      keepaliveTimeout:_keepaliveTimeout
-                                                     connectMinTimeout:_connectMinTimeout
-                                                 connectInitialBackoff:_connectInitialBackoff
-                                                     connectMaxBackoff:_connectMaxBackoff
-                                                 additionalChannelArgs:[_additionalChannelArgs copy]
-                                                           pemRootCert:_pemRootCert
-                                                         pemPrivateKey:_pemPrivateKey
-                                                          pemCertChain:_pemCertChain
-                                                         transportType:_transportType
-                                                      hostNameOverride:_hostNameOverride
-                                                            logContext:_logContext
-                                                     channelPoolDomain:_channelPoolDomain
-                                                             channelId:_channelId];
+  GRPCMutableCallOptions *newOptions = [[GRPCMutableCallOptions allocWithZone:zone]
+      initWithServerAuthority:_serverAuthority
+                      timeout:_timeout
+            oauth2AccessToken:_oauth2AccessToken
+            authTokenProvider:_authTokenProvider
+              initialMetadata:_initialMetadata
+              userAgentPrefix:_userAgentPrefix
+            responseSizeLimit:_responseSizeLimit
+            compressAlgorithm:_compressAlgorithm
+                  enableRetry:_enableRetry
+            keepaliveInterval:_keepaliveInterval
+             keepaliveTimeout:_keepaliveTimeout
+            connectMinTimeout:_connectMinTimeout
+        connectInitialBackoff:_connectInitialBackoff
+            connectMaxBackoff:_connectMaxBackoff
+        additionalChannelArgs:[_additionalChannelArgs copy]
+                  pemRootCert:_pemRootCert
+                pemPrivateKey:_pemPrivateKey
+                 pemCertChain:_pemCertChain
+                transportType:_transportType
+             hostNameOverride:_hostNameOverride
+                   logContext:_logContext
+            channelPoolDomain:_channelPoolDomain
+                    channelId:_channelId];
   return newOptions;
 }
 
@@ -339,7 +339,7 @@ static NSUInteger kDefaultChannelId = 0;
   _serverAuthority = serverAuthority;
 }
 
-- (void)setTimeout:(NSTimeInterval )timeout {
+- (void)setTimeout:(NSTimeInterval)timeout {
   _timeout = timeout;
 }
 
@@ -347,7 +347,7 @@ static NSUInteger kDefaultChannelId = 0;
   _oauth2AccessToken = oauth2AccessToken;
 }
 
-- (void)setAuthTokenProvider:(id<GRPCAuthorizationProtocol> )authTokenProvider {
+- (void)setAuthTokenProvider:(id<GRPCAuthorizationProtocol>)authTokenProvider {
   _authTokenProvider = authTokenProvider;
 }
 
@@ -359,35 +359,35 @@ static NSUInteger kDefaultChannelId = 0;
   _userAgentPrefix = userAgentPrefix;
 }
 
-- (void)setResponseSizeLimit:(NSUInteger )responseSizeLimit {
+- (void)setResponseSizeLimit:(NSUInteger)responseSizeLimit {
   _responseSizeLimit = responseSizeLimit;
 }
 
-- (void)setCompressAlgorithm:(GRPCCompressAlgorithm )compressAlgorithm {
+- (void)setCompressAlgorithm:(GRPCCompressAlgorithm)compressAlgorithm {
   _compressAlgorithm = compressAlgorithm;
 }
 
-- (void)setEnableRetry:(BOOL )enableRetry {
+- (void)setEnableRetry:(BOOL)enableRetry {
   _enableRetry = enableRetry;
 }
 
-- (void)setKeepaliveInterval:(NSTimeInterval )keepaliveInterval {
+- (void)setKeepaliveInterval:(NSTimeInterval)keepaliveInterval {
   _keepaliveInterval = keepaliveInterval;
 }
 
-- (void)setKeepaliveTimeout:(NSTimeInterval )keepaliveTimeout {
+- (void)setKeepaliveTimeout:(NSTimeInterval)keepaliveTimeout {
   _keepaliveTimeout = keepaliveTimeout;
 }
 
-- (void)setConnectMinTimeout:(NSTimeInterval )connectMinTimeout {
+- (void)setConnectMinTimeout:(NSTimeInterval)connectMinTimeout {
   _connectMinTimeout = connectMinTimeout;
 }
 
-- (void)setConnectInitialBackoff:(NSTimeInterval )connectInitialBackoff {
+- (void)setConnectInitialBackoff:(NSTimeInterval)connectInitialBackoff {
   _connectInitialBackoff = connectInitialBackoff;
 }
 
-- (void)setConnectMaxBackoff:(NSTimeInterval )connectMaxBackoff {
+- (void)setConnectMaxBackoff:(NSTimeInterval)connectMaxBackoff {
   _connectMaxBackoff = connectMaxBackoff;
 }
 
@@ -407,7 +407,7 @@ static NSUInteger kDefaultChannelId = 0;
   _pemCertChain = pemCertChain;
 }
 
-- (void)setTransportType:(GRPCTransportType )transportType {
+- (void)setTransportType:(GRPCTransportType)transportType {
   _transportType = transportType;
 }
 
@@ -415,7 +415,7 @@ static NSUInteger kDefaultChannelId = 0;
   _hostNameOverride = hostNameOverride;
 }
 
-- (void)setLogContext:(id )logContext {
+- (void)setLogContext:(id)logContext {
   _logContext = logContext;
 }
 
@@ -423,7 +423,7 @@ static NSUInteger kDefaultChannelId = 0;
   _channelPoolDomain = channelPoolDomain;
 }
 
-- (void)setChannelId:(NSUInteger )channelId {
+- (void)setChannelId:(NSUInteger)channelId {
   _channelId = channelId;
 }
 

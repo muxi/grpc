@@ -113,7 +113,7 @@ void PrintAdvancedSignature(Printer* printer, const MethodDescriptor* method,
   PrintMethodSignature(printer, method, vars);
 }
 
-void PrintNgSignature(Printer* printer, const MethodDescriptor* method,
+void PrintV2Signature(Printer* printer, const MethodDescriptor* method,
                       map< ::grpc::string, ::grpc::string> vars) {
   if (method->client_streaming()) {
     vars["return_type"] = "GRPCStreamingProtoCall *";
@@ -129,7 +129,9 @@ void PrintNgSignature(Printer* printer, const MethodDescriptor* method,
   if (method->client_streaming()) {
     printer->Print("ResponseHandler:(id<GRPCResponseHandler>)handler");
   } else {
-    printer->Print(vars, "Message:($request_class$ *)message responseHandler:(id<GRPCResponseHandler>)handler");
+    printer->Print(vars,
+                   "Message:($request_class$ *)message "
+                   "responseHandler:(id<GRPCResponseHandler>)handler");
   }
   printer->Print(" options:(GRPCCallOptions *_Nullable)options");
 }
@@ -156,12 +158,13 @@ void PrintMethodDeclarations(Printer* printer, const MethodDescriptor* method) {
   printer->Print(";\n\n\n");
 }
 
-void PrintNgMethodDeclarations(Printer* printer, const MethodDescriptor* method) {
+void PrintV2MethodDeclarations(Printer* printer,
+                               const MethodDescriptor* method) {
   map< ::grpc::string, ::grpc::string> vars = GetMethodVars(method);
 
   PrintProtoRpcDeclarationAsPragma(printer, method, vars);
 
-  PrintNgSignature(printer, method, vars);
+  PrintV2Signature(printer, method, vars);
   printer->Print(";\n\n");
 }
 
@@ -207,21 +210,22 @@ void PrintAdvancedImplementation(Printer* printer,
   printer->Print("}\n");
 }
 
-void PrintNgImplementation(Printer* printer,
-                                 const MethodDescriptor* method,
-                                 map< ::grpc::string, ::grpc::string> vars) {
+void PrintV2Implementation(Printer* printer, const MethodDescriptor* method,
+                           map< ::grpc::string, ::grpc::string> vars) {
   printer->Print(" {\n");
   if (method->client_streaming()) {
     printer->Print(vars, "  return [self RPCToMethod:@\"$method_name$\"\n");
-    printer->Print(      "           responseHandler:handler\n");
-    printer->Print(      "                   options:options ?: _options\n");
-    printer->Print(vars, "             responseClass:[$response_class$ class]];\n}\n\n");
+    printer->Print("           responseHandler:handler\n");
+    printer->Print("                   options:options ?: _options\n");
+    printer->Print(
+        vars, "             responseClass:[$response_class$ class]];\n}\n\n");
   } else {
     printer->Print(vars, "  return [self RPCToMethod:@\"$method_name$\"\n");
-    printer->Print(      "                   message:message\n");
-    printer->Print(      "           responseHandler:handler\n");
-    printer->Print(      "                   options:options ?: _options\n");
-    printer->Print(vars, "             responseClass:[$response_class$ class]];\n}\n\n");
+    printer->Print("                   message:message\n");
+    printer->Print("           responseHandler:handler\n");
+    printer->Print("                   options:options ?: _options\n");
+    printer->Print(
+        vars, "             responseClass:[$response_class$ class]];\n}\n\n");
   }
 }
 
@@ -240,8 +244,8 @@ void PrintMethodImplementations(Printer* printer,
   PrintAdvancedSignature(printer, method, vars);
   PrintAdvancedImplementation(printer, method, vars);
 
-  PrintNgSignature(printer, method, vars);
-  PrintNgImplementation(printer, method, vars);
+  PrintV2Signature(printer, method, vars);
+  PrintV2Implementation(printer, method, vars);
 }
 
 }  // namespace
@@ -283,7 +287,7 @@ void PrintMethodImplementations(Printer* printer,
   return output;
 }
 
-::grpc::string GetNgProtocol(const ServiceDescriptor* service) {
+::grpc::string GetV2Protocol(const ServiceDescriptor* service) {
   ::grpc::string output;
 
   // Scope the output stream so it closes and finalizes output to the string.
@@ -291,11 +295,11 @@ void PrintMethodImplementations(Printer* printer,
   Printer printer(&output_stream, '$');
 
   map< ::grpc::string, ::grpc::string> vars = {
-      {"service_class", ServiceClassName(service) + "Ng"}};
+      {"service_class", ServiceClassName(service) + "2"}};
 
   printer.Print(vars, "@protocol $service_class$ <NSObject>\n\n");
   for (int i = 0; i < service->method_count(); i++) {
-    PrintNgMethodDeclarations(&printer, service->method(i));
+    PrintV2MethodDeclarations(&printer, service->method(i));
   }
   printer.Print("@end\n\n");
 
@@ -319,13 +323,15 @@ void PrintMethodImplementations(Printer* printer,
                 " */\n");
   printer.Print(vars,
                 "@interface $service_class$ :"
-                " GRPCProtoService<$service_class$, $service_class$Ng>\n");
+                " GRPCProtoService<$service_class$, $service_class$2>\n");
   printer.Print(
-      "- (instancetype)initWithHost:(NSString *)host options:(GRPCCallOptions *_Nullable)options"
+      "- (instancetype)initWithHost:(NSString *)host options:(GRPCCallOptions "
+      "*_Nullable)options"
       " NS_DESIGNATED_INITIALIZER;\n");
+  printer.Print("- (instancetype)initWithHost:(NSString *)host;\n");
   printer.Print(
-      "- (instancetype)initWithHost:(NSString *)host;\n");
-  printer.Print("+ (instancetype)serviceWithHost:(NSString *)host options:(GRPCCallOptions *_Nullable)options;\n");
+      "+ (instancetype)serviceWithHost:(NSString *)host "
+      "options:(GRPCCallOptions *_Nullable)options;\n");
   printer.Print("+ (instancetype)serviceWithHost:(NSString *)host;\n");
   printer.Print("@end\n");
 
@@ -349,7 +355,8 @@ void PrintMethodImplementations(Printer* printer,
                   "  GRPCCallOptions *_options;\n"
                   "}\n\n"
                   "// Designated initializer\n"
-                  "- (instancetype)initWithHost:(NSString *)host options:(GRPCCallOptions *_Nullable)options{\n"
+                  "- (instancetype)initWithHost:(NSString *)host "
+                  "options:(GRPCCallOptions *_Nullable)options{\n"
                   "  self = [super initWithHost:host\n"
                   "                 packageName:@\"$package$\"\n"
                   "                 serviceName:@\"$service_name$\"\n"
@@ -377,7 +384,8 @@ void PrintMethodImplementations(Printer* printer,
         "+ (instancetype)serviceWithHost:(NSString *)host {\n"
         "  return [self serviceWithHost:host options:nil];\n"
         "}\n\n"
-        "+ (instancetype)serviceWithHost:(NSString *)host options:(GRPCCallOptions *_Nullable)options {\n"
+        "+ (instancetype)serviceWithHost:(NSString *)host "
+        "options:(GRPCCallOptions *_Nullable)options {\n"
         "  return [[self alloc] initWithHost:host options:options];\n"
         "}\n\n");
 

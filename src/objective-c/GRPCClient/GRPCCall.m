@@ -20,10 +20,10 @@
 
 #import "GRPCCall+OAuth2.h"
 
+#import <RxLibrary/GRXBufferedPipe.h>
 #import <RxLibrary/GRXConcurrentWriteable.h>
 #import <RxLibrary/GRXImmediateSingleWriter.h>
 #import <RxLibrary/GRXWriter+Immediate.h>
-#import <RxLibrary/GRXBufferedPipe.h>
 #include <grpc/grpc.h>
 #include <grpc/support/time.h>
 
@@ -75,7 +75,7 @@ static NSString *const kBearerPrefix = @"Bearer ";
 
 @end
 
-@implementation GRPCCallNg {
+@implementation GRPCCall2 {
   GRPCCallOptions *_options;
   GRPCRequestOptions *_request;
   id<GRPCResponseHandler> _handler;
@@ -148,27 +148,27 @@ static NSString *const kBearerPrefix = @"Bearer ";
           }
         }
       });
-    } completionHandler:^(NSError *errorOrNil) {
-      dispatch_async(self->_dispatchQueue, ^{
-        if (self->_handler) {
-          id<GRPCResponseHandler> handler = self->_handler;
-          NSDictionary *headers = nil;
-          if (!self->_initialMetadataPublished) {
-            headers = self->_call.responseHeaders;
-            self->_initialMetadataPublished = YES;
-          }
-          if (headers) {
-            dispatch_async(handler.dispatchQueue, ^{
-              [handler receivedInitialMetadata:headers];
-            });
-          }
-          dispatch_async(handler.dispatchQueue, ^{
-            [handler closedWithTrailingMetadata:self->_call.responseTrailers
-                                          error:errorOrNil];
+    }
+        completionHandler:^(NSError *errorOrNil) {
+          dispatch_async(self->_dispatchQueue, ^{
+            if (self->_handler) {
+              id<GRPCResponseHandler> handler = self->_handler;
+              NSDictionary *headers = nil;
+              if (!self->_initialMetadataPublished) {
+                headers = self->_call.responseHeaders;
+                self->_initialMetadataPublished = YES;
+              }
+              if (headers) {
+                dispatch_async(handler.dispatchQueue, ^{
+                  [handler receivedInitialMetadata:headers];
+                });
+              }
+              dispatch_async(handler.dispatchQueue, ^{
+                [handler closedWithTrailingMetadata:self->_call.responseTrailers error:errorOrNil];
+              });
+            }
           });
-        }
-      });
-    }];
+        }];
     [self->_call startWithWriteable:responseWriteable];
   });
 }
@@ -182,10 +182,13 @@ static NSString *const kBearerPrefix = @"Bearer ";
     if (self->_handler) {
       id<GRPCResponseHandler> handler = self->_handler;
       dispatch_async(handler.dispatchQueue, ^{
-        [handler closedWithTrailingMetadata:nil error:[NSError
-                                                       errorWithDomain:kGRPCErrorDomain
-                                                       code:GRPCErrorCodeCancelled
-                                                       userInfo:@{NSLocalizedDescriptionKey : @"Canceled by app"}]];
+        [handler closedWithTrailingMetadata:nil
+                                      error:[NSError errorWithDomain:kGRPCErrorDomain
+                                                                code:GRPCErrorCodeCancelled
+                                                            userInfo:@{
+                                                              NSLocalizedDescriptionKey :
+                                                                  @"Canceled by app"
+                                                            }]];
       });
       self->_handler = nil;
     }
@@ -315,7 +318,11 @@ static NSString *const kBearerPrefix = @"Bearer ";
 - (instancetype)initWithHost:(NSString *)host
                         path:(NSString *)path
               requestsWriter:(GRXWriter *)requestWriter {
-  return [self initWithHost:host path:path callSafety:GRPCCallSafetyDefault requestsWriter:requestWriter options:nil];
+  return [self initWithHost:host
+                       path:path
+                 callSafety:GRPCCallSafetyDefault
+             requestsWriter:requestWriter
+                    options:nil];
 }
 
 - (instancetype)initWithHost:(NSString *)host
@@ -350,7 +357,8 @@ static NSString *const kBearerPrefix = @"Bearer ";
 
     _responseQueue = dispatch_get_main_queue();
   }
-  return self;}
+  return self;
+}
 
 - (void)setResponseDispatchQueue:(dispatch_queue_t)queue {
   if (_state != GRXWriterStateNotStarted) {
@@ -645,8 +653,8 @@ static NSString *const kBearerPrefix = @"Bearer ";
 #pragma mark GRXWriter implementation
 
 - (void)startCallWithWriteable:(id<GRXWriteable>)writeable {
-  _responseWriteable = [[GRXConcurrentWriteable alloc] initWithWriteable:writeable
-                                                           dispatchQueue:_responseQueue];
+  _responseWriteable =
+      [[GRXConcurrentWriteable alloc] initWithWriteable:writeable dispatchQueue:_responseQueue];
 
   _wrappedCall = [[GRPCWrappedCall alloc] initWithHost:_host path:_path options:_options];
   NSAssert(_wrappedCall, @"Error allocating RPC objects. Low memory?");

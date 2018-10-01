@@ -30,10 +30,10 @@
 __attribute__((deprecated("Please use GRPCProtoService."))) @interface ProtoService
     : NSObject
 
-- (instancetype)initWithHost:(NSString *)host
-                 packageName:(NSString *)packageName
-                 serviceName:(NSString *)serviceName
-                     options:(GRPCCallOptions *)options NS_DESIGNATED_INITIALIZER;
+      -
+      (instancetype)initWithHost : (NSString *)host packageName
+    : (NSString *)packageName serviceName : (NSString *)serviceName options
+    : (GRPCCallOptions *)options NS_DESIGNATED_INITIALIZER;
 
 - (instancetype)initWithHost:(NSString *)host
                  packageName:(NSString *)packageName

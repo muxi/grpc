@@ -37,7 +37,7 @@
                   responseClass:(Class)responseClass {
   if ((self = [super init])) {
     _call = [[GRPCStreamingProtoCall alloc] initWithRequest:request
-                                          responseHandler:handler
+                                            responseHandler:handler
                                                     options:options
                                               responseClass:responseClass];
     [_call writeWithMessage:message];
@@ -63,7 +63,7 @@
   GRPCCallOptions *_options;
   Class _responseClass;
 
-  GRPCCallNg *_call;
+  GRPCCall2 *_call;
   dispatch_queue_t _dispatchQueue;
 }
 
@@ -84,9 +84,7 @@
 }
 
 - (void)start {
-  _call = [[GRPCCallNg alloc] initWithRequest:_request
-                                      handler:self
-                                      options:_options];
+  _call = [[GRPCCall2 alloc] initWithRequest:_request handler:self options:_options];
   [_call start];
 }
 
@@ -99,10 +97,13 @@
     if (_handler) {
       id<GRPCResponseHandler> handler = _handler;
       dispatch_async(handler.dispatchQueue, ^{
-        [handler closedWithTrailingMetadata:nil error:[NSError
-                                                        errorWithDomain:kGRPCErrorDomain
-                                                        code:GRPCErrorCodeCancelled
-                                                        userInfo:@{NSLocalizedDescriptionKey : @"Canceled by app"}]];
+        [handler closedWithTrailingMetadata:nil
+                                      error:[NSError errorWithDomain:kGRPCErrorDomain
+                                                                code:GRPCErrorCodeCancelled
+                                                            userInfo:@{
+                                                              NSLocalizedDescriptionKey :
+                                                                  @"Canceled by app"
+                                                            }]];
       });
       _handler = nil;
     }
@@ -111,8 +112,7 @@
 
 - (void)writeWithMessage:(GPBMessage *)message {
   if (![message isKindOfClass:[GPBMessage class]]) {
-    [NSException raise:NSInvalidArgumentException
-                format:@"Data must be a valid protobuf type."];
+    [NSException raise:NSInvalidArgumentException format:@"Data must be a valid protobuf type."];
   }
 
   dispatch_async(_dispatchQueue, ^{
@@ -144,8 +144,7 @@
   if (_handler) {
     id<GRPCResponseHandler> handler = _handler;
     NSError *error = nil;
-    id parsed = [_responseClass parseFromData:message
-                                        error:&error];
+    id parsed = [_responseClass parseFromData:message error:&error];
     if (parsed) {
       dispatch_async(handler.dispatchQueue, ^{
         [handler receivedMessage:parsed];
@@ -161,8 +160,7 @@
   }
 }
 
-- (void)closedWithTrailingMetadata:(NSDictionary *)trailingMetadata
-                            error:(NSError *)error {
+- (void)closedWithTrailingMetadata:(NSDictionary *)trailingMetadata error:(NSError *)error {
   if (_handler) {
     id<GRPCResponseHandler> handler = _handler;
     dispatch_async(handler.dispatchQueue, ^{

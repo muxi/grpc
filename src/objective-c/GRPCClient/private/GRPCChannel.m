@@ -108,12 +108,15 @@
   }
 
   if (_options.compressAlgorithm != GRPC_COMPRESS_NONE) {
-    args[@GRPC_COMPRESSION_CHANNEL_DEFAULT_ALGORITHM] = [NSNumber numberWithInt:_options.compressAlgorithm];
+    args[@GRPC_COMPRESSION_CHANNEL_DEFAULT_ALGORITHM] =
+        [NSNumber numberWithInt:_options.compressAlgorithm];
   }
 
   if (_options.keepaliveInterval != 0) {
-    args[@GRPC_ARG_KEEPALIVE_TIME_MS] = [NSNumber numberWithUnsignedInteger:(unsigned int)(_options.keepaliveInterval * 1000)];
-    args[@GRPC_ARG_KEEPALIVE_TIMEOUT_MS] = [NSNumber numberWithUnsignedInteger:(unsigned int)(_options.keepaliveTimeout * 1000)];
+    args[@GRPC_ARG_KEEPALIVE_TIME_MS] =
+        [NSNumber numberWithUnsignedInteger:(unsigned int)(_options.keepaliveInterval * 1000)];
+    args[@GRPC_ARG_KEEPALIVE_TIMEOUT_MS] =
+        [NSNumber numberWithUnsignedInteger:(unsigned int)(_options.keepaliveTimeout * 1000)];
   }
 
   if (_options.enableRetry == NO) {
@@ -172,18 +175,25 @@
   if (!(obj.options.additionalChannelArgs == _options.additionalChannelArgs ||
         [obj.options.additionalChannelArgs isEqualToDictionary:_options.additionalChannelArgs]))
     return NO;
-  if (!(obj.options.pemRootCert == _options.pemRootCert || [obj.options.pemRootCert isEqualToString:_options.pemRootCert]))
+  if (!(obj.options.pemRootCert == _options.pemRootCert ||
+        [obj.options.pemRootCert isEqualToString:_options.pemRootCert]))
     return NO;
-  if (!(obj.options.pemPrivateKey == _options.pemPrivateKey || [obj.options.pemPrivateKey isEqualToString:_options.pemPrivateKey]))
+  if (!(obj.options.pemPrivateKey == _options.pemPrivateKey ||
+        [obj.options.pemPrivateKey isEqualToString:_options.pemPrivateKey]))
     return NO;
-  if (!(obj.options.pemCertChain == _options.pemCertChain || [obj.options.pemCertChain isEqualToString:_options.pemCertChain]))
+  if (!(obj.options.pemCertChain == _options.pemCertChain ||
+        [obj.options.pemCertChain isEqualToString:_options.pemCertChain]))
     return NO;
   if (!(obj.options.hostNameOverride == _options.hostNameOverride ||
         [obj.options.hostNameOverride isEqualToString:_options.hostNameOverride]))
     return NO;
   if (!(obj.options.transportType == _options.transportType)) return NO;
-  if (!(obj.options.logContext == _options.logContext || [obj.options.logContext isEqual:_options.logContext])) return NO;
-  if (!(obj.options.channelPoolDomain == _options.channelPoolDomain || [obj.options.channelPoolDomain isEqualToString:_options.channelPoolDomain])) return NO;
+  if (!(obj.options.logContext == _options.logContext ||
+        [obj.options.logContext isEqual:_options.logContext]))
+    return NO;
+  if (!(obj.options.channelPoolDomain == _options.channelPoolDomain ||
+        [obj.options.channelPoolDomain isEqualToString:_options.channelPoolDomain]))
+    return NO;
   if (!(obj.options.channelId == _options.channelId)) return NO;
 
   return YES;
@@ -238,9 +248,9 @@
       timeout == 0 ? gpr_inf_future(GPR_CLOCK_REALTIME)
                    : gpr_time_add(gpr_now(GPR_CLOCK_MONOTONIC),
                                   gpr_time_from_millis((int64_t)(timeout * 1000), GPR_TIMESPAN));
-  grpc_call *call = grpc_channel_create_call(_unmanagedChannel, NULL, GRPC_PROPAGATE_DEFAULTS,
-                                             queue.unmanagedQueue, path_slice,
-                                             serverAuthority ? &host_slice : NULL, deadline_ms, NULL);
+  grpc_call *call = grpc_channel_create_call(
+      _unmanagedChannel, NULL, GRPC_PROPAGATE_DEFAULTS, queue.unmanagedQueue, path_slice,
+      serverAuthority ? &host_slice : NULL, deadline_ms, NULL);
   if (serverAuthority) {
     grpc_slice_unref(host_slice);
   }

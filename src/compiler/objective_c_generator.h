@@ -38,7 +38,7 @@ string GetProtocol(const ServiceDescriptor* service);
 
 // Returns the content to be included defining the @protocol segment at the
 // insertion point of the generated implementation file.
-string GetNgProtocol(const ServiceDescriptor* service);
+string GetV2Protocol(const ServiceDescriptor* service);
 
 // Returns the content to be included defining the @interface segment at the
 // insertion point of the generated implementation file.
