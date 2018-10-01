@@ -23,28 +23,49 @@
 
 @class GPBMessage;
 
+/** A unary-request RPC call with Protobuf. */
 @interface GRPCUnaryProtoCall : NSObject
 
+/**
+ * Users should not use this initializer directly. Call objects will be created, initialized, and
+ * returned to users by methods of the generated service.
+ */
 - (instancetype)initWithRequest:(GRPCRequestOptions *)request
                         message:(GPBMessage *)message
                 responseHandler:(id<GRPCResponseHandler>)handler
                         options:(GRPCCallOptions *)options
                   responseClass:(Class)responseClass;
 
+/** Cancel the call at best effort. */
 - (void)cancel;
 
 @end
 
+/** A client-streaming RPC call with Protobuf. */
 @interface GRPCStreamingProtoCall : NSObject
 
+/**
+ * Users should not use this initializer directly. Call objects will be created, initialized, and
+ * returned to users by methods of the generated service.
+ */
 - (instancetype)initWithRequest:(GRPCRequestOptions *)request
                 responseHandler:(id<GRPCResponseHandler>)handler
                         options:(GRPCCallOptions *)options
                   responseClass:(Class)responseClass;
 
+/** Cancel the call at best effort. */
 - (void)cancel;
 
+/**
+ * Send a message to the server. The message should be a Protobuf message which will be serialized
+ * internally.
+ */
 - (void)writeWithMessage:(GPBMessage *)message;
+
+/**
+ * Finish the RPC request and half-close the call. The server may still send messages and/or
+ * trailers to the client.
+ */
 - (void)finish;
 
 @end

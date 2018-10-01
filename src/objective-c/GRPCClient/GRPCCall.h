@@ -150,34 +150,70 @@ typedef NS_ENUM(NSUInteger, GRPCErrorCode) {
 extern id const kGRPCHeadersKey;
 extern id const kGRPCTrailersKey;
 
+/** An object can implement this protocol to receive responses from server from a call. */
 @protocol GRPCResponseHandler
 @optional
+/** Issued when initial metadata is received from the server. */
 - (void)receivedInitialMetadata:(NSDictionary *)initialMetadata;
+/**
+ * Issued when a message is received from the server. The message may be raw data from the server
+ * (when using \a GRPCCall2 directly) or deserialized proto object (when using \a ProtoRPC).
+ */
 - (void)receivedMessage:(id)message;
+/**
+ * Issued when a call finished. If the call finished successfully, \a error is nil and \a
+ * trainingMetadata consists any trailing metadata received from the server. Otherwise, \a error
+ * is non-nil and contains the corresponding error information, including gRPC error codes and
+ * error descriptions.
+ */
 - (void)closedWithTrailingMetadata:(NSDictionary *)trailingMetadata error:(NSError *)error;
 
-// The dispatch queue to be used for issuing the notifications.
+/**
+ * All the responses must be issued to a user-provided dispatch queue. This property specifies the
+ * dispatch queue to be used for issuing the notifications.
+ */
 @property(atomic, readonly) dispatch_queue_t dispatchQueue;
 
 @end
 
+/**
+ * Call related parameters. These parameters are automatically specified by Protobuf. If directly
+ * using the \a GRPCCall2 class, users should specify these parameters manually.
+ */
 @interface GRPCRequestOptions : NSObject<NSCopying>
+/** The host serving the RPC service. */
 @property(copy, readwrite) NSString *host;
+/** The path to the RPC call. */
 @property(copy, readwrite) NSString *path;
+/**
+ * Specify whether the call is idempotent or cachable. gRPC may select different HTTP verbs for the
+ * call based on this information.
+ */
 @property(readwrite) GRPCCallSafety safety;
 
 @end
 
 #pragma mark GRPCCall
 
+/**
+ * A \a GRPCCall2 object represents an RPC call.
+ */
 @interface GRPCCall2 : NSObject
 
 - (instancetype)init NS_UNAVAILABLE;
 
+/**
+ * Designated initializer for a call.
+ * \param request Protobuf generated parameters for the call.
+ * \param handler The object to which responses should be issed.
+ * \param options Options for the call.
+ */
 - (instancetype)initWithRequest:(GRPCRequestOptions *)request
                         handler:(id<GRPCResponseHandler>)handler
                         options:(GRPCCallOptions *)options NS_DESIGNATED_INITIALIZER;
-
+/**
+ * Convevience initializer for a call that uses default call options.
+ */
 - (instancetype)initWithRequest:(GRPCRequestOptions *)request
                         handler:(id<GRPCResponseHandler>)handler;
 
@@ -187,23 +223,39 @@ extern id const kGRPCTrailersKey;
 - (void)start;
 
 /**
- * Finishes the request side of this call, notifies the server that the RPC should be cancelled, and
- * issue callback to handler with an error code CANCELED if the call is not finished.
+ * Cancel the request of this call at best effort; notifies the server that the RPC should be
+ * cancelled, and issue callback to the user with an error code CANCELED if the call is not
+ * finished.
  */
 - (void)cancel;
 
+/**
+ * Send a message to the server. Data are sent as raw bytes in gRPC message frames.
+ */
 - (void)writeWithData:(NSData *)data;
 
-- (void)finish;
+/**
+ * Finish the RPC request and half-close the call. The server may still send messages and/or
+ * trailers to the client.
+ */- (void)finish;
 
+/**
+ * Get a copy of the original call options.
+ */
 @property(atomic, readonly, copy) GRPCCallOptions *options;
+
+/** Get a copy of the original request options. */
 @property(atomic, copy, readonly) NSString *host;
 @property(atomic, copy, readonly) NSString *path;
 @property(atomic, readonly) GRPCCallSafety safety;
 
 @end
 
-/** Represents a single gRPC remote call. */
+/**
+  * This interface is deprecated. Please use \a GRPCcall2.
+  *
+  * Represents a single gRPC remote call.
+  */
 @interface GRPCCall : GRXWriter
 
 /**
