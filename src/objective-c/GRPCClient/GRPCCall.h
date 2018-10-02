@@ -250,12 +250,10 @@ extern id const kGRPCTrailersKey;
 /**
  * Get a copy of the original call options.
  */
-@property(atomic, readonly, copy) GRPCCallOptions *callOptions;
+@property(readonly, copy) GRPCCallOptions *callOptions;
 
 /** Get a copy of the original request options. */
-@property(atomic, copy, readonly) NSString *host;
-@property(atomic, copy, readonly) NSString *path;
-@property(atomic, readonly) GRPCCallSafety safety;
+@property(readonly, copy) GRPCRequestOptions *requestOptions;
 
 @end
 

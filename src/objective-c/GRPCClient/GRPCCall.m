@@ -87,7 +87,6 @@ static NSString *const kBearerPrefix = @"Bearer ";
 
 @implementation GRPCCall2 {
   GRPCCallOptions *_callOptions;
-  GRPCRequestOptions *_requestOptions;
   id<GRPCResponseHandler> _handler;
 
   GRPCCall *_call;
