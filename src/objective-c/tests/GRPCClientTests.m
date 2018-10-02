@@ -289,7 +289,7 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
   [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];
 }
 
-- (void)testMetadataWithOptions {
+- (void)testMetadataWithV2API {
   __weak XCTestExpectation *expectation = [self expectationWithDescription:@"RPC unauthorized."];
 
   RMTSimpleRequest *request = [RMTSimpleRequest message];
@@ -426,7 +426,7 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
   [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];
 }
 
-- (void)testUserAgentPrefixWithOptions {
+- (void)testUserAgentPrefixWithV2API {
   __weak XCTestExpectation *completion = [self expectationWithDescription:@"Empty RPC completed."];
   __weak XCTestExpectation *recvInitialMd =
       [self expectationWithDescription:@"Did not receive initial md."];
@@ -584,7 +584,7 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
   [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];
 }
 
-- (void)testIdempotentProtoRPCWithOptions {
+- (void)testIdempotentProtoRPCWithV2API {
   __weak XCTestExpectation *response = [self expectationWithDescription:@"Expected response."];
   __weak XCTestExpectation *completion = [self expectationWithDescription:@"RPC completed."];
 
@@ -713,7 +713,7 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
   [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];
 }
 
-- (void)testTimeoutWithOptions {
+- (void)testTimeoutWithV2API {
   __weak XCTestExpectation *completion = [self expectationWithDescription:@"RPC completed."];
 
   GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
