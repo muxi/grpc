@@ -31,13 +31,13 @@
   GRPCStreamingProtoCall *_call;
 }
 
-- (instancetype)initWithRequest:(GRPCRequestOptions *)request
+- (instancetype)initWithRequestOptions:(GRPCRequestOptions *)requestOptions
                         message:(GPBMessage *)message
                 responseHandler:(id<GRPCResponseHandler>)handler
                     callOptions:(GRPCCallOptions *)callOptions
                   responseClass:(Class)responseClass {
   if ((self = [super init])) {
-    _call = [[GRPCStreamingProtoCall alloc] initWithRequest:request
+    _call = [[GRPCStreamingProtoCall alloc] initWithRequestOptions:requestOptions
                                             responseHandler:handler
                                                 callOptions:callOptions
                                               responseClass:responseClass];
@@ -59,7 +59,7 @@
 @end
 
 @implementation GRPCStreamingProtoCall {
-  GRPCRequestOptions *_request;
+  GRPCRequestOptions *_requestOptions;
   id<GRPCResponseHandler> _handler;
   GRPCCallOptions *_callOptions;
   Class _responseClass;
@@ -68,12 +68,12 @@
   dispatch_queue_t _dispatchQueue;
 }
 
-- (instancetype)initWithRequest:(GRPCRequestOptions *)request
+- (instancetype)initWithRequestOptions:(GRPCRequestOptions *)requestOptions
                 responseHandler:(id<GRPCResponseHandler>)handler
                     callOptions:(GRPCCallOptions *)callOptions
                   responseClass:(Class)responseClass {
   if ((self = [super init])) {
-    _request = [request copy];
+    _requestOptions = [requestOptions copy];
     _handler = handler;
     _callOptions = [callOptions copy];
     _responseClass = responseClass;
@@ -85,7 +85,7 @@
 }
 
 - (void)start {
-  _call = [[GRPCCall2 alloc] initWithRequest:_request handler:self callOptions:_callOptions];
+  _call = [[GRPCCall2 alloc] initWithRequestOptions:_requestOptions handler:self callOptions:_callOptions];
   [_call start];
 }
 

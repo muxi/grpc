@@ -181,15 +181,23 @@ extern id const kGRPCTrailersKey;
  * using the \a GRPCCall2 class, users should specify these parameters manually.
  */
 @interface GRPCRequestOptions : NSObject<NSCopying>
+
+- (instancetype)init NS_UNAVAILABLE;
+
+/** Initialize with all properties. */
+- (instancetype)initWithHost:(NSString *)host
+                        path:(NSString *)path
+                      safety:(GRPCCallSafety)safety;
+
 /** The host serving the RPC service. */
-@property(copy, readwrite) NSString *host;
+@property(copy, readonly) NSString *host;
 /** The path to the RPC call. */
-@property(copy, readwrite) NSString *path;
+@property(copy, readonly) NSString *path;
 /**
  * Specify whether the call is idempotent or cachable. gRPC may select different HTTP verbs for the
  * call based on this information.
  */
-@property(readwrite) GRPCCallSafety safety;
+@property(readonly) GRPCCallSafety safety;
 
 @end
 
@@ -204,17 +212,17 @@ extern id const kGRPCTrailersKey;
 
 /**
  * Designated initializer for a call.
- * \param request Protobuf generated parameters for the call.
+ * \param requestOptions Protobuf generated parameters for the call.
  * \param handler The object to which responses should be issed.
  * \param callOptions Options for the call.
  */
-- (instancetype)initWithRequest:(GRPCRequestOptions *)request
+- (instancetype)initWithRequestOptions:(GRPCRequestOptions *)requestOptions
                         handler:(id<GRPCResponseHandler>)handler
                     callOptions:(GRPCCallOptions *)callOptions NS_DESIGNATED_INITIALIZER;
 /**
  * Convevience initializer for a call that uses default call options.
  */
-- (instancetype)initWithRequest:(GRPCRequestOptions *)request
+- (instancetype)initWithRequestOptions:(GRPCRequestOptions *)requestOptions
                         handler:(id<GRPCResponseHandler>)handler;
 
 /**

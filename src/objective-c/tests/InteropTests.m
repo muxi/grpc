@@ -141,6 +141,10 @@ BOOL isRemoteInteropTest(NSString *host) {
   return 0;
 }
 
++ (GRPCTransportType)transportType {
+  return GRPCTransportTypeDefault;
+}
+
 + (void)setUp {
   NSLog(@"InteropTest Started, class: %@", [[self class] description]);
 #ifdef GRPC_COMPILE_WITH_CRONET
@@ -183,6 +187,8 @@ BOOL isRemoteInteropTest(NSString *host) {
   __weak XCTestExpectation *expectation = [self expectationWithDescription:@"EmptyUnary"];
 
   GPBEmpty *request = [GPBEmpty message];
+  GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
+  options.transportType = self.class.transportType;
 
   [_service
       emptyCallWithMessage:request
@@ -197,7 +203,7 @@ BOOL isRemoteInteropTest(NSString *host) {
                                closeCallback:^(NSDictionary *trailingMetadata, NSError *error) {
                                  XCTAssertNil(error, @"Unexpected error: %@", error);
                                }]
-               callOptions:nil];
+               callOptions:options];
   [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];
 }
 
@@ -461,6 +467,8 @@ BOOL isRemoteInteropTest(NSString *host) {
 
   id request = [RMTStreamingOutputCallRequest messageWithPayloadSize:requests[index]
                                                requestedResponseSize:responses[index]];
+  GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
+  options.transportType = self.class.transportType;;
 
   __block GRPCStreamingProtoCall *call = [_service
       fullDuplexCallWithResponseHandler:[[InteropTestsBlockCallbacks alloc]
@@ -491,7 +499,7 @@ BOOL isRemoteInteropTest(NSString *host) {
                                                              index);
                                               [expectation fulfill];
                                             }]
-                            callOptions:nil];
+                            callOptions:options];
   [call writeWithMessage:request];
 
   [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];
@@ -535,7 +543,7 @@ BOOL isRemoteInteropTest(NSString *host) {
   [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];
 }
 
-- (void)testCancelAfterBeginRPCWithOptions {
+- (void)testCancelAfterBeginRPCWithV2API {
   XCTAssertNotNil(self.class.host);
   __weak XCTestExpectation *expectation = [self expectationWithDescription:@"CancelAfterBegin"];
 
@@ -593,7 +601,7 @@ BOOL isRemoteInteropTest(NSString *host) {
   [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];
 }
 
-- (void)testCancelAfterFirstResponseRPCWithOptions {
+- (void)testCancelAfterFirstResponseRPCWithV2API {
   XCTAssertNotNil(self.class.host);
   __weak XCTestExpectation *completionExpectation =
       [self expectationWithDescription:@"Call completed."];
@@ -601,6 +609,9 @@ BOOL isRemoteInteropTest(NSString *host) {
       [self expectationWithDescription:@"Received response."];
 
   __block BOOL receivedResponse = NO;
+
+  GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
+  options.transportType = self.class.transportType;
 
   id request =
       [RMTStreamingOutputCallRequest messageWithPayloadSize:@21782 requestedResponseSize:@31415];
@@ -619,7 +630,7 @@ BOOL isRemoteInteropTest(NSString *host) {
                                               XCTAssertEqual(error.code, GRPC_STATUS_CANCELLED);
                                               [completionExpectation fulfill];
                                             }]
-                            callOptions:nil];
+                            callOptions:options];
 
   [call writeWithMessage:request];
   [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];

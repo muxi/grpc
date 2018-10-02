@@ -83,11 +83,10 @@
                       responseClass:(Class)responseClass {
   GRPCProtoMethod *methodName =
       [[GRPCProtoMethod alloc] initWithPackage:_packageName service:_serviceName method:method];
-  GRPCRequestOptions *request = [[GRPCRequestOptions alloc] init];
-  request.host = _host;
-  request.path = methodName.HTTPPath;
-  request.safety = GRPCCallSafetyDefault;
-  return [[GRPCUnaryProtoCall alloc] initWithRequest:request
+  GRPCRequestOptions *requestOptions = [[GRPCRequestOptions alloc] initWithHost:_host
+                                                                    path:methodName.HTTPPath
+                                                                  safety:GRPCCallSafetyDefault];
+  return [[GRPCUnaryProtoCall alloc] initWithRequestOptions:requestOptions
                                              message:message
                                      responseHandler:handler
                                          callOptions:callOptions ?: _callOptions
@@ -100,11 +99,10 @@
                           responseClass:(Class)responseClass {
   GRPCProtoMethod *methodName =
       [[GRPCProtoMethod alloc] initWithPackage:_packageName service:_serviceName method:method];
-  GRPCRequestOptions *request = [[GRPCRequestOptions alloc] init];
-  request.host = _host;
-  request.path = methodName.HTTPPath;
-  request.safety = GRPCCallSafetyDefault;
-  return [[GRPCStreamingProtoCall alloc] initWithRequest:request
+  GRPCRequestOptions *requestOptions = [[GRPCRequestOptions alloc] initWithHost:_host
+                                                                    path:methodName.HTTPPath
+                                                                  safety:GRPCCallSafetyDefault];
+  return [[GRPCStreamingProtoCall alloc] initWithRequestOptions:requestOptions
                                          responseHandler:handler
                                              callOptions:callOptions ?: _callOptions
                                            responseClass:responseClass];

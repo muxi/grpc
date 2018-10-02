@@ -30,7 +30,7 @@
  * Users should not use this initializer directly. Call objects will be created, initialized, and
  * returned to users by methods of the generated service.
  */
-- (instancetype)initWithRequest:(GRPCRequestOptions *)request
+- (instancetype)initWithRequestOptions:(GRPCRequestOptions *)requestOptions
                         message:(GPBMessage *)message
                 responseHandler:(id<GRPCResponseHandler>)handler
                     callOptions:(GRPCCallOptions *)callOptions
@@ -48,7 +48,7 @@
  * Users should not use this initializer directly. Call objects will be created, initialized, and
  * returned to users by methods of the generated service.
  */
-- (instancetype)initWithRequest:(GRPCRequestOptions *)request
+- (instancetype)initWithRequestOptions:(GRPCRequestOptions *)requestOptions
                 responseHandler:(id<GRPCResponseHandler>)handler
                     callOptions:(GRPCCallOptions *)callOptions
                   responseClass:(Class)responseClass;

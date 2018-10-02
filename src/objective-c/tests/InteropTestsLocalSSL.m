@@ -44,6 +44,10 @@ static int32_t kLocalInteropServerOverhead = 10;
   return kLocalInteropServerOverhead;  // bytes
 }
 
++ (GRPCTransportType)transportType {
+  return GRPCTransportTypeCronet;
+}
+
 - (void)setUp {
   [super setUp];
 

@@ -52,4 +52,8 @@ static int32_t kLocalInteropServerOverhead = 10;
   [GRPCCall useInsecureConnectionsForHost:kLocalCleartextHost];
 }
 
++ (GRPCTransportType)transportType {
+  return GRPCTransportTypeInsecure;
+}
+
 @end

@@ -296,15 +296,15 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
   request.fillUsername = YES;
   request.fillOauthScope = YES;
 
-  GRPCRequestOptions *callRequest = [[GRPCRequestOptions alloc] init];
-  callRequest.host = kRemoteSSLHost;
-  callRequest.path = kUnaryCallMethod.HTTPPath;
+  GRPCRequestOptions *callRequest = [[GRPCRequestOptions alloc] initWithHost:(NSString *)kRemoteSSLHost
+                                                                        path:kUnaryCallMethod.HTTPPath
+                                                                      safety:GRPCCallSafetyDefault];
   __block NSDictionary *init_md;
   __block NSDictionary *trailing_md;
   GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
   options.oauth2AccessToken = @"bogusToken";
   GRPCCall2 *call = [[GRPCCall2 alloc]
-      initWithRequest:callRequest
+      initWithRequestOptions:callRequest
               handler:[[ClientTestsBlockCallbacks alloc]
                           initWithInitialMetadataCallback:^(NSDictionary *initialMetadata) {
                             init_md = initialMetadata;
@@ -431,9 +431,7 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
   __weak XCTestExpectation *recvInitialMd =
       [self expectationWithDescription:@"Did not receive initial md."];
 
-  GRPCRequestOptions *request = [[GRPCRequestOptions alloc] init];
-  request.host = kHostAddress;
-  request.path = kEmptyCallMethod.HTTPPath;
+  GRPCRequestOptions *request = [[GRPCRequestOptions alloc] initWithHost:kHostAddress path:kEmptyCallMethod.HTTPPath safety:GRPCCallSafetyDefault];
   NSDictionary *headers =
       [NSDictionary dictionaryWithObjectsAndKeys:@"", @"x-grpc-test-echo-useragent", nil];
   GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
@@ -441,7 +439,7 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
   options.userAgentPrefix = @"Foo";
   options.initialMetadata = headers;
   GRPCCall2 *call = [[GRPCCall2 alloc]
-      initWithRequest:request
+      initWithRequestOptions:request
               handler:[[ClientTestsBlockCallbacks alloc] initWithInitialMetadataCallback:^(
                                                              NSDictionary *initialMetadata) {
                 NSString *userAgent = initialMetadata[@"x-grpc-test-echo-useragent"];
@@ -594,15 +592,12 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
   request.responseSize = 100;
   request.fillUsername = YES;
   request.fillOauthScope = YES;
-  GRPCRequestOptions *requestOptions = [[GRPCRequestOptions alloc] init];
-  requestOptions.host = kHostAddress;
-  requestOptions.path = kUnaryCallMethod.HTTPPath;
-  requestOptions.safety = GRPCCallSafetyIdempotentRequest;
+  GRPCRequestOptions *requestOptions = [[GRPCRequestOptions alloc] initWithHost:kHostAddress path:kUnaryCallMethod.HTTPPath safety:GRPCCallSafetyIdempotentRequest];
 
   GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
   options.transportType = GRPCTransportTypeInsecure;
   GRPCCall2 *call = [[GRPCCall2 alloc]
-      initWithRequest:requestOptions
+      initWithRequestOptions:requestOptions
               handler:[[ClientTestsBlockCallbacks alloc] initWithInitialMetadataCallback:nil
                           messageCallback:^(id message) {
                             NSData *data = (NSData *)message;
@@ -723,12 +718,10 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
 
   GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
   options.timeout = 0.001;
-  GRPCRequestOptions *requestOptions = [[GRPCRequestOptions alloc] init];
-  requestOptions.host = kHostAddress;
-  requestOptions.path = kFullDuplexCallMethod.HTTPPath;
+  GRPCRequestOptions *requestOptions = [[GRPCRequestOptions alloc] initWithHost:kHostAddress path:kFullDuplexCallMethod.HTTPPath safety:GRPCCallSafetyDefault];
 
   GRPCCall2 *call = [[GRPCCall2 alloc]
-      initWithRequest:requestOptions
+      initWithRequestOptions:requestOptions
               handler:[[ClientTestsBlockCallbacks alloc] initWithInitialMetadataCallback:nil
                           messageCallback:^(id data) {
                             XCTFail(@"Failure: response received; Expect: no response received.");
@@ -824,9 +817,7 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
 
   __weak XCTestExpectation *completion = [self expectationWithDescription:@"Timeout in a second."];
   NSString *const kDummyAddress = [NSString stringWithFormat:@"8.8.8.8:1"];
-  GRPCRequestOptions *requestOptions = [[GRPCRequestOptions alloc] init];
-  requestOptions.host = kDummyAddress;
-  requestOptions.path = @"";
+  GRPCRequestOptions *requestOptions = [[GRPCRequestOptions alloc] initWithHost:kDummyAddress path:@"" safety:GRPCCallSafetyDefault];
   GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
   options.connectMinTimeout = timeout;
   options.connectInitialBackoff = backoff;
@@ -834,7 +825,7 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
 
   NSDate *startTime = [NSDate date];
   GRPCCall2 *call = [[GRPCCall2 alloc]
-      initWithRequest:requestOptions
+      initWithRequestOptions:requestOptions
               handler:[[ClientTestsBlockCallbacks alloc] initWithInitialMetadataCallback:nil
                           messageCallback:^(id data) {
                             XCTFail(@"Received message. Should not reach here.");

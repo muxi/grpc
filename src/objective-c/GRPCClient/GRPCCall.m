@@ -64,11 +64,21 @@ static NSString *const kBearerPrefix = @"Bearer ";
 
 @implementation GRPCRequestOptions
 
+- (instancetype)initWithHost:(NSString *)host
+                        path:(NSString *)path
+                      safety:(GRPCCallSafety)safety {
+  if ((self = [super init])) {
+    _host = host;
+    _path = path;
+    _safety = safety;
+  }
+  return self;
+}
+
 - (id)copyWithZone:(NSZone *)zone {
-  GRPCRequestOptions *request = [[GRPCRequestOptions alloc] init];
-  request.host = [_host copy];
-  request.path = [_path copy];
-  request.safety = _safety;
+  GRPCRequestOptions *request = [[GRPCRequestOptions alloc] initWithHost:[_host copy]
+                                                                    path:[_path copy]
+                                                                  safety:_safety];
 
   return request;
 }
@@ -77,10 +87,8 @@ static NSString *const kBearerPrefix = @"Bearer ";
 
 @implementation GRPCCall2 {
   GRPCCallOptions *_callOptions;
-  GRPCRequestOptions *_request;
+  GRPCRequestOptions *_requestOptions;
   id<GRPCResponseHandler> _handler;
-
-  GRPCRequestOptions *_activeRequest;
 
   GRPCCall *_call;
   BOOL _initialMetadataPublished;
@@ -88,16 +96,16 @@ static NSString *const kBearerPrefix = @"Bearer ";
   dispatch_queue_t _dispatchQueue;
 }
 
-- (instancetype)initWithRequest:(GRPCRequestOptions *)request
+- (instancetype)initWithRequestOptions:(GRPCRequestOptions *)requestOptions
                         handler:(id<GRPCResponseHandler>)handler
                     callOptions:(GRPCCallOptions *)callOptions {
-  if (!request || !request.host || !request.path) {
+  if (!requestOptions || !requestOptions.host || !requestOptions.path) {
     [NSException raise:NSInvalidArgumentException format:@"Neither host nor path can be nil."];
   }
 
   if ((self = [super init])) {
-    _request = [request copy];
-    _callOptions = callOptions;
+    _requestOptions = [requestOptions copy];
+    _callOptions = [callOptions copy];
     _handler = handler;
     _initialMetadataPublished = NO;
     _pipe = [GRXBufferedPipe pipe];
@@ -107,9 +115,9 @@ static NSString *const kBearerPrefix = @"Bearer ";
   return self;
 }
 
-- (instancetype)initWithRequest:(GRPCRequestOptions *)request
+- (instancetype)initWithRequestOptions:(GRPCRequestOptions *)requestOptions
                         handler:(id<GRPCResponseHandler>)handler {
-  return [self initWithRequest:request handler:handler callOptions:nil];
+  return [self initWithRequestOptions:requestOptions handler:handler callOptions:nil];
 }
 
 - (void)start {
@@ -117,11 +125,10 @@ static NSString *const kBearerPrefix = @"Bearer ";
     if (!self->_callOptions) {
       self->_callOptions = [[GRPCCallOptions alloc] init];
     }
-    self->_activeRequest = [self->_request copy];
 
-    self->_call = [[GRPCCall alloc] initWithHost:self->_activeRequest.host
-                                            path:self->_activeRequest.path
-                                      callSafety:self->_activeRequest.safety
+    self->_call = [[GRPCCall alloc] initWithHost:self->_requestOptions.host
+                                            path:self->_requestOptions.path
+                                      callSafety:self->_requestOptions.safety
                                   requestsWriter:self->_pipe
                                      callOptions:self->_callOptions];
     if (self->_callOptions.initialMetadata) {
@@ -707,7 +714,7 @@ static NSString *const kBearerPrefix = @"Bearer ";
     if (tokenProvider != nil) {
       callOptions.authTokenProvider = tokenProvider;
     }
-    callOptions = callOptions;
+    _callOptions = callOptions;
   }
   if (_callOptions.authTokenProvider != nil) {
     self.isWaitingForToken = YES;
