@@ -77,7 +77,7 @@ end
 target 'ChannelTests' do
   pod 'gRPC', :path => GRPC_LOCAL_SRC
   pod 'gRPC-Core', :path => GRPC_LOCAL_SRC
-  pod 'BoringSSL', :podspec => "#{GRPC_LOCAL_SRC}/src/objective-c", :inhibit_warnings => true
+  pod 'BoringSSL-GRPC', :podspec => "#{GRPC_LOCAL_SRC}/src/objective-c", :inhibit_warnings => true
 end
 
 # gRPC-Core.podspec needs to be modified to be successfully used for local development. A Podfile's

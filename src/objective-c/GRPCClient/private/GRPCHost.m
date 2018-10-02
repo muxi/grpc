@@ -35,8 +35,6 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-extern const char *kCFStreamVarName;
-
 static NSMutableDictionary *kHostCache;
 
 @implementation GRPCHost {

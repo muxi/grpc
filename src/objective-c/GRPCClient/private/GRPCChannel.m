@@ -27,9 +27,12 @@
 #import "GRPCInsecureChannelFactory.h"
 #import "GRPCSecureChannelFactory.h"
 #import "version.h"
+#import "GRPCConnectivityMonitor.h"
 
 #import <GRPCClient/GRPCCall+Cronet.h>
 #import <GRPCClient/GRPCCallOptions.h>
+
+extern const char *kCFStreamVarName;
 
 @interface GRPCChannelConfiguration : NSObject<NSCopying>
 
