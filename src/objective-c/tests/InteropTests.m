@@ -197,7 +197,7 @@ BOOL isRemoteInteropTest(NSString *host) {
                                closeCallback:^(NSDictionary *trailingMetadata, NSError *error) {
                                  XCTAssertNil(error, @"Unexpected error: %@", error);
                                }]
-                   options:nil];
+               callOptions:nil];
   [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];
 }
 
@@ -491,7 +491,7 @@ BOOL isRemoteInteropTest(NSString *host) {
                                                              index);
                                               [expectation fulfill];
                                             }]
-                                options:nil];
+                            callOptions:nil];
   [call writeWithMessage:request];
 
   [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];
@@ -551,7 +551,7 @@ BOOL isRemoteInteropTest(NSString *host) {
                                                   XCTAssertEqual(error.code, GRPC_STATUS_CANCELLED);
                                                   [expectation fulfill];
                                                 }]
-                                    options:nil];
+                                callOptions:nil];
   [call cancel];
 
   [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];
@@ -619,7 +619,7 @@ BOOL isRemoteInteropTest(NSString *host) {
                                               XCTAssertEqual(error.code, GRPC_STATUS_CANCELLED);
                                               [completionExpectation fulfill];
                                             }]
-                                options:nil];
+                            callOptions:nil];
 
   [call writeWithMessage:request];
   [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];

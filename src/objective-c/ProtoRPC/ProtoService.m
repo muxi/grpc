@@ -32,7 +32,7 @@
   NSString *_host;
   NSString *_packageName;
   NSString *_serviceName;
-  GRPCCallOptions *_options;
+  GRPCCallOptions *_callOptions;
 }
 
 - (instancetype)init {
@@ -43,7 +43,7 @@
 - (instancetype)initWithHost:(NSString *)host
                  packageName:(NSString *)packageName
                  serviceName:(NSString *)serviceName
-                     options:(GRPCCallOptions *)options {
+                 callOptions:(GRPCCallOptions *)callOptions {
   if (!host || !serviceName) {
     [NSException raise:NSInvalidArgumentException
                 format:@"Neither host nor serviceName can be nil."];
@@ -52,7 +52,7 @@
     _host = [host copy];
     _packageName = [packageName copy];
     _serviceName = [serviceName copy];
-    _options = [options copy];
+    _callOptions = [callOptions copy];
   }
   return self;
 }
@@ -60,7 +60,7 @@
 - (instancetype)initWithHost:(NSString *)host
                  packageName:(NSString *)packageName
                  serviceName:(NSString *)serviceName {
-  return [self initWithHost:host packageName:packageName serviceName:serviceName options:nil];
+  return [self initWithHost:host packageName:packageName serviceName:serviceName callOptions:nil];
 }
 
 - (GRPCProtoCall *)RPCToMethod:(NSString *)method
@@ -79,7 +79,7 @@
 - (GRPCUnaryProtoCall *)RPCToMethod:(NSString *)method
                             message:(id)message
                     responseHandler:(id<GRPCProtoResponseCallbacks>)handler
-                            options:(GRPCCallOptions *)options
+                        callOptions:(GRPCCallOptions *)callOptions
                       responseClass:(Class)responseClass {
   GRPCProtoMethod *methodName =
       [[GRPCProtoMethod alloc] initWithPackage:_packageName service:_serviceName method:method];
@@ -90,13 +90,13 @@
   return [[GRPCUnaryProtoCall alloc] initWithRequest:request
                                              message:message
                                      responseHandler:handler
-                                             options:options ?: _options
+                                         callOptions:callOptions ?: _callOptions
                                        responseClass:responseClass];
 }
 
 - (GRPCStreamingProtoCall *)RPCToMethod:(NSString *)method
                         responseHandler:(id<GRPCProtoResponseCallbacks>)handler
-                                options:(GRPCCallOptions *)options
+                            callOptions:(GRPCCallOptions *)callOptions
                           responseClass:(Class)responseClass {
   GRPCProtoMethod *methodName =
       [[GRPCProtoMethod alloc] initWithPackage:_packageName service:_serviceName method:method];
@@ -106,7 +106,7 @@
   request.safety = GRPCCallSafetyDefault;
   return [[GRPCStreamingProtoCall alloc] initWithRequest:request
                                          responseHandler:handler
-                                                 options:options ?: _options
+                                             callOptions:callOptions ?: _callOptions
                                            responseClass:responseClass];
 }
 

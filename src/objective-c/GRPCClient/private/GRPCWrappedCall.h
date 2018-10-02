@@ -75,7 +75,7 @@
 
 - (instancetype)initWithHost:(NSString *)host
                         path:(NSString *)path
-                     options:(GRPCCallOptions *)options NS_DESIGNATED_INITIALIZER;
+                 callOptions:(GRPCCallOptions *)callOptions NS_DESIGNATED_INITIALIZER;
 
 - (void)startBatchWithOperations:(NSArray *)ops errorHandler:(void (^)(void))errorHandler;
 

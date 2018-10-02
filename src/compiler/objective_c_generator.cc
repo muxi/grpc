@@ -133,7 +133,7 @@ void PrintV2Signature(Printer* printer, const MethodDescriptor* method,
                    "Message:($request_class$ *)message "
                    "responseHandler:(id<GRPCResponseHandler>)handler");
   }
-  printer->Print(" options:(GRPCCallOptions *_Nullable)options");
+  printer->Print(" callOptions:(GRPCCallOptions *_Nullable)callOptions");
 }
 
 inline map< ::grpc::string, ::grpc::string> GetMethodVars(
@@ -216,14 +216,14 @@ void PrintV2Implementation(Printer* printer, const MethodDescriptor* method,
   if (method->client_streaming()) {
     printer->Print(vars, "  return [self RPCToMethod:@\"$method_name$\"\n");
     printer->Print("           responseHandler:handler\n");
-    printer->Print("                   options:options ?: _options\n");
+    printer->Print("               callOptions:callOptions\n");
     printer->Print(
         vars, "             responseClass:[$response_class$ class]];\n}\n\n");
   } else {
     printer->Print(vars, "  return [self RPCToMethod:@\"$method_name$\"\n");
     printer->Print("                   message:message\n");
     printer->Print("           responseHandler:handler\n");
-    printer->Print("                   options:options ?: _options\n");
+    printer->Print("               callOptions:callOptions\n");
     printer->Print(
         vars, "             responseClass:[$response_class$ class]];\n}\n\n");
   }
@@ -325,13 +325,14 @@ void PrintMethodImplementations(Printer* printer,
                 "@interface $service_class$ :"
                 " GRPCProtoService<$service_class$, $service_class$2>\n");
   printer.Print(
-      "- (instancetype)initWithHost:(NSString *)host options:(GRPCCallOptions "
-      "*_Nullable)options"
+      "- (instancetype)initWithHost:(NSString *)host "
+      "callOptions:(GRPCCallOptions "
+      "*_Nullable)callOptions"
       " NS_DESIGNATED_INITIALIZER;\n");
   printer.Print("- (instancetype)initWithHost:(NSString *)host;\n");
   printer.Print(
       "+ (instancetype)serviceWithHost:(NSString *)host "
-      "options:(GRPCCallOptions *_Nullable)options;\n");
+      "callOptions:(GRPCCallOptions *_Nullable)callOptions;\n");
   printer.Print("+ (instancetype)serviceWithHost:(NSString *)host;\n");
   printer.Print("@end\n");
 
@@ -351,23 +352,21 @@ void PrintMethodImplementations(Printer* printer,
         {"package", service->file()->package()}};
 
     printer.Print(vars,
-                  "@implementation $service_class$ {\n"
-                  "  GRPCCallOptions *_options;\n"
-                  "}\n\n"
+                  "@implementation $service_class$\n\n"
                   "// Designated initializer\n"
                   "- (instancetype)initWithHost:(NSString *)host "
-                  "options:(GRPCCallOptions *_Nullable)options{\n"
+                  "callOptions:(GRPCCallOptions *_Nullable)callOptions{\n"
                   "  self = [super initWithHost:host\n"
                   "                 packageName:@\"$package$\"\n"
                   "                 serviceName:@\"$service_name$\"\n"
-                  "                     options:options];\n"
+                  "                 callOptions:callOptions];\n"
                   "  return self;\n"
                   "}\n\n"
                   "- (instancetype)initWithHost:(NSString *)host {\n"
                   "  return [self initWithHost:host\n"
                   "                packageName:@\"$package$\"\n"
                   "                serviceName:@\"$service_name$\"\n"
-                  "                     options:nil];\n"
+                  "                callOptions:nil];\n"
                   "}\n\n");
 
     printer.Print(
@@ -382,11 +381,11 @@ void PrintMethodImplementations(Printer* printer,
     printer.Print(
         "#pragma mark - Class Methods\n\n"
         "+ (instancetype)serviceWithHost:(NSString *)host {\n"
-        "  return [self serviceWithHost:host options:nil];\n"
+        "  return [self serviceWithHost:host callOptions:nil];\n"
         "}\n\n"
         "+ (instancetype)serviceWithHost:(NSString *)host "
-        "options:(GRPCCallOptions *_Nullable)options {\n"
-        "  return [[self alloc] initWithHost:host options:options];\n"
+        "callOptions:(GRPCCallOptions *_Nullable)callOptions {\n"
+        "  return [[self alloc] initWithHost:host callOptions:callOptions];\n"
         "}\n\n");
 
     printer.Print("#pragma mark - Method Implementations\n\n");

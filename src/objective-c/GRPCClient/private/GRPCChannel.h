@@ -32,11 +32,11 @@ struct grpc_channel_credentials;
 - (nullable instancetype)init NS_UNAVAILABLE;
 
 + (nullable instancetype)channelWithHost:(nonnull NSString *)host
-                                 options:(nullable GRPCCallOptions *)options;
+                             callOptions:(nullable GRPCCallOptions *)callOptions;
 
 - (nullable grpc_call *)unmanagedCallWithPath:(nonnull NSString *)path
                               completionQueue:(nonnull GRPCCompletionQueue *)queue
-                                      options:(nonnull GRPCCallOptions *)options;
+                                  callOptions:(nonnull GRPCCallOptions *)callOptions;
 
 // TODO (mxyan): deprecate with GRPCCall:closeOpenConnections
 + (void)closeOpenConnections;

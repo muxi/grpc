@@ -325,7 +325,7 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
                               [expectation fulfill];
                             }
                           }]
-              options:options];
+          callOptions:options];
 
   [call start];
   [call writeWithData:[request data]];
@@ -488,7 +488,7 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
                               [completion fulfill];
                             }
                           }]
-              options:options];
+          callOptions:options];
   [call writeWithData:[NSData data]];
   [call start];
 
@@ -620,7 +620,7 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
                             XCTAssertNil(error, @"Finished with unexpected error: %@", error);
                             [completion fulfill];
                           }]
-              options:options];
+          callOptions:options];
 
   [call start];
   [call writeWithData:[request data]];
@@ -740,7 +740,7 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
                             XCTAssertEqual(error.code, GRPCErrorCodeDeadlineExceeded);
                             [completion fulfill];
                           }]
-              options:options];
+          callOptions:options];
 
   [call start];
 
@@ -845,7 +845,7 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
                                               maxConnectTime + kMargin);
                             [completion fulfill];
                           }]
-              options:options];
+          callOptions:options];
 
   [call start];
 

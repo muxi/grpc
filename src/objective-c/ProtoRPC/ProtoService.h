@@ -32,8 +32,8 @@ __attribute__((deprecated("Please use GRPCProtoService."))) @interface ProtoServ
 
       -
       (instancetype)initWithHost : (NSString *)host packageName
-    : (NSString *)packageName serviceName : (NSString *)serviceName options
-    : (GRPCCallOptions *)options NS_DESIGNATED_INITIALIZER;
+    : (NSString *)packageName serviceName : (NSString *)serviceName callOptions
+    : (GRPCCallOptions *)callOptions NS_DESIGNATED_INITIALIZER;
 
 - (instancetype)initWithHost:(NSString *)host
                  packageName:(NSString *)packageName
@@ -47,12 +47,12 @@ __attribute__((deprecated("Please use GRPCProtoService."))) @interface ProtoServ
 - (GRPCUnaryProtoCall *)RPCToMethod:(NSString *)method
                             message:(id)message
                     responseHandler:(id<GRPCProtoResponseCallbacks>)handler
-                            options:(GRPCCallOptions *)options
+                        callOptions:(GRPCCallOptions *)callOptions
                       responseClass:(Class)responseClass;
 
 - (GRPCStreamingProtoCall *)RPCToMethod:(NSString *)method
                         responseHandler:(id<GRPCProtoResponseCallbacks>)handler
-                                options:(GRPCCallOptions *)options
+                            callOptions:(GRPCCallOptions *)callOptions
                           responseClass:(Class)responseClass;
 
 @end

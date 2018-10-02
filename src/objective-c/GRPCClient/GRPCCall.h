@@ -206,11 +206,11 @@ extern id const kGRPCTrailersKey;
  * Designated initializer for a call.
  * \param request Protobuf generated parameters for the call.
  * \param handler The object to which responses should be issed.
- * \param options Options for the call.
+ * \param callOptions Options for the call.
  */
 - (instancetype)initWithRequest:(GRPCRequestOptions *)request
                         handler:(id<GRPCResponseHandler>)handler
-                        options:(GRPCCallOptions *)options NS_DESIGNATED_INITIALIZER;
+                    callOptions:(GRPCCallOptions *)callOptions NS_DESIGNATED_INITIALIZER;
 /**
  * Convevience initializer for a call that uses default call options.
  */
@@ -237,12 +237,12 @@ extern id const kGRPCTrailersKey;
 /**
  * Finish the RPC request and half-close the call. The server may still send messages and/or
  * trailers to the client.
- */- (void)finish;
+ */ -(void)finish;
 
 /**
  * Get a copy of the original call options.
  */
-@property(atomic, readonly, copy) GRPCCallOptions *options;
+@property(atomic, readonly, copy) GRPCCallOptions *callOptions;
 
 /** Get a copy of the original request options. */
 @property(atomic, copy, readonly) NSString *host;
@@ -252,10 +252,10 @@ extern id const kGRPCTrailersKey;
 @end
 
 /**
-  * This interface is deprecated. Please use \a GRPCcall2.
-  *
-  * Represents a single gRPC remote call.
-  */
+ * This interface is deprecated. Please use \a GRPCcall2.
+ *
+ * Represents a single gRPC remote call.
+ */
 @interface GRPCCall : GRXWriter
 
 /**

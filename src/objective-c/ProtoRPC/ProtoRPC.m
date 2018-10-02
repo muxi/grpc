@@ -23,6 +23,7 @@
 #else
 #import <GPBProtocolBuffers.h>
 #endif
+#import <GRPCClient/GRPCCall.h>
 #import <RxLibrary/GRXWriteable.h>
 #import <RxLibrary/GRXWriter+Transformations.h>
 
@@ -33,12 +34,12 @@
 - (instancetype)initWithRequest:(GRPCRequestOptions *)request
                         message:(GPBMessage *)message
                 responseHandler:(id<GRPCResponseHandler>)handler
-                        options:(GRPCCallOptions *)options
+                    callOptions:(GRPCCallOptions *)callOptions
                   responseClass:(Class)responseClass {
   if ((self = [super init])) {
     _call = [[GRPCStreamingProtoCall alloc] initWithRequest:request
                                             responseHandler:handler
-                                                    options:options
+                                                callOptions:callOptions
                                               responseClass:responseClass];
     [_call writeWithMessage:message];
     [_call finish];
@@ -60,7 +61,7 @@
 @implementation GRPCStreamingProtoCall {
   GRPCRequestOptions *_request;
   id<GRPCResponseHandler> _handler;
-  GRPCCallOptions *_options;
+  GRPCCallOptions *_callOptions;
   Class _responseClass;
 
   GRPCCall2 *_call;
@@ -69,12 +70,12 @@
 
 - (instancetype)initWithRequest:(GRPCRequestOptions *)request
                 responseHandler:(id<GRPCResponseHandler>)handler
-                        options:(GRPCCallOptions *)options
+                    callOptions:(GRPCCallOptions *)callOptions
                   responseClass:(Class)responseClass {
   if ((self = [super init])) {
     _request = [request copy];
     _handler = handler;
-    _options = [options copy];
+    _callOptions = [callOptions copy];
     _responseClass = responseClass;
     _dispatchQueue = dispatch_queue_create(nil, DISPATCH_QUEUE_SERIAL);
 
@@ -84,7 +85,7 @@
 }
 
 - (void)start {
-  _call = [[GRPCCall2 alloc] initWithRequest:_request handler:self options:_options];
+  _call = [[GRPCCall2 alloc] initWithRequest:_request handler:self callOptions:_callOptions];
   [_call start];
 }
 

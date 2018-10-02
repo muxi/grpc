@@ -240,12 +240,12 @@
 }
 
 - (instancetype)init {
-  return [self initWithHost:nil path:nil options:[[GRPCCallOptions alloc] init]];
+  return [self initWithHost:nil path:nil callOptions:[[GRPCCallOptions alloc] init]];
 }
 
 - (instancetype)initWithHost:(NSString *)host
                         path:(NSString *)path
-                     options:(GRPCCallOptions *)options {
+                 callOptions:(GRPCCallOptions *)callOptions {
   if (!path || !host) {
     [NSException raise:NSInvalidArgumentException format:@"path and host cannot be nil."];
   }
@@ -256,9 +256,10 @@
     // queue. Currently we use a singleton queue.
     _queue = [GRPCCompletionQueue completionQueue];
 
-    _call = [[GRPCChannel channelWithHost:host options:options] unmanagedCallWithPath:path
-                                                                      completionQueue:_queue
-                                                                              options:options];
+    _call = [[GRPCChannel channelWithHost:host callOptions:callOptions]
+        unmanagedCallWithPath:path
+              completionQueue:_queue
+                  callOptions:callOptions];
     if (_call == NULL) {
       return nil;
     }

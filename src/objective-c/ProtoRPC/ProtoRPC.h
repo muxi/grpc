@@ -33,7 +33,7 @@
 - (instancetype)initWithRequest:(GRPCRequestOptions *)request
                         message:(GPBMessage *)message
                 responseHandler:(id<GRPCResponseHandler>)handler
-                        options:(GRPCCallOptions *)options
+                    callOptions:(GRPCCallOptions *)callOptions
                   responseClass:(Class)responseClass;
 
 /** Cancel the call at best effort. */
@@ -50,7 +50,7 @@
  */
 - (instancetype)initWithRequest:(GRPCRequestOptions *)request
                 responseHandler:(id<GRPCResponseHandler>)handler
-                        options:(GRPCCallOptions *)options
+                    callOptions:(GRPCCallOptions *)callOptions
                   responseClass:(Class)responseClass;
 
 /** Cancel the call at best effort. */
