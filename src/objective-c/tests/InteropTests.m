@@ -36,6 +36,8 @@
 
 #define TEST_TIMEOUT 32
 
+extern const char *kCFStreamVarName;
+
 // Convenience constructors for the generated proto messages:
 
 @interface RMTStreamingOutputCallRequest (Constructors)
@@ -152,6 +154,9 @@ BOOL isRemoteInteropTest(NSString *host) {
   [Cronet setHttp2Enabled:YES];
   [Cronet start];
   [GRPCCall useCronetWithEngine:[Cronet getGlobalEngine]];
+#endif
+#ifdef GRPC_CFSTREAM
+  setenv(kCFStreamVarName, "1", 1);
 #endif
 }
 

@@ -228,8 +228,6 @@
 @end
 
 @implementation GRPCChannel {
-  // Retain arguments to channel_create because they may not be used on the thread that invoked
-  // the channel_create function.
   NSString *_host;
   grpc_channel *_unmanagedChannel;
 }
@@ -259,15 +257,29 @@
   return call;
 }
 
-- (nullable instancetype)initWithUnmanagedChannel:(nullable grpc_channel *)unmanagedChannel {
+- (nullable instancetype)initWithUnmanagedChannel:(nullable grpc_channel *)unmanagedChannel
+                                             host:(NSString *)host {
   if ((self = [super init])) {
     _unmanagedChannel = unmanagedChannel;
+    _host = host;
+
+    // Connectivity monitor is not required for CFStream
+    char *enableCFStream = getenv(kCFStreamVarName);
+    if (enableCFStream == nil || enableCFStream[0] != '1') {
+      [GRPCConnectivityMonitor registerObserver:self selector:@selector(connectivityChange:)];
+    }
   }
   return self;
 }
 
 - (void)dealloc {
   grpc_channel_destroy(_unmanagedChannel);
+
+  // Connectivity monitor is not required for CFStream
+  char *enableCFStream = getenv(kCFStreamVarName);
+  if (enableCFStream == nil || enableCFStream[0] != '1') {
+    [GRPCConnectivityMonitor unregisterObserver:self];
+  }
 }
 
 + (nullable instancetype)createChannelWithConfiguration:(GRPCChannelConfiguration *)config {
@@ -280,7 +292,7 @@
   [channelArgs addEntriesFromDictionary:config.callOptions.additionalChannelArgs];
   id<GRPCChannelFactory> factory = config.channelFactory;
   grpc_channel *unmanaged_channel = [factory createChannelWithHost:host channelArgs:channelArgs];
-  return [[GRPCChannel alloc] initWithUnmanagedChannel:unmanaged_channel];
+  return [[GRPCChannel alloc] initWithUnmanagedChannel:unmanaged_channel host:host];
 }
 
 static dispatch_once_t initChannelPool;
@@ -309,6 +321,10 @@ static NSMutableDictionary *kChannelPool;
 
 + (void)closeOpenConnections {
   kChannelPool = [NSMutableDictionary dictionary];
+}
+
+- (void)connectivityChange:(NSNotification *)note {
+  [kChannelPool removeObjectForKey:_host];
 }
 
 @end
