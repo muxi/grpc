@@ -28,210 +28,13 @@
 #import "GRPCSecureChannelFactory.h"
 #import "version.h"
 #import "GRPCConnectivityMonitor.h"
+#import "GRPCChannelPool.h"
 
 #import <GRPCClient/GRPCCall+Cronet.h>
 #import <GRPCClient/GRPCCallOptions.h>
 
-extern const char *kCFStreamVarName;
-
-@interface GRPCChannelConfiguration : NSObject<NSCopying>
-
-@property(atomic, strong, readwrite) NSString *host;
-@property(atomic, strong, readwrite) GRPCCallOptions *callOptions;
-
-@property(readonly) id<GRPCChannelFactory> channelFactory;
-@property(readonly) NSMutableDictionary *channelArgs;
-
-- (nullable instancetype)initWithHost:(NSString *)host callOptions:(GRPCCallOptions *)callOptions;
-
-@end
-
-@implementation GRPCChannelConfiguration
-
-- (nullable instancetype)initWithHost:(NSString *)host callOptions:(GRPCCallOptions *)callOptions {
-  if ((self = [super init])) {
-    _host = host;
-    _callOptions = callOptions;
-  }
-  return self;
-}
-
-- (id<GRPCChannelFactory>)channelFactory {
-  NSError *error;
-  id<GRPCChannelFactory> factory;
-  GRPCTransportType type = _callOptions.transportType;
-  switch (type) {
-    case GRPCTransportTypeDefault:
-      // TODO (mxyan): Remove when the API is deprecated
-#ifdef GRPC_COMPILE_WITH_CRONET
-      if (![GRPCCall isUsingCronet]) {
-#endif
-        factory = [GRPCSecureChannelFactory factoryWithPEMRootCerts:_callOptions.pemRootCert
-                                                         privateKey:_callOptions.pemPrivateKey
-                                                          certChain:_callOptions.pemCertChain
-                                                              error:&error];
-        if (error) {
-          NSLog(@"Error creating secure channel factory: %@", error);
-          return nil;
-        }
-        return factory;
-#ifdef GRPC_COMPILE_WITH_CRONET
-      }
-#endif
-      // fallthrough
-    case GRPCTransportTypeCronet:
-      return [GRPCCronetChannelFactory sharedInstance];
-    case GRPCTransportTypeInsecure:
-      return [GRPCInsecureChannelFactory sharedInstance];
-    default:
-      GPR_UNREACHABLE_CODE(return nil);
-  }
-}
-
-- (NSMutableDictionary *)channelArgs {
-  NSMutableDictionary *args = [NSMutableDictionary new];
-
-  NSString *userAgent = @"grpc-objc/" GRPC_OBJC_VERSION_STRING;
-  NSString *userAgentPrefix = _callOptions.userAgentPrefix;
-  if (userAgentPrefix) {
-    args[@GRPC_ARG_PRIMARY_USER_AGENT_STRING] =
-        [_callOptions.userAgentPrefix stringByAppendingFormat:@" %@", userAgent];
-  } else {
-    args[@GRPC_ARG_PRIMARY_USER_AGENT_STRING] = userAgent;
-  }
-
-  NSString *hostNameOverride = _callOptions.hostNameOverride;
-  if (hostNameOverride) {
-    args[@GRPC_SSL_TARGET_NAME_OVERRIDE_ARG] = hostNameOverride;
-  }
-
-  if (_callOptions.responseSizeLimit) {
-    args[@GRPC_ARG_MAX_RECEIVE_MESSAGE_LENGTH] =
-        [NSNumber numberWithUnsignedInteger:_callOptions.responseSizeLimit];
-  }
-
-  if (_callOptions.compressAlgorithm != GRPC_COMPRESS_NONE) {
-    args[@GRPC_COMPRESSION_CHANNEL_DEFAULT_ALGORITHM] =
-        [NSNumber numberWithInt:_callOptions.compressAlgorithm];
-  }
-
-  if (_callOptions.keepaliveInterval != 0) {
-    args[@GRPC_ARG_KEEPALIVE_TIME_MS] =
-        [NSNumber numberWithUnsignedInteger:(unsigned int)(_callOptions.keepaliveInterval * 1000)];
-    args[@GRPC_ARG_KEEPALIVE_TIMEOUT_MS] =
-        [NSNumber numberWithUnsignedInteger:(unsigned int)(_callOptions.keepaliveTimeout * 1000)];
-  }
-
-  if (_callOptions.enableRetry == NO) {
-    args[@GRPC_ARG_ENABLE_RETRIES] = [NSNumber numberWithInt:_callOptions.enableRetry];
-  }
-
-  if (_callOptions.connectMinTimeout > 0) {
-    args[@GRPC_ARG_MIN_RECONNECT_BACKOFF_MS] =
-        [NSNumber numberWithUnsignedInteger:(unsigned int)(_callOptions.connectMinTimeout * 1000)];
-  }
-  if (_callOptions.connectInitialBackoff > 0) {
-    args[@GRPC_ARG_INITIAL_RECONNECT_BACKOFF_MS] = [NSNumber
-        numberWithUnsignedInteger:(unsigned int)(_callOptions.connectInitialBackoff * 1000)];
-  }
-  if (_callOptions.connectMaxBackoff > 0) {
-    args[@GRPC_ARG_MAX_RECONNECT_BACKOFF_MS] =
-        [NSNumber numberWithUnsignedInteger:(unsigned int)(_callOptions.connectMaxBackoff * 1000)];
-  }
-
-  if (_callOptions.logContext != nil) {
-    args[@GRPC_ARG_MOBILE_LOG_CONTEXT] = _callOptions.logContext;
-  }
-
-  if (_callOptions.channelPoolDomain != nil) {
-    args[@GRPC_ARG_CHANNEL_POOL_DOMAIN] = _callOptions.channelPoolDomain;
-  }
-
-  [args addEntriesFromDictionary:_callOptions.additionalChannelArgs];
-
-  return args;
-}
-
-- (nonnull id)copyWithZone:(nullable NSZone *)zone {
-  GRPCChannelConfiguration *newConfig = [[GRPCChannelConfiguration alloc] init];
-  newConfig.host = _host;
-  newConfig.callOptions = _callOptions;
-
-  return newConfig;
-}
-
-- (BOOL)isEqual:(id)object {
-  NSAssert([object isKindOfClass:[GRPCChannelConfiguration class]], @"Illegal :isEqual");
-  GRPCChannelConfiguration *obj = (GRPCChannelConfiguration *)object;
-  if (!(obj.host == _host || [obj.host isEqualToString:_host])) return NO;
-  if (!(obj.callOptions.userAgentPrefix == _callOptions.userAgentPrefix ||
-        [obj.callOptions.userAgentPrefix isEqualToString:_callOptions.userAgentPrefix]))
-    return NO;
-  if (!(obj.callOptions.responseSizeLimit == _callOptions.responseSizeLimit)) return NO;
-  if (!(obj.callOptions.compressAlgorithm == _callOptions.compressAlgorithm)) return NO;
-  if (!(obj.callOptions.enableRetry == _callOptions.enableRetry)) return NO;
-  if (!(obj.callOptions.keepaliveInterval == _callOptions.keepaliveInterval)) return NO;
-  if (!(obj.callOptions.keepaliveTimeout == _callOptions.keepaliveTimeout)) return NO;
-  if (!(obj.callOptions.connectMinTimeout == _callOptions.connectMinTimeout)) return NO;
-  if (!(obj.callOptions.connectInitialBackoff == _callOptions.connectInitialBackoff)) return NO;
-  if (!(obj.callOptions.connectMaxBackoff == _callOptions.connectMaxBackoff)) return NO;
-  if (!(obj.callOptions.additionalChannelArgs == _callOptions.additionalChannelArgs ||
-        [obj.callOptions.additionalChannelArgs
-            isEqualToDictionary:_callOptions.additionalChannelArgs]))
-    return NO;
-  if (!(obj.callOptions.pemRootCert == _callOptions.pemRootCert ||
-        [obj.callOptions.pemRootCert isEqualToString:_callOptions.pemRootCert]))
-    return NO;
-  if (!(obj.callOptions.pemPrivateKey == _callOptions.pemPrivateKey ||
-        [obj.callOptions.pemPrivateKey isEqualToString:_callOptions.pemPrivateKey]))
-    return NO;
-  if (!(obj.callOptions.pemCertChain == _callOptions.pemCertChain ||
-        [obj.callOptions.pemCertChain isEqualToString:_callOptions.pemCertChain]))
-    return NO;
-  if (!(obj.callOptions.hostNameOverride == _callOptions.hostNameOverride ||
-        [obj.callOptions.hostNameOverride isEqualToString:_callOptions.hostNameOverride]))
-    return NO;
-  if (!(obj.callOptions.transportType == _callOptions.transportType)) return NO;
-  if (!(obj.callOptions.logContext == _callOptions.logContext ||
-        [obj.callOptions.logContext isEqual:_callOptions.logContext]))
-    return NO;
-  if (!(obj.callOptions.channelPoolDomain == _callOptions.channelPoolDomain ||
-        [obj.callOptions.channelPoolDomain isEqualToString:_callOptions.channelPoolDomain]))
-    return NO;
-  if (!(obj.callOptions.channelId == _callOptions.channelId)) return NO;
-
-  return YES;
-}
-
-- (NSUInteger)hash {
-  NSUInteger result = 0;
-  result ^= _host.hash;
-  result ^= _callOptions.userAgentPrefix.hash;
-  result ^= _callOptions.responseSizeLimit;
-  result ^= _callOptions.compressAlgorithm;
-  result ^= _callOptions.enableRetry;
-  result ^= (unsigned int)(_callOptions.keepaliveInterval * 1000);
-  result ^= (unsigned int)(_callOptions.keepaliveTimeout * 1000);
-  result ^= (unsigned int)(_callOptions.connectMinTimeout * 1000);
-  result ^= (unsigned int)(_callOptions.connectInitialBackoff * 1000);
-  result ^= (unsigned int)(_callOptions.connectMaxBackoff * 1000);
-  result ^= _callOptions.additionalChannelArgs.hash;
-  result ^= _callOptions.pemRootCert.hash;
-  result ^= _callOptions.pemPrivateKey.hash;
-  result ^= _callOptions.pemCertChain.hash;
-  result ^= _callOptions.hostNameOverride.hash;
-  result ^= _callOptions.transportType;
-  result ^= [_callOptions.logContext hash];
-  result ^= _callOptions.channelPoolDomain.hash;
-  result ^= _callOptions.channelId;
-
-  return result;
-}
-
-@end
-
 @implementation GRPCChannel {
-  NSString *_host;
+  GRPCChannelConfiguration *_configuration;
   grpc_channel *_unmanagedChannel;
 }
 
@@ -260,29 +63,21 @@ extern const char *kCFStreamVarName;
   return call;
 }
 
+- (void)unmanagedCallUnref {
+  [kChannelPool unrefChannelWithConfiguration:_configuration];
+}
+
 - (nullable instancetype)initWithUnmanagedChannel:(nullable grpc_channel *)unmanagedChannel
-                                             host:(NSString *)host {
+                                    configuration:(GRPCChannelConfiguration *)configuration {
   if ((self = [super init])) {
     _unmanagedChannel = unmanagedChannel;
-    _host = host;
-
-    // Connectivity monitor is not required for CFStream
-    char *enableCFStream = getenv(kCFStreamVarName);
-    if (enableCFStream == nil || enableCFStream[0] != '1') {
-      [GRPCConnectivityMonitor registerObserver:self selector:@selector(connectivityChange:)];
-    }
+    _configuration = configuration;
   }
   return self;
 }
 
 - (void)dealloc {
   grpc_channel_destroy(_unmanagedChannel);
-
-  // Connectivity monitor is not required for CFStream
-  char *enableCFStream = getenv(kCFStreamVarName);
-  if (enableCFStream == nil || enableCFStream[0] != '1') {
-    [GRPCConnectivityMonitor unregisterObserver:self];
-  }
 }
 
 + (nullable instancetype)createChannelWithConfiguration:(GRPCChannelConfiguration *)config {
@@ -295,16 +90,16 @@ extern const char *kCFStreamVarName;
   [channelArgs addEntriesFromDictionary:config.callOptions.additionalChannelArgs];
   id<GRPCChannelFactory> factory = config.channelFactory;
   grpc_channel *unmanaged_channel = [factory createChannelWithHost:host channelArgs:channelArgs];
-  return [[GRPCChannel alloc] initWithUnmanagedChannel:unmanaged_channel host:host];
+  return [[GRPCChannel alloc] initWithUnmanagedChannel:unmanaged_channel configuration:config];
 }
 
 static dispatch_once_t initChannelPool;
-static NSMutableDictionary *kChannelPool;
+static GRPCChannelPool *kChannelPool;
 
 + (nullable instancetype)channelWithHost:(NSString *)host
                              callOptions:(GRPCCallOptions *)callOptions {
   dispatch_once(&initChannelPool, ^{
-    kChannelPool = [NSMutableDictionary new];
+    kChannelPool = [[GRPCChannelPool alloc] init];
   });
 
   NSURL *hostURL = [NSURL URLWithString:[@"https://" stringByAppendingString:host]];
@@ -314,20 +109,14 @@ static NSMutableDictionary *kChannelPool;
 
   GRPCChannelConfiguration *channelConfig =
       [[GRPCChannelConfiguration alloc] initWithHost:host callOptions:callOptions];
-  GRPCChannel *channel = kChannelPool[channelConfig];
-  if (channel == nil) {
-    channel = [GRPCChannel createChannelWithConfiguration:channelConfig];
-    kChannelPool[channelConfig] = channel;
-  }
-  return channel;
+  return [kChannelPool channelWithConfiguration:channelConfig
+                                  createChannel:^{
+                                    return [GRPCChannel createChannelWithConfiguration:channelConfig];
+                                  }];
 }
 
 + (void)closeOpenConnections {
-  kChannelPool = [NSMutableDictionary dictionary];
-}
-
-- (void)connectivityChange:(NSNotification *)note {
-  [kChannelPool removeObjectForKey:_host];
+  [kChannelPool clear];
 }
 
 @end

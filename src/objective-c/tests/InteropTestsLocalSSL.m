@@ -40,6 +40,18 @@ static int32_t kLocalInteropServerOverhead = 10;
   return kLocalSSLHost;
 }
 
++ (NSString *)pemRootCert {
+  NSBundle *bundle = [NSBundle bundleForClass:self.class];
+  NSString *certsPath =
+  [bundle pathForResource:@"TestCertificates.bundle/test-certificates" ofType:@"pem"];
+  NSError *error;
+  return [NSString stringWithContentsOfFile:certsPath encoding:NSUTF8StringEncoding error:&error];
+}
+
++ (NSString *)hostNameOverride {
+  return @"foo.test.google.fr";
+}
+
 - (int32_t)encodingOverhead {
   return kLocalInteropServerOverhead;  // bytes
 }

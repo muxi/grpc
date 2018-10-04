@@ -147,6 +147,14 @@ BOOL isRemoteInteropTest(NSString *host) {
   return GRPCTransportTypeDefault;
 }
 
++ (NSString *)pemRootCert {
+  return nil;
+}
+
++ (NSString *)hostNameOverride {
+  return nil;
+}
+
 + (void)setUp {
   NSLog(@"InteropTest Started, class: %@", [[self class] description]);
 #ifdef GRPC_COMPILE_WITH_CRONET
@@ -194,6 +202,8 @@ BOOL isRemoteInteropTest(NSString *host) {
   GPBEmpty *request = [GPBEmpty message];
   GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
   options.transportType = self.class.transportType;
+  options.pemRootCert = self.class.pemRootCert;
+  options.hostNameOverride = self.class.hostNameOverride;
 
   [_service
       emptyCallWithMessage:request
@@ -473,7 +483,9 @@ BOOL isRemoteInteropTest(NSString *host) {
   id request = [RMTStreamingOutputCallRequest messageWithPayloadSize:requests[index]
                                                requestedResponseSize:responses[index]];
   GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
-  options.transportType = self.class.transportType;;
+  options.transportType = self.class.transportType;
+  options.pemRootCert = self.class.pemRootCert;
+  options.hostNameOverride = self.class.hostNameOverride;
 
   __block GRPCStreamingProtoCall *call = [_service
       fullDuplexCallWithResponseHandler:[[InteropTestsBlockCallbacks alloc]
@@ -617,6 +629,8 @@ BOOL isRemoteInteropTest(NSString *host) {
 
   GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
   options.transportType = self.class.transportType;
+  options.pemRootCert = self.class.pemRootCert;
+  options.hostNameOverride = self.class.hostNameOverride;
 
   id request =
       [RMTStreamingOutputCallRequest messageWithPayloadSize:@21782 requestedResponseSize:@31415];

@@ -27,6 +27,7 @@
 		5EB2A2E92107DED300EB4B69 /* libTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 635697C71B14FC11007A7283 /* libTests.a */; };
 		5EB2A2F82109284500EB4B69 /* InteropTestsMultipleChannels.m in Sources */ = {isa = PBXBuildFile; fileRef = 5EB2A2F72109284500EB4B69 /* InteropTestsMultipleChannels.m */; };
 		5EB2A2FA2109284500EB4B69 /* libTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 635697C71B14FC11007A7283 /* libTests.a */; };
+		5EB5C3AA21656CEA00ADC300 /* ChannelPoolTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 5EB5C3A921656CEA00ADC300 /* ChannelPoolTest.m */; };
 		5EC5E42B2081782C000EF4AD /* InteropTestsRemote.m in Sources */ = {isa = PBXBuildFile; fileRef = 6379CC4F1BE16703001BC0A1 /* InteropTestsRemote.m */; };
 		5EC5E42C20817832000EF4AD /* InteropTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 635ED2EB1B1A3BC400FDE5C3 /* InteropTests.m */; };
 		5EC5E43B208185A7000EF4AD /* InteropTestsLocalCleartext.m in Sources */ = {isa = PBXBuildFile; fileRef = 63715F551B780C020029CB0B /* InteropTestsLocalCleartext.m */; };
@@ -222,6 +223,7 @@
 		5EB2A2F52109284500EB4B69 /* InteropTestsMultipleChannels.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = InteropTestsMultipleChannels.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5EB2A2F72109284500EB4B69 /* InteropTestsMultipleChannels.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = InteropTestsMultipleChannels.m; sourceTree = "<group>"; };
 		5EB2A2F92109284500EB4B69 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		5EB5C3A921656CEA00ADC300 /* ChannelPoolTest.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ChannelPoolTest.m; sourceTree = "<group>"; };
 		5EC5E421208177CC000EF4AD /* InteropTestsRemoteCFStream.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = InteropTestsRemoteCFStream.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5EC5E4312081856B000EF4AD /* InteropTestsLocalCleartextCFStream.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = InteropTestsLocalCleartextCFStream.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5EC5E442208185CE000EF4AD /* InteropTestsLocalSSLCFStream.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = InteropTestsLocalSSLCFStream.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -565,6 +567,7 @@
 		5EB2A2E52107DED300EB4B69 /* ChannelTests */ = {
 			isa = PBXGroup;
 			children = (
+				5EB5C3A921656CEA00ADC300 /* ChannelPoolTest.m */,
 				5EB2A2E62107DED300EB4B69 /* ChannelTests.m */,
 				5EB2A2E82107DED300EB4B69 /* Info.plist */,
 			);
@@ -1801,6 +1804,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				5EB2A2E72107DED300EB4B69 /* ChannelTests.m in Sources */,
+				5EB5C3AA21656CEA00ADC300 /* ChannelPoolTest.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

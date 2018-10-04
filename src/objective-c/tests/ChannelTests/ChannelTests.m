@@ -33,17 +33,17 @@
 
 - (void)testSameConfiguration {
   NSString *host = @"grpc-test.sandbox.googleapis.com";
-  GRPCCallOptions *options = [[GRPCCallOptions alloc] init];
+  GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
   options.userAgentPrefix = @"TestUAPrefix";
   NSMutableDictionary *args = [NSMutableDictionary new];
   args[@"abc"] = @"xyz";
   options.additionalChannelArgs = [args copy];
-  GRPCChannel *channel1 = [GRPCChannel channelWithHost:host options:options];
-  GRPCChannel *channel2 = [GRPCChannel channelWithHost:host options:options];
+  GRPCChannel *channel1 = [GRPCChannel channelWithHost:host callOptions:options];
+  GRPCChannel *channel2 = [GRPCChannel channelWithHost:host callOptions:options];
   XCTAssertEqual(channel1, channel2);
-  GRPCCallOptions *options2 = [options copy];
+  GRPCMutableCallOptions *options2 = [options mutableCopy];
   options2.additionalChannelArgs = [args copy];
-  GRPCChannel *channel3 = [GRPCChannel channelWithHost:host options:options2];
+  GRPCChannel *channel3 = [GRPCChannel channelWithHost:host callOptions:options2];
   XCTAssertEqual(channel1, channel3);
 }
 
@@ -53,16 +53,16 @@
   NSString *host3 = @"http://grpc-test.sandbox.googleapis.com";
   NSString *host4 = @"dns://grpc-test.sandbox.googleapis.com";
   NSString *host5 = @"grpc-test.sandbox.googleapis.com:80";
-  GRPCCallOptions *options = [[GRPCCallOptions alloc] init];
+  GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
   options.userAgentPrefix = @"TestUAPrefix";
   NSMutableDictionary *args = [NSMutableDictionary new];
   args[@"abc"] = @"xyz";
   options.additionalChannelArgs = [args copy];
-  GRPCChannel *channel1 = [GRPCChannel channelWithHost:host1 options:options];
-  GRPCChannel *channel2 = [GRPCChannel channelWithHost:host2 options:options];
-  GRPCChannel *channel3 = [GRPCChannel channelWithHost:host3 options:options];
-  GRPCChannel *channel4 = [GRPCChannel channelWithHost:host4 options:options];
-  GRPCChannel *channel5 = [GRPCChannel channelWithHost:host5 options:options];
+  GRPCChannel *channel1 = [GRPCChannel channelWithHost:host1 callOptions:options];
+  GRPCChannel *channel2 = [GRPCChannel channelWithHost:host2 callOptions:options];
+  GRPCChannel *channel3 = [GRPCChannel channelWithHost:host3 callOptions:options];
+  GRPCChannel *channel4 = [GRPCChannel channelWithHost:host4 callOptions:options];
+  GRPCChannel *channel5 = [GRPCChannel channelWithHost:host5 callOptions:options];
   XCTAssertNotEqual(channel1, channel2);
   XCTAssertNotEqual(channel1, channel3);
   XCTAssertNotEqual(channel1, channel4);
@@ -71,21 +71,21 @@
 
 - (void)testDifferentChannelParameters {
   NSString *host = @"grpc-test.sandbox.googleapis.com";
-  GRPCCallOptions *options1 = [[GRPCCallOptions alloc] init];
+  GRPCMutableCallOptions *options1 = [[GRPCMutableCallOptions alloc] init];
   options1.transportType = GRPCTransportTypeDefault;
   NSMutableDictionary *args = [NSMutableDictionary new];
   args[@"abc"] = @"xyz";
   options1.additionalChannelArgs = [args copy];
-  GRPCCallOptions *options2 = [[GRPCCallOptions alloc] init];
+  GRPCMutableCallOptions *options2 = [[GRPCMutableCallOptions alloc] init];
   options2.transportType = GRPCTransportTypeInsecure;
   options2.additionalChannelArgs = [args copy];
-  GRPCCallOptions *options3 = [[GRPCCallOptions alloc] init];
+  GRPCMutableCallOptions *options3 = [[GRPCMutableCallOptions alloc] init];
   options3.transportType = GRPCTransportTypeDefault;
   args[@"def"] = @"uvw";
   options3.additionalChannelArgs = [args copy];
-  GRPCChannel *channel1 = [GRPCChannel channelWithHost:host options:options1];
-  GRPCChannel *channel2 = [GRPCChannel channelWithHost:host options:options2];
-  GRPCChannel *channel3 = [GRPCChannel channelWithHost:host options:options3];
+  GRPCChannel *channel1 = [GRPCChannel channelWithHost:host callOptions:options1];
+  GRPCChannel *channel2 = [GRPCChannel channelWithHost:host callOptions:options2];
+  GRPCChannel *channel3 = [GRPCChannel channelWithHost:host callOptions:options3];
   XCTAssertNotEqual(channel1, channel2);
   XCTAssertNotEqual(channel1, channel3);
 }

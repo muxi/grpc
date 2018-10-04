@@ -236,6 +236,7 @@
 
 @implementation GRPCWrappedCall {
   GRPCCompletionQueue *_queue;
+  GRPCChannel *_channel;
   grpc_call *_call;
 }
 
@@ -255,8 +256,8 @@
     // consuming too many threads and having contention of multiple calls in a single completion
     // queue. Currently we use a singleton queue.
     _queue = [GRPCCompletionQueue completionQueue];
-
-    _call = [[GRPCChannel channelWithHost:host callOptions:callOptions]
+    _channel = [GRPCChannel channelWithHost:host callOptions:callOptions];
+    _call = [_channel
         unmanagedCallWithPath:path
               completionQueue:_queue
                   callOptions:callOptions];
@@ -313,6 +314,8 @@
 
 - (void)dealloc {
   grpc_call_unref(_call);
+  [_channel unmanagedCallUnref];
+  _channel = nil;
 }
 
 @end

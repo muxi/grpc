@@ -41,6 +41,14 @@ static int32_t kRemoteInteropServerOverhead = 12;
   return kRemoteSSLHost;
 }
 
++ (NSString *)pemRootCert {
+  return nil;
+}
+
++ (NSString *)hostNameOverride {
+  return nil;
+}
+
 - (int32_t)encodingOverhead {
   return kRemoteInteropServerOverhead;  // bytes
 }

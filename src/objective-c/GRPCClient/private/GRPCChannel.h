@@ -22,6 +22,7 @@
 
 @class GRPCCompletionQueue;
 @class GRPCCallOptions;
+@class GRPCChannelConfiguration;
 struct grpc_channel_credentials;
 
 /**
@@ -31,12 +32,27 @@ struct grpc_channel_credentials;
 
 - (nullable instancetype)init NS_UNAVAILABLE;
 
+/**
+ * Returns a channel connecting to \a host with options as \a callOptions. The channel may be new
+ * or a cached channel that is already connected.
+ */
 + (nullable instancetype)channelWithHost:(nonnull NSString *)host
                              callOptions:(nullable GRPCCallOptions *)callOptions;
 
+/**
+ * Get a grpc core call object from this channel.
+ */
 - (nullable grpc_call *)unmanagedCallWithPath:(nonnull NSString *)path
                               completionQueue:(nonnull GRPCCompletionQueue *)queue
                                   callOptions:(nonnull GRPCCallOptions *)callOptions;
+
+- (void)unmanagedCallUnref;
+
+/**
+ * Create a channel object with the signature \a config. This function is used for testing only. Use
+ * channelWithHost:callOptions: in production.
+ */
++ (nullable instancetype)createChannelWithConfiguration:(nonnull GRPCChannelConfiguration *)config;
 
 // TODO (mxyan): deprecate with GRPCCall:closeOpenConnections
 + (void)closeOpenConnections;
