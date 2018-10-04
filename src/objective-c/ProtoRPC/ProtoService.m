@@ -83,14 +83,15 @@
                       responseClass:(Class)responseClass {
   GRPCProtoMethod *methodName =
       [[GRPCProtoMethod alloc] initWithPackage:_packageName service:_serviceName method:method];
-  GRPCRequestOptions *requestOptions = [[GRPCRequestOptions alloc] initWithHost:_host
-                                                                    path:methodName.HTTPPath
-                                                                  safety:GRPCCallSafetyDefault];
+  GRPCRequestOptions *requestOptions =
+      [[GRPCRequestOptions alloc] initWithHost:_host
+                                          path:methodName.HTTPPath
+                                        safety:GRPCCallSafetyDefault];
   return [[GRPCUnaryProtoCall alloc] initWithRequestOptions:requestOptions
-                                             message:message
-                                     responseHandler:handler
-                                         callOptions:callOptions ?: _callOptions
-                                       responseClass:responseClass];
+                                                    message:message
+                                            responseHandler:handler
+                                                callOptions:callOptions ?: _callOptions
+                                              responseClass:responseClass];
 }
 
 - (GRPCStreamingProtoCall *)RPCToMethod:(NSString *)method
@@ -99,13 +100,14 @@
                           responseClass:(Class)responseClass {
   GRPCProtoMethod *methodName =
       [[GRPCProtoMethod alloc] initWithPackage:_packageName service:_serviceName method:method];
-  GRPCRequestOptions *requestOptions = [[GRPCRequestOptions alloc] initWithHost:_host
-                                                                    path:methodName.HTTPPath
-                                                                  safety:GRPCCallSafetyDefault];
+  GRPCRequestOptions *requestOptions =
+      [[GRPCRequestOptions alloc] initWithHost:_host
+                                          path:methodName.HTTPPath
+                                        safety:GRPCCallSafetyDefault];
   return [[GRPCStreamingProtoCall alloc] initWithRequestOptions:requestOptions
-                                         responseHandler:handler
-                                             callOptions:callOptions ?: _callOptions
-                                           responseClass:responseClass];
+                                                responseHandler:handler
+                                                    callOptions:callOptions ?: _callOptions
+                                                  responseClass:responseClass];
 }
 
 @end

@@ -22,13 +22,13 @@
 
 #import "ChannelArgsUtil.h"
 #import "GRPCChannelFactory.h"
+#import "GRPCChannelPool.h"
 #import "GRPCCompletionQueue.h"
+#import "GRPCConnectivityMonitor.h"
 #import "GRPCCronetChannelFactory.h"
 #import "GRPCInsecureChannelFactory.h"
 #import "GRPCSecureChannelFactory.h"
 #import "version.h"
-#import "GRPCConnectivityMonitor.h"
-#import "GRPCChannelPool.h"
 
 #import <GRPCClient/GRPCCall+Cronet.h>
 #import <GRPCClient/GRPCCallOptions.h>
@@ -111,7 +111,8 @@ static GRPCChannelPool *kChannelPool;
       [[GRPCChannelConfiguration alloc] initWithHost:host callOptions:callOptions];
   return [kChannelPool channelWithConfiguration:channelConfig
                                   createChannel:^{
-                                    return [GRPCChannel createChannelWithConfiguration:channelConfig];
+                                    return
+                                        [GRPCChannel createChannelWithConfiguration:channelConfig];
                                   }];
 }
 

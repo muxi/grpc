@@ -31,7 +31,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface GRPCChannelConfiguration : NSObject<NSCopying>
 
-@property(atomic, strong, readwrite) NSString * host;
+@property(atomic, strong, readwrite) NSString *host;
 @property(atomic, strong, readwrite) GRPCCallOptions *callOptions;
 
 @property(readonly) id<GRPCChannelFactory> channelFactory;

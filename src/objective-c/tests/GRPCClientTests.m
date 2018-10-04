@@ -296,36 +296,40 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
   request.fillUsername = YES;
   request.fillOauthScope = YES;
 
-  GRPCRequestOptions *callRequest = [[GRPCRequestOptions alloc] initWithHost:(NSString *)kRemoteSSLHost
-                                                                        path:kUnaryCallMethod.HTTPPath
-                                                                      safety:GRPCCallSafetyDefault];
+  GRPCRequestOptions *callRequest =
+      [[GRPCRequestOptions alloc] initWithHost:(NSString *)kRemoteSSLHost
+                                          path:kUnaryCallMethod.HTTPPath
+                                        safety:GRPCCallSafetyDefault];
   __block NSDictionary *init_md;
   __block NSDictionary *trailing_md;
   GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
   options.oauth2AccessToken = @"bogusToken";
   GRPCCall2 *call = [[GRPCCall2 alloc]
       initWithRequestOptions:callRequest
-              handler:[[ClientTestsBlockCallbacks alloc]
-                          initWithInitialMetadataCallback:^(NSDictionary *initialMetadata) {
-                            init_md = initialMetadata;
-                          }
-                          messageCallback:^(id message) {
-                            XCTFail(@"Received unexpected response.");
-                          }
-                          closeCallback:^(NSDictionary *trailingMetadata, NSError *error) {
-                            trailing_md = trailingMetadata;
-                            if (error) {
-                              XCTAssertEqual(error.code, 16, @"Finished with unexpected error: %@",
-                                             error);
-                              XCTAssertEqualObjects(init_md, error.userInfo[kGRPCHeadersKey]);
-                              XCTAssertEqualObjects(trailing_md, error.userInfo[kGRPCTrailersKey]);
-                              NSString *challengeHeader = init_md[@"www-authenticate"];
-                              XCTAssertGreaterThan(challengeHeader.length, 0,
-                                                   @"No challenge in response headers %@", init_md);
-                              [expectation fulfill];
-                            }
-                          }]
-          callOptions:options];
+                     handler:[[ClientTestsBlockCallbacks alloc]
+                                 initWithInitialMetadataCallback:^(NSDictionary *initialMetadata) {
+                                   init_md = initialMetadata;
+                                 }
+                                 messageCallback:^(id message) {
+                                   XCTFail(@"Received unexpected response.");
+                                 }
+                                 closeCallback:^(NSDictionary *trailingMetadata, NSError *error) {
+                                   trailing_md = trailingMetadata;
+                                   if (error) {
+                                     XCTAssertEqual(error.code, 16,
+                                                    @"Finished with unexpected error: %@", error);
+                                     XCTAssertEqualObjects(init_md,
+                                                           error.userInfo[kGRPCHeadersKey]);
+                                     XCTAssertEqualObjects(trailing_md,
+                                                           error.userInfo[kGRPCTrailersKey]);
+                                     NSString *challengeHeader = init_md[@"www-authenticate"];
+                                     XCTAssertGreaterThan(challengeHeader.length, 0,
+                                                          @"No challenge in response headers %@",
+                                                          init_md);
+                                     [expectation fulfill];
+                                   }
+                                 }]
+                 callOptions:options];
 
   [call start];
   [call writeWithData:[request data]];
@@ -431,7 +435,9 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
   __weak XCTestExpectation *recvInitialMd =
       [self expectationWithDescription:@"Did not receive initial md."];
 
-  GRPCRequestOptions *request = [[GRPCRequestOptions alloc] initWithHost:kHostAddress path:kEmptyCallMethod.HTTPPath safety:GRPCCallSafetyDefault];
+  GRPCRequestOptions *request = [[GRPCRequestOptions alloc] initWithHost:kHostAddress
+                                                                    path:kEmptyCallMethod.HTTPPath
+                                                                  safety:GRPCCallSafetyDefault];
   NSDictionary *headers =
       [NSDictionary dictionaryWithObjectsAndKeys:@"", @"x-grpc-test-echo-useragent", nil];
   GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
@@ -440,53 +446,55 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
   options.initialMetadata = headers;
   GRPCCall2 *call = [[GRPCCall2 alloc]
       initWithRequestOptions:request
-              handler:[[ClientTestsBlockCallbacks alloc] initWithInitialMetadataCallback:^(
-                                                             NSDictionary *initialMetadata) {
-                NSString *userAgent = initialMetadata[@"x-grpc-test-echo-useragent"];
-                // Test the regex is correct
-                NSString *expectedUserAgent = @"Foo grpc-objc/";
-                expectedUserAgent =
-                    [expectedUserAgent stringByAppendingString:GRPC_OBJC_VERSION_STRING];
-                expectedUserAgent = [expectedUserAgent stringByAppendingString:@" grpc-c/"];
-                expectedUserAgent =
-                    [expectedUserAgent stringByAppendingString:GRPC_C_VERSION_STRING];
-                expectedUserAgent = [expectedUserAgent stringByAppendingString:@" (ios; chttp2; "];
-                expectedUserAgent = [expectedUserAgent
-                    stringByAppendingString:[NSString stringWithUTF8String:grpc_g_stands_for()]];
-                expectedUserAgent = [expectedUserAgent stringByAppendingString:@")"];
-                XCTAssertEqualObjects(userAgent, expectedUserAgent);
+                     handler:[[ClientTestsBlockCallbacks alloc] initWithInitialMetadataCallback:^(
+                                                                    NSDictionary *initialMetadata) {
+                       NSString *userAgent = initialMetadata[@"x-grpc-test-echo-useragent"];
+                       // Test the regex is correct
+                       NSString *expectedUserAgent = @"Foo grpc-objc/";
+                       expectedUserAgent =
+                           [expectedUserAgent stringByAppendingString:GRPC_OBJC_VERSION_STRING];
+                       expectedUserAgent = [expectedUserAgent stringByAppendingString:@" grpc-c/"];
+                       expectedUserAgent =
+                           [expectedUserAgent stringByAppendingString:GRPC_C_VERSION_STRING];
+                       expectedUserAgent =
+                           [expectedUserAgent stringByAppendingString:@" (ios; chttp2; "];
+                       expectedUserAgent = [expectedUserAgent
+                           stringByAppendingString:[NSString
+                                                       stringWithUTF8String:grpc_g_stands_for()]];
+                       expectedUserAgent = [expectedUserAgent stringByAppendingString:@")"];
+                       XCTAssertEqualObjects(userAgent, expectedUserAgent);
 
-                NSError *error = nil;
-                // Change in format of user-agent field in a direction that does not match the regex
-                // will likely cause problem for certain gRPC users. For details, refer to internal
-                // doc https://goo.gl/c2diBc
-                NSRegularExpression *regex = [NSRegularExpression
-                    regularExpressionWithPattern:
-                        @" grpc-[a-zA-Z0-9]+(-[a-zA-Z0-9]+)?/[^ ,]+( \\([^)]*\\))?"
-                                         options:0
-                                           error:&error];
+                       NSError *error = nil;
+                       // Change in format of user-agent field in a direction that does not match
+                       // the regex will likely cause problem for certain gRPC users. For details,
+                       // refer to internal doc https://goo.gl/c2diBc
+                       NSRegularExpression *regex = [NSRegularExpression
+                           regularExpressionWithPattern:
+                               @" grpc-[a-zA-Z0-9]+(-[a-zA-Z0-9]+)?/[^ ,]+( \\([^)]*\\))?"
+                                                options:0
+                                                  error:&error];
 
-                NSString *customUserAgent =
-                    [regex stringByReplacingMatchesInString:userAgent
+                       NSString *customUserAgent = [regex
+                           stringByReplacingMatchesInString:userAgent
                                                     options:0
                                                       range:NSMakeRange(0, [userAgent length])
                                                withTemplate:@""];
-                XCTAssertEqualObjects(customUserAgent, @"Foo");
-                [recvInitialMd fulfill];
-              }
-                          messageCallback:^(id message) {
-                            XCTAssertNotNil(message);
-                            XCTAssertEqual([message length], 0, @"Non-empty response received: %@",
-                                           message);
-                          }
-                          closeCallback:^(NSDictionary *trailingMetadata, NSError *error) {
-                            if (error) {
-                              XCTFail(@"Finished with unexpected error: %@", error);
-                            } else {
-                              [completion fulfill];
-                            }
-                          }]
-          callOptions:options];
+                       XCTAssertEqualObjects(customUserAgent, @"Foo");
+                       [recvInitialMd fulfill];
+                     }
+                                 messageCallback:^(id message) {
+                                   XCTAssertNotNil(message);
+                                   XCTAssertEqual([message length], 0,
+                                                  @"Non-empty response received: %@", message);
+                                 }
+                                 closeCallback:^(NSDictionary *trailingMetadata, NSError *error) {
+                                   if (error) {
+                                     XCTFail(@"Finished with unexpected error: %@", error);
+                                   } else {
+                                     [completion fulfill];
+                                   }
+                                 }]
+                 callOptions:options];
   [call writeWithData:[NSData data]];
   [call start];
 
@@ -592,30 +600,36 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
   request.responseSize = 100;
   request.fillUsername = YES;
   request.fillOauthScope = YES;
-  GRPCRequestOptions *requestOptions = [[GRPCRequestOptions alloc] initWithHost:kHostAddress path:kUnaryCallMethod.HTTPPath safety:GRPCCallSafetyIdempotentRequest];
+  GRPCRequestOptions *requestOptions =
+      [[GRPCRequestOptions alloc] initWithHost:kHostAddress
+                                          path:kUnaryCallMethod.HTTPPath
+                                        safety:GRPCCallSafetyIdempotentRequest];
 
   GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
   options.transportType = GRPCTransportTypeInsecure;
   GRPCCall2 *call = [[GRPCCall2 alloc]
       initWithRequestOptions:requestOptions
-              handler:[[ClientTestsBlockCallbacks alloc] initWithInitialMetadataCallback:nil
-                          messageCallback:^(id message) {
-                            NSData *data = (NSData *)message;
-                            XCTAssertNotNil(data, @"nil value received as response.");
-                            XCTAssertGreaterThan(data.length, 0, @"Empty response received.");
-                            RMTSimpleResponse *responseProto =
-                                [RMTSimpleResponse parseFromData:data error:NULL];
-                            // We expect empty strings, not nil:
-                            XCTAssertNotNil(responseProto.username, @"Response's username is nil.");
-                            XCTAssertNotNil(responseProto.oauthScope,
-                                            @"Response's OAuth scope is nil.");
-                            [response fulfill];
-                          }
-                          closeCallback:^(NSDictionary *trailingMetadata, NSError *error) {
-                            XCTAssertNil(error, @"Finished with unexpected error: %@", error);
-                            [completion fulfill];
-                          }]
-          callOptions:options];
+                     handler:[[ClientTestsBlockCallbacks alloc] initWithInitialMetadataCallback:nil
+                                 messageCallback:^(id message) {
+                                   NSData *data = (NSData *)message;
+                                   XCTAssertNotNil(data, @"nil value received as response.");
+                                   XCTAssertGreaterThan(data.length, 0,
+                                                        @"Empty response received.");
+                                   RMTSimpleResponse *responseProto =
+                                       [RMTSimpleResponse parseFromData:data error:NULL];
+                                   // We expect empty strings, not nil:
+                                   XCTAssertNotNil(responseProto.username,
+                                                   @"Response's username is nil.");
+                                   XCTAssertNotNil(responseProto.oauthScope,
+                                                   @"Response's OAuth scope is nil.");
+                                   [response fulfill];
+                                 }
+                                 closeCallback:^(NSDictionary *trailingMetadata, NSError *error) {
+                                   XCTAssertNil(error, @"Finished with unexpected error: %@",
+                                                error);
+                                   [completion fulfill];
+                                 }]
+                 callOptions:options];
 
   [call start];
   [call writeWithData:[request data]];
@@ -718,22 +732,27 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
 
   GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
   options.timeout = 0.001;
-  GRPCRequestOptions *requestOptions = [[GRPCRequestOptions alloc] initWithHost:kHostAddress path:kFullDuplexCallMethod.HTTPPath safety:GRPCCallSafetyDefault];
+  GRPCRequestOptions *requestOptions =
+      [[GRPCRequestOptions alloc] initWithHost:kHostAddress
+                                          path:kFullDuplexCallMethod.HTTPPath
+                                        safety:GRPCCallSafetyDefault];
 
   GRPCCall2 *call = [[GRPCCall2 alloc]
       initWithRequestOptions:requestOptions
-              handler:[[ClientTestsBlockCallbacks alloc] initWithInitialMetadataCallback:nil
-                          messageCallback:^(id data) {
-                            XCTFail(@"Failure: response received; Expect: no response received.");
-                          }
-                          closeCallback:^(NSDictionary *trailingMetadata, NSError *error) {
-                            XCTAssertNotNil(
-                                error,
-                                @"Failure: no error received; Expect: receive deadline exceeded.");
-                            XCTAssertEqual(error.code, GRPCErrorCodeDeadlineExceeded);
-                            [completion fulfill];
-                          }]
-          callOptions:options];
+                     handler:
+                         [[ClientTestsBlockCallbacks alloc] initWithInitialMetadataCallback:nil
+                             messageCallback:^(id data) {
+                               XCTFail(
+                                   @"Failure: response received; Expect: no response received.");
+                             }
+                             closeCallback:^(NSDictionary *trailingMetadata, NSError *error) {
+                               XCTAssertNotNil(error,
+                                               @"Failure: no error received; Expect: receive "
+                                               @"deadline exceeded.");
+                               XCTAssertEqual(error.code, GRPCErrorCodeDeadlineExceeded);
+                               [completion fulfill];
+                             }]
+                 callOptions:options];
 
   [call start];
 
@@ -817,7 +836,8 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
 
   __weak XCTestExpectation *completion = [self expectationWithDescription:@"Timeout in a second."];
   NSString *const kDummyAddress = [NSString stringWithFormat:@"8.8.8.8:1"];
-  GRPCRequestOptions *requestOptions = [[GRPCRequestOptions alloc] initWithHost:kDummyAddress path:@"" safety:GRPCCallSafetyDefault];
+  GRPCRequestOptions *requestOptions =
+      [[GRPCRequestOptions alloc] initWithHost:kDummyAddress path:@"" safety:GRPCCallSafetyDefault];
   GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
   options.connectMinTimeout = timeout;
   options.connectInitialBackoff = backoff;
@@ -826,17 +846,19 @@ static GRPCProtoMethod *kFullDuplexCallMethod;
   NSDate *startTime = [NSDate date];
   GRPCCall2 *call = [[GRPCCall2 alloc]
       initWithRequestOptions:requestOptions
-              handler:[[ClientTestsBlockCallbacks alloc] initWithInitialMetadataCallback:nil
-                          messageCallback:^(id data) {
-                            XCTFail(@"Received message. Should not reach here.");
-                          }
-                          closeCallback:^(NSDictionary *trailingMetadata, NSError *error) {
-                            XCTAssertNotNil(error, @"Finished with no error; expecting error");
-                            XCTAssertLessThan([[NSDate date] timeIntervalSinceDate:startTime],
-                                              maxConnectTime + kMargin);
-                            [completion fulfill];
-                          }]
-          callOptions:options];
+                     handler:[[ClientTestsBlockCallbacks alloc] initWithInitialMetadataCallback:nil
+                                 messageCallback:^(id data) {
+                                   XCTFail(@"Received message. Should not reach here.");
+                                 }
+                                 closeCallback:^(NSDictionary *trailingMetadata, NSError *error) {
+                                   XCTAssertNotNil(error,
+                                                   @"Finished with no error; expecting error");
+                                   XCTAssertLessThan(
+                                       [[NSDate date] timeIntervalSinceDate:startTime],
+                                       maxConnectTime + kMargin);
+                                   [completion fulfill];
+                                 }]
+                 callOptions:options];
 
   [call start];
 

@@ -66,9 +66,7 @@ const char *kCFStreamVarName = "grpc_cfstream";
 
 @implementation GRPCRequestOptions
 
-- (instancetype)initWithHost:(NSString *)host
-                        path:(NSString *)path
-                      safety:(GRPCCallSafety)safety {
+- (instancetype)initWithHost:(NSString *)host path:(NSString *)path safety:(GRPCCallSafety)safety {
   if ((self = [super init])) {
     _host = host;
     _path = path;
@@ -78,9 +76,8 @@ const char *kCFStreamVarName = "grpc_cfstream";
 }
 
 - (id)copyWithZone:(NSZone *)zone {
-  GRPCRequestOptions *request = [[GRPCRequestOptions alloc] initWithHost:[_host copy]
-                                                                    path:[_path copy]
-                                                                  safety:_safety];
+  GRPCRequestOptions *request =
+      [[GRPCRequestOptions alloc] initWithHost:[_host copy] path:[_path copy] safety:_safety];
 
   return request;
 }
@@ -98,8 +95,8 @@ const char *kCFStreamVarName = "grpc_cfstream";
 }
 
 - (instancetype)initWithRequestOptions:(GRPCRequestOptions *)requestOptions
-                        handler:(id<GRPCResponseHandler>)handler
-                    callOptions:(GRPCCallOptions *)callOptions {
+                               handler:(id<GRPCResponseHandler>)handler
+                           callOptions:(GRPCCallOptions *)callOptions {
   if (!requestOptions || !requestOptions.host || !requestOptions.path) {
     [NSException raise:NSInvalidArgumentException format:@"Neither host nor path can be nil."];
   }
@@ -117,7 +114,7 @@ const char *kCFStreamVarName = "grpc_cfstream";
 }
 
 - (instancetype)initWithRequestOptions:(GRPCRequestOptions *)requestOptions
-                        handler:(id<GRPCResponseHandler>)handler {
+                               handler:(id<GRPCResponseHandler>)handler {
   return [self initWithRequestOptions:requestOptions handler:handler callOptions:nil];
 }
 

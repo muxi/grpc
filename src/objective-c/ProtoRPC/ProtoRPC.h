@@ -31,10 +31,10 @@
  * returned to users by methods of the generated service.
  */
 - (instancetype)initWithRequestOptions:(GRPCRequestOptions *)requestOptions
-                        message:(GPBMessage *)message
-                responseHandler:(id<GRPCResponseHandler>)handler
-                    callOptions:(GRPCCallOptions *)callOptions
-                  responseClass:(Class)responseClass;
+                               message:(GPBMessage *)message
+                       responseHandler:(id<GRPCResponseHandler>)handler
+                           callOptions:(GRPCCallOptions *)callOptions
+                         responseClass:(Class)responseClass;
 
 /** Cancel the call at best effort. */
 - (void)cancel;
@@ -49,9 +49,9 @@
  * returned to users by methods of the generated service.
  */
 - (instancetype)initWithRequestOptions:(GRPCRequestOptions *)requestOptions
-                responseHandler:(id<GRPCResponseHandler>)handler
-                    callOptions:(GRPCCallOptions *)callOptions
-                  responseClass:(Class)responseClass;
+                       responseHandler:(id<GRPCResponseHandler>)handler
+                           callOptions:(GRPCCallOptions *)callOptions
+                         responseClass:(Class)responseClass;
 
 /** Cancel the call at best effort. */
 - (void)cancel;

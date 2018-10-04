@@ -18,13 +18,13 @@
 
 #import <Foundation/Foundation.h>
 
-#import "GRPCChannelPool.h"
 #import "GRPCChannelFactory.h"
+#import "GRPCChannelPool.h"
+#import "GRPCConnectivityMonitor.h"
 #import "GRPCCronetChannelFactory.h"
 #import "GRPCInsecureChannelFactory.h"
 #import "GRPCSecureChannelFactory.h"
 #import "version.h"
-#import "GRPCConnectivityMonitor.h"
 
 #import <GRPCClient/GRPCCall+Cronet.h>
 #include <grpc/support/log.h>
@@ -83,7 +83,7 @@ const NSTimeInterval kChannelDestroyDelay = 30;
   NSString *userAgentPrefix = _callOptions.userAgentPrefix;
   if (userAgentPrefix) {
     args[@GRPC_ARG_PRIMARY_USER_AGENT_STRING] =
-    [_callOptions.userAgentPrefix stringByAppendingFormat:@" %@", userAgent];
+        [_callOptions.userAgentPrefix stringByAppendingFormat:@" %@", userAgent];
   } else {
     args[@GRPC_ARG_PRIMARY_USER_AGENT_STRING] = userAgent;
   }
@@ -95,19 +95,19 @@ const NSTimeInterval kChannelDestroyDelay = 30;
 
   if (_callOptions.responseSizeLimit) {
     args[@GRPC_ARG_MAX_RECEIVE_MESSAGE_LENGTH] =
-    [NSNumber numberWithUnsignedInteger:_callOptions.responseSizeLimit];
+        [NSNumber numberWithUnsignedInteger:_callOptions.responseSizeLimit];
   }
 
   if (_callOptions.compressAlgorithm != GRPC_COMPRESS_NONE) {
     args[@GRPC_COMPRESSION_CHANNEL_DEFAULT_ALGORITHM] =
-    [NSNumber numberWithInt:_callOptions.compressAlgorithm];
+        [NSNumber numberWithInt:_callOptions.compressAlgorithm];
   }
 
   if (_callOptions.keepaliveInterval != 0) {
     args[@GRPC_ARG_KEEPALIVE_TIME_MS] =
-    [NSNumber numberWithUnsignedInteger:(unsigned int)(_callOptions.keepaliveInterval * 1000)];
+        [NSNumber numberWithUnsignedInteger:(unsigned int)(_callOptions.keepaliveInterval * 1000)];
     args[@GRPC_ARG_KEEPALIVE_TIMEOUT_MS] =
-    [NSNumber numberWithUnsignedInteger:(unsigned int)(_callOptions.keepaliveTimeout * 1000)];
+        [NSNumber numberWithUnsignedInteger:(unsigned int)(_callOptions.keepaliveTimeout * 1000)];
   }
 
   if (_callOptions.enableRetry == NO) {
@@ -116,15 +116,15 @@ const NSTimeInterval kChannelDestroyDelay = 30;
 
   if (_callOptions.connectMinTimeout > 0) {
     args[@GRPC_ARG_MIN_RECONNECT_BACKOFF_MS] =
-    [NSNumber numberWithUnsignedInteger:(unsigned int)(_callOptions.connectMinTimeout * 1000)];
+        [NSNumber numberWithUnsignedInteger:(unsigned int)(_callOptions.connectMinTimeout * 1000)];
   }
   if (_callOptions.connectInitialBackoff > 0) {
     args[@GRPC_ARG_INITIAL_RECONNECT_BACKOFF_MS] = [NSNumber
-                                                    numberWithUnsignedInteger:(unsigned int)(_callOptions.connectInitialBackoff * 1000)];
+        numberWithUnsignedInteger:(unsigned int)(_callOptions.connectInitialBackoff * 1000)];
   }
   if (_callOptions.connectMaxBackoff > 0) {
     args[@GRPC_ARG_MAX_RECONNECT_BACKOFF_MS] =
-    [NSNumber numberWithUnsignedInteger:(unsigned int)(_callOptions.connectMaxBackoff * 1000)];
+        [NSNumber numberWithUnsignedInteger:(unsigned int)(_callOptions.connectMaxBackoff * 1000)];
   }
 
   if (_callOptions.logContext != nil) {
@@ -165,7 +165,7 @@ const NSTimeInterval kChannelDestroyDelay = 30;
   if (!(obj.callOptions.connectMaxBackoff == _callOptions.connectMaxBackoff)) return NO;
   if (!(obj.callOptions.additionalChannelArgs == _callOptions.additionalChannelArgs ||
         [obj.callOptions.additionalChannelArgs
-         isEqualToDictionary:_callOptions.additionalChannelArgs]))
+            isEqualToDictionary:_callOptions.additionalChannelArgs]))
     return NO;
   if (!(obj.callOptions.pemRootCert == _callOptions.pemRootCert ||
         [obj.callOptions.pemRootCert isEqualToString:_callOptions.pemRootCert]))
@@ -350,13 +350,14 @@ const NSTimeInterval kChannelDestroyDelay = 30;
       channel = createChannel();
       self->_channelPool[configuration] = channel;
 
-      GRPCChannelCallRef *callRef = [[GRPCChannelCallRef alloc] initWithChannelConfiguration:configuration
-                                                                                destroyDelay:self->_channelDestroyDelay
-                                                                               dispatchQueue:self->_dispatchQueue
-                                                                              destroyChannel:^(GRPCChannelConfiguration *configuration){
-                                                                                [self->_channelPool removeObjectForKey:configuration];
-                                                                                [self->_callRefs removeObjectForKey:configuration];
-                                                                              }];
+      GRPCChannelCallRef *callRef = [[GRPCChannelCallRef alloc]
+          initWithChannelConfiguration:configuration
+                          destroyDelay:self->_channelDestroyDelay
+                         dispatchQueue:self->_dispatchQueue
+                        destroyChannel:^(GRPCChannelConfiguration *configuration) {
+                          [self->_channelPool removeObjectForKey:configuration];
+                          [self->_callRefs removeObjectForKey:configuration];
+                        }];
       [callRef refChannel];
       self->_callRefs[configuration] = callRef;
     }

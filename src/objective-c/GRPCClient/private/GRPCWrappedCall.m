@@ -257,10 +257,7 @@
     // queue. Currently we use a singleton queue.
     _queue = [GRPCCompletionQueue completionQueue];
     _channel = [GRPCChannel channelWithHost:host callOptions:callOptions];
-    _call = [_channel
-        unmanagedCallWithPath:path
-              completionQueue:_queue
-                  callOptions:callOptions];
+    _call = [_channel unmanagedCallWithPath:path completionQueue:_queue callOptions:callOptions];
     if (_call == NULL) {
       return nil;
     }

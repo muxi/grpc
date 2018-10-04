@@ -43,7 +43,7 @@ static int32_t kLocalInteropServerOverhead = 10;
 + (NSString *)pemRootCert {
   NSBundle *bundle = [NSBundle bundleForClass:self.class];
   NSString *certsPath =
-  [bundle pathForResource:@"TestCertificates.bundle/test-certificates" ofType:@"pem"];
+      [bundle pathForResource:@"TestCertificates.bundle/test-certificates" ofType:@"pem"];
   NSError *error;
   return [NSString stringWithContentsOfFile:certsPath encoding:NSUTF8StringEncoding error:&error];
 }

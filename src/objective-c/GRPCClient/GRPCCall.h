@@ -185,9 +185,7 @@ extern id const kGRPCTrailersKey;
 - (instancetype)init NS_UNAVAILABLE;
 
 /** Initialize with all properties. */
-- (instancetype)initWithHost:(NSString *)host
-                        path:(NSString *)path
-                      safety:(GRPCCallSafety)safety;
+- (instancetype)initWithHost:(NSString *)host path:(NSString *)path safety:(GRPCCallSafety)safety;
 
 /** The host serving the RPC service. */
 @property(copy, readonly) NSString *host;
@@ -217,13 +215,13 @@ extern id const kGRPCTrailersKey;
  * \param callOptions Options for the call.
  */
 - (instancetype)initWithRequestOptions:(GRPCRequestOptions *)requestOptions
-                        handler:(id<GRPCResponseHandler>)handler
-                    callOptions:(GRPCCallOptions *)callOptions NS_DESIGNATED_INITIALIZER;
+                               handler:(id<GRPCResponseHandler>)handler
+                           callOptions:(GRPCCallOptions *)callOptions NS_DESIGNATED_INITIALIZER;
 /**
  * Convevience initializer for a call that uses default call options.
  */
 - (instancetype)initWithRequestOptions:(GRPCRequestOptions *)requestOptions
-                        handler:(id<GRPCResponseHandler>)handler;
+                               handler:(id<GRPCResponseHandler>)handler;
 
 /**
  * Starts the call. Can only be called once.

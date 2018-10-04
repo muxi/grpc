@@ -32,15 +32,15 @@
 }
 
 - (instancetype)initWithRequestOptions:(GRPCRequestOptions *)requestOptions
-                        message:(GPBMessage *)message
-                responseHandler:(id<GRPCResponseHandler>)handler
-                    callOptions:(GRPCCallOptions *)callOptions
-                  responseClass:(Class)responseClass {
+                               message:(GPBMessage *)message
+                       responseHandler:(id<GRPCResponseHandler>)handler
+                           callOptions:(GRPCCallOptions *)callOptions
+                         responseClass:(Class)responseClass {
   if ((self = [super init])) {
     _call = [[GRPCStreamingProtoCall alloc] initWithRequestOptions:requestOptions
-                                            responseHandler:handler
-                                                callOptions:callOptions
-                                              responseClass:responseClass];
+                                                   responseHandler:handler
+                                                       callOptions:callOptions
+                                                     responseClass:responseClass];
     [_call writeWithMessage:message];
     [_call finish];
   }
@@ -69,9 +69,9 @@
 }
 
 - (instancetype)initWithRequestOptions:(GRPCRequestOptions *)requestOptions
-                responseHandler:(id<GRPCResponseHandler>)handler
-                    callOptions:(GRPCCallOptions *)callOptions
-                  responseClass:(Class)responseClass {
+                       responseHandler:(id<GRPCResponseHandler>)handler
+                           callOptions:(GRPCCallOptions *)callOptions
+                         responseClass:(Class)responseClass {
   if ((self = [super init])) {
     _requestOptions = [requestOptions copy];
     _handler = handler;
@@ -85,7 +85,9 @@
 }
 
 - (void)start {
-  _call = [[GRPCCall2 alloc] initWithRequestOptions:_requestOptions handler:self callOptions:_callOptions];
+  _call = [[GRPCCall2 alloc] initWithRequestOptions:_requestOptions
+                                            handler:self
+                                        callOptions:_callOptions];
   [_call start];
 }
 
