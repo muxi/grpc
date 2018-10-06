@@ -28,7 +28,7 @@
 #include <grpc/support/time.h>
 
 #import "GRPCCallOptions.h"
-#import "GRPCHost.h"
+#import "private/GRPCHost.h"
 #import "private/GRPCConnectivityMonitor.h"
 #import "private/GRPCRequestHeaders.h"
 #import "private/GRPCWrappedCall.h"

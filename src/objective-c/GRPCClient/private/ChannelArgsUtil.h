@@ -16,6 +16,8 @@
  *
  */
 
+#import <Foundation/Foundation.h>
+
 #include <grpc/impl/codegen/grpc_types.h>
 
 void FreeChannelArgs(grpc_channel_args* channel_args);

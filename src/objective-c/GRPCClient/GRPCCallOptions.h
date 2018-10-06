@@ -16,6 +16,8 @@
  *
  */
 
+#import <Foundation/Foundation.h>
+
 /**
  * Safety remark of a gRPC method as defined in RFC 2616 Section 9.1
  */
