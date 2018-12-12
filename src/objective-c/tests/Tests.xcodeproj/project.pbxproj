@@ -30,6 +30,8 @@
 		5EE84BF41D4717E40050C6CC /* InteropTestsRemoteWithCronet.m in Sources */ = {isa = PBXBuildFile; fileRef = 5EE84BF31D4717E40050C6CC /* InteropTestsRemoteWithCronet.m */; };
 		5EE84BF61D4717E40050C6CC /* libTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 635697C71B14FC11007A7283 /* libTests.a */; };
 		5EE84BFE1D471D400050C6CC /* InteropTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 635ED2EB1B1A3BC400FDE5C3 /* InteropTests.m */; };
+		5EFD6F5621C09BF30007890F /* InteropTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 635ED2EB1B1A3BC400FDE5C3 /* InteropTests.m */; };
+		5EFD6F5721C09BF80007890F /* InteropTestsRemote.m in Sources */ = {isa = PBXBuildFile; fileRef = 6379CC4F1BE16703001BC0A1 /* InteropTestsRemote.m */; };
 		60D2A57ED559F34428C2EEC5 /* libPods-CoreCronetEnd2EndTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = FBD98AC417B9882D32B19F28 /* libPods-CoreCronetEnd2EndTests.a */; };
 		6312AE4E1B1BF49B00341DEE /* GRPCClientTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 6312AE4D1B1BF49B00341DEE /* GRPCClientTests.m */; };
 		63423F4A1B150A5F006CF63C /* libTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 635697C71B14FC11007A7283 /* libTests.a */; };
@@ -53,6 +55,7 @@
 		63DC84501BE153AA000708E8 /* GRPCClientTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 6312AE4D1B1BF49B00341DEE /* GRPCClientTests.m */; };
 		63E240CE1B6C4E2B005F3B0E /* InteropTestsLocalSSL.m in Sources */ = {isa = PBXBuildFile; fileRef = 63E240CD1B6C4E2B005F3B0E /* InteropTestsLocalSSL.m */; };
 		63E240D01B6C63DC005F3B0E /* TestCertificates.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 63E240CF1B6C63DC005F3B0E /* TestCertificates.bundle */; };
+		70ECE20EFF0C50731B00808B /* libPods-MacInteropTestsRemote.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 716E34C2561A90B4ECEF9930 /* libPods-MacInteropTestsRemote.a */; };
 		91D4B3C85B6D8562F409CB48 /* libPods-InteropTestsLocalSSLCFStream.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F3AB031E0E26AC8EF30A2A2A /* libPods-InteropTestsLocalSSLCFStream.a */; };
 		BC111C80CBF7068B62869352 /* libPods-InteropTestsRemoteCFStream.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F44AC3F44E3491A8C0D890FE /* libPods-InteropTestsRemoteCFStream.a */; };
 		C3D6F4270A2FFF634D8849ED /* libPods-InteropTestsLocalCleartextCFStream.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0BDA4BA011779D5D25B5618C /* libPods-InteropTestsLocalCleartextCFStream.a */; };
@@ -182,6 +185,7 @@
 		5EE84BF11D4717E40050C6CC /* InteropTestsRemoteWithCronet.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = InteropTestsRemoteWithCronet.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5EE84BF31D4717E40050C6CC /* InteropTestsRemoteWithCronet.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = InteropTestsRemoteWithCronet.m; sourceTree = "<group>"; };
 		5EE84BF51D4717E40050C6CC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		5EFD6F4C21C09BD90007890F /* MacInteropTestsRemote.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MacInteropTestsRemote.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		6312AE4D1B1BF49B00341DEE /* GRPCClientTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GRPCClientTests.m; sourceTree = "<group>"; };
 		63423F441B150A5F006CF63C /* AllTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AllTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		63423F501B151B77006CF63C /* RxLibraryUnitTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RxLibraryUnitTests.m; sourceTree = "<group>"; };
@@ -200,13 +204,17 @@
 		63E240CF1B6C63DC005F3B0E /* TestCertificates.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; path = TestCertificates.bundle; sourceTree = "<group>"; };
 		64F68A9A6A63CC930DD30A6E /* Pods-CronetUnitTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CronetUnitTests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-CronetUnitTests/Pods-CronetUnitTests.debug.xcconfig"; sourceTree = "<group>"; };
 		6793C9D019CB268C5BB491A2 /* Pods-CoreCronetEnd2EndTests.test.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CoreCronetEnd2EndTests.test.xcconfig"; path = "Pods/Target Support Files/Pods-CoreCronetEnd2EndTests/Pods-CoreCronetEnd2EndTests.test.xcconfig"; sourceTree = "<group>"; };
+		68BE598085076266F66E7844 /* Pods-MacInteropTestsRemote.test.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MacInteropTestsRemote.test.xcconfig"; path = "Pods/Target Support Files/Pods-MacInteropTestsRemote/Pods-MacInteropTestsRemote.test.xcconfig"; sourceTree = "<group>"; };
+		716E34C2561A90B4ECEF9930 /* libPods-MacInteropTestsRemote.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-MacInteropTestsRemote.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		781089FAE980F51F88A3BE0B /* Pods-RxLibraryUnitTests.test.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RxLibraryUnitTests.test.xcconfig"; path = "Pods/Target Support Files/Pods-RxLibraryUnitTests/Pods-RxLibraryUnitTests.test.xcconfig"; sourceTree = "<group>"; };
 		79C68EFFCB5533475D810B79 /* Pods-RxLibraryUnitTests.cronet.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RxLibraryUnitTests.cronet.xcconfig"; path = "Pods/Target Support Files/Pods-RxLibraryUnitTests/Pods-RxLibraryUnitTests.cronet.xcconfig"; sourceTree = "<group>"; };
 		7A2E97E3F469CC2A758D77DE /* Pods-InteropTestsLocalSSL.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-InteropTestsLocalSSL.release.xcconfig"; path = "Pods/Target Support Files/Pods-InteropTestsLocalSSL/Pods-InteropTestsLocalSSL.release.xcconfig"; sourceTree = "<group>"; };
 		7BA53C6D224288D5870FE6F3 /* Pods-InteropTestsLocalCleartextCFStream.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-InteropTestsLocalCleartextCFStream.release.xcconfig"; path = "Pods/Target Support Files/Pods-InteropTestsLocalCleartextCFStream/Pods-InteropTestsLocalCleartextCFStream.release.xcconfig"; sourceTree = "<group>"; };
+		7D17C5AA6E4F6DB66E402222 /* Pods-MacInteropTestsRemote.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MacInteropTestsRemote.debug.xcconfig"; path = "Pods/Target Support Files/Pods-MacInteropTestsRemote/Pods-MacInteropTestsRemote.debug.xcconfig"; sourceTree = "<group>"; };
 		8B498B05C6DA0818B2FA91D4 /* Pods-InteropTestsLocalCleartextCFStream.cronet.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-InteropTestsLocalCleartextCFStream.cronet.xcconfig"; path = "Pods/Target Support Files/Pods-InteropTestsLocalCleartextCFStream/Pods-InteropTestsLocalCleartextCFStream.cronet.xcconfig"; sourceTree = "<group>"; };
 		943138072A9605B5B8DC1FC0 /* Pods-InteropTestsLocalCleartextCFStream.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-InteropTestsLocalCleartextCFStream.debug.xcconfig"; path = "Pods/Target Support Files/Pods-InteropTestsLocalCleartextCFStream/Pods-InteropTestsLocalCleartextCFStream.debug.xcconfig"; sourceTree = "<group>"; };
 		94D7A5FAA13480E9A5166D7A /* Pods-UnitTests.test.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-UnitTests.test.xcconfig"; path = "Pods/Target Support Files/Pods-UnitTests/Pods-UnitTests.test.xcconfig"; sourceTree = "<group>"; };
+		9909719EDECEBEA5FF2671E2 /* Pods-MacInteropTestsRemote.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MacInteropTestsRemote.release.xcconfig"; path = "Pods/Target Support Files/Pods-MacInteropTestsRemote/Pods-MacInteropTestsRemote.release.xcconfig"; sourceTree = "<group>"; };
 		9E9444C764F0FFF64A7EB58E /* libPods-InteropTestsRemoteWithCronet.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-InteropTestsRemoteWithCronet.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		A2DCF2570BE515B62CB924CA /* Pods-UnitTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-UnitTests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-UnitTests/Pods-UnitTests.debug.xcconfig"; sourceTree = "<group>"; };
 		A58BE6DF1C62D1739EBB2C78 /* libPods-RxLibraryUnitTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-RxLibraryUnitTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -215,6 +223,7 @@
 		AC414EF7A6BF76ED02B6E480 /* Pods-InteropTestsRemoteWithCronet.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-InteropTestsRemoteWithCronet.release.xcconfig"; path = "Pods/Target Support Files/Pods-InteropTestsRemoteWithCronet/Pods-InteropTestsRemoteWithCronet.release.xcconfig"; sourceTree = "<group>"; };
 		B226619DC4E709E0FFFF94B8 /* Pods-CronetUnitTests.test.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CronetUnitTests.test.xcconfig"; path = "Pods/Target Support Files/Pods-CronetUnitTests/Pods-CronetUnitTests.test.xcconfig"; sourceTree = "<group>"; };
 		B94C27C06733CF98CE1B2757 /* Pods-AllTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AllTests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-AllTests/Pods-AllTests.debug.xcconfig"; sourceTree = "<group>"; };
+		C13DB7844FFA25B735D7D14D /* Pods-MacInteropTestsRemote.cronet.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MacInteropTestsRemote.cronet.xcconfig"; path = "Pods/Target Support Files/Pods-MacInteropTestsRemote/Pods-MacInteropTestsRemote.cronet.xcconfig"; sourceTree = "<group>"; };
 		C17F57E5BCB989AB1C2F1F25 /* Pods-InteropTestsRemoteCFStream.test.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-InteropTestsRemoteCFStream.test.xcconfig"; path = "Pods/Target Support Files/Pods-InteropTestsRemoteCFStream/Pods-InteropTestsRemoteCFStream.test.xcconfig"; sourceTree = "<group>"; };
 		C6134277D2EB8B380862A03F /* libPods-CronetUnitTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-CronetUnitTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		CAE086D5B470DA367D415AB0 /* libPods-AllTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-AllTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -297,6 +306,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		5EFD6F4921C09BD90007890F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				70ECE20EFF0C50731B00808B /* libPods-MacInteropTestsRemote.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		63423F411B150A5F006CF63C /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -369,6 +386,7 @@
 				0BDA4BA011779D5D25B5618C /* libPods-InteropTestsLocalCleartextCFStream.a */,
 				F3AB031E0E26AC8EF30A2A2A /* libPods-InteropTestsLocalSSLCFStream.a */,
 				22A3EBB488699C8CEA19707B /* libPods-UnitTests.a */,
+				716E34C2561A90B4ECEF9930 /* libPods-MacInteropTestsRemote.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -426,6 +444,10 @@
 				94D7A5FAA13480E9A5166D7A /* Pods-UnitTests.test.xcconfig */,
 				E1E7660656D902104F728892 /* Pods-UnitTests.cronet.xcconfig */,
 				EBFFEC04B514CB0D4922DC40 /* Pods-UnitTests.release.xcconfig */,
+				7D17C5AA6E4F6DB66E402222 /* Pods-MacInteropTestsRemote.debug.xcconfig */,
+				68BE598085076266F66E7844 /* Pods-MacInteropTestsRemote.test.xcconfig */,
+				C13DB7844FFA25B735D7D14D /* Pods-MacInteropTestsRemote.cronet.xcconfig */,
+				9909719EDECEBEA5FF2671E2 /* Pods-MacInteropTestsRemote.release.xcconfig */,
 			);
 			name = Pods;
 			sourceTree = "<group>";
@@ -496,6 +518,7 @@
 				5EC5E4312081856B000EF4AD /* InteropTestsLocalCleartextCFStream.xctest */,
 				5EC5E442208185CE000EF4AD /* InteropTestsLocalSSLCFStream.xctest */,
 				5E0282E6215AA697007AC99D /* UnitTests.xctest */,
+				5EFD6F4C21C09BD90007890F /* MacInteropTestsRemote.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -666,6 +689,25 @@
 			productReference = 5EE84BF11D4717E40050C6CC /* InteropTestsRemoteWithCronet.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		5EFD6F4B21C09BD90007890F /* MacInteropTestsRemote */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5EFD6F5121C09BD90007890F /* Build configuration list for PBXNativeTarget "MacInteropTestsRemote" */;
+			buildPhases = (
+				2DCA4782D9A24D72B7C24330 /* [CP] Check Pods Manifest.lock */,
+				5EFD6F4821C09BD90007890F /* Sources */,
+				5EFD6F4921C09BD90007890F /* Frameworks */,
+				5EFD6F4A21C09BD90007890F /* Resources */,
+				33B4316C0966299D7390C97B /* [CP] Copy Pods Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MacInteropTestsRemote;
+			productName = MacInteropTestsRemote;
+			productReference = 5EFD6F4C21C09BD90007890F /* MacInteropTestsRemote.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		63423F431B150A5F006CF63C /* AllTests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 63423F4D1B150A5F006CF63C /* Build configuration list for PBXNativeTarget "AllTests" */;
@@ -817,6 +859,10 @@
 					5EE84BF01D4717E40050C6CC = {
 						CreatedOnToolsVersion = 7.3.1;
 					};
+					5EFD6F4B21C09BD90007890F = {
+						CreatedOnToolsVersion = 10.0;
+						ProvisioningStyle = Automatic;
+					};
 					63423F431B150A5F006CF63C = {
 						CreatedOnToolsVersion = 6.3.1;
 					};
@@ -862,6 +908,7 @@
 				5EC5E4302081856B000EF4AD /* InteropTestsLocalCleartextCFStream */,
 				5EC5E441208185CE000EF4AD /* InteropTestsLocalSSLCFStream */,
 				5E0282E5215AA697007AC99D /* UnitTests */,
+				5EFD6F4B21C09BD90007890F /* MacInteropTestsRemote */,
 			);
 		};
 /* End PBXProject section */
@@ -911,6 +958,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		5EE84BEF1D4717E40050C6CC /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5EFD6F4A21C09BD90007890F /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -975,6 +1029,28 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
+		2DCA4782D9A24D72B7C24330 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-MacInteropTestsRemote-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
 		31F8D1C407195CBF0C02929B /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -991,6 +1067,28 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-InteropTestsRemoteWithCronet/Pods-InteropTestsRemoteWithCronet-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		33B4316C0966299D7390C97B /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${SRCROOT}/Pods/Target Support Files/Pods-MacInteropTestsRemote/Pods-MacInteropTestsRemote-resources.sh",
+				"${PODS_CONFIGURATION_BUILD_DIR}/gRPC/gRPCCertificates.bundle",
+			);
+			name = "[CP] Copy Pods Resources";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/gRPCCertificates.bundle",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-MacInteropTestsRemote/Pods-MacInteropTestsRemote-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		483CDBBAEAEFCB530ADDDDD5 /* [CP] Check Pods Manifest.lock */ = {
@@ -1471,6 +1569,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		5EFD6F4821C09BD90007890F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5EFD6F5721C09BF80007890F /* InteropTestsRemote.m in Sources */,
+				5EFD6F5621C09BF30007890F /* InteropTests.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		63423F401B150A5F006CF63C /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1806,6 +1913,7 @@
 				INFOPLIST_FILE = Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				PRODUCT_BUNDLE_IDENTIFIER = io.grpc.InteropTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -2111,6 +2219,7 @@
 				INFOPLIST_FILE = Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				PRODUCT_BUNDLE_IDENTIFIER = io.grpc.InteropTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -2611,6 +2720,145 @@
 			};
 			name = Release;
 		};
+		5EFD6F5221C09BD90007890F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7D17C5AA6E4F6DB66E402222 /* Pods-MacInteropTestsRemote.debug.xcconfig */;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				INFOPLIST_FILE = "";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = io.grpc.MacInteropTestsRemote;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		5EFD6F5321C09BD90007890F /* Test */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 68BE598085076266F66E7844 /* Pods-MacInteropTestsRemote.test.xcconfig */;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				INFOPLIST_FILE = "";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = io.grpc.MacInteropTestsRemote;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+			};
+			name = Test;
+		};
+		5EFD6F5421C09BD90007890F /* Cronet */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = C13DB7844FFA25B735D7D14D /* Pods-MacInteropTestsRemote.cronet.xcconfig */;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				INFOPLIST_FILE = "";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = io.grpc.MacInteropTestsRemote;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+			};
+			name = Cronet;
+		};
+		5EFD6F5521C09BD90007890F /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9909719EDECEBEA5FF2671E2 /* Pods-MacInteropTestsRemote.release.xcconfig */;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				INFOPLIST_FILE = "";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = io.grpc.MacInteropTestsRemote;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
 		63423F4E1B150A5F006CF63C /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = B94C27C06733CF98CE1B2757 /* Pods-AllTests.debug.xcconfig */;
@@ -2776,6 +3024,7 @@
 				INFOPLIST_FILE = Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				PRODUCT_BUNDLE_IDENTIFIER = io.grpc.InteropTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -2788,6 +3037,7 @@
 				INFOPLIST_FILE = Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				PRODUCT_BUNDLE_IDENTIFIER = io.grpc.InteropTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -2921,6 +3171,17 @@
 				5E1228A01E4D400F00E8504F /* Test */,
 				5EC3C7A81D4FC18C000330E2 /* Cronet */,
 				5EE84BFA1D4717E40050C6CC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		5EFD6F5121C09BD90007890F /* Build configuration list for PBXNativeTarget "MacInteropTestsRemote" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5EFD6F5221C09BD90007890F /* Debug */,
+				5EFD6F5321C09BD90007890F /* Test */,
+				5EFD6F5421C09BD90007890F /* Cronet */,
+				5EFD6F5521C09BD90007890F /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -153,10 +153,12 @@ static NSMutableDictionary *kHostCache;
   static NSError *kDefaultRootsError;
   static dispatch_once_t loading;
   dispatch_once(&loading, ^{
-    NSString *defaultPath = @"gRPCCertificates.bundle/roots";  // .pem
+    NSString *rootsPEM = @"roots";
+    NSString *resourceBundlePath = @"gRPCCertificates.bundle";  // .pem
     // Do not use NSBundle.mainBundle, as it's nil for tests of library projects.
     NSBundle *bundle = [NSBundle bundleForClass:self.class];
-    NSString *path = [bundle pathForResource:defaultPath ofType:@"pem"];
+    NSBundle *resourceBundle = [NSBundle bundleWithURL:[[bundle resourceURL] URLByAppendingPathComponent:resourceBundlePath]];
+    NSString *path = [resourceBundle pathForResource:rootsPEM ofType:@"pem"];
     NSError *error;
     // Files in PEM format can have non-ASCII characters in their comments (e.g. for the name of the
     // issuer). Load them as UTF8 and produce an ASCII equivalent.

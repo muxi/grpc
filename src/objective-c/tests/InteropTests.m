@@ -471,7 +471,7 @@ BOOL isRemoteInteropTest(NSString *host) {
                      [GRPCCall closeOpenConnections];
 #pragma clang diagnostic pop
 
-                     [_service
+                     [self->_service
                          emptyCallWithRequest:request
                                       handler:^(GPBEmpty *response, NSError *error) {
                                         XCTAssertNil(
