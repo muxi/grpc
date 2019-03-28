@@ -844,7 +844,6 @@ grpc_cc_library(
         "src/core/lib/transport/metadata.cc",
         "src/core/lib/transport/metadata_batch.cc",
         "src/core/lib/transport/pid_controller.cc",
-        "src/core/lib/transport/service_config.cc",
         "src/core/lib/transport/static_metadata.cc",
         "src/core/lib/transport/status_conversion.cc",
         "src/core/lib/transport/status_metadata.cc",
@@ -982,7 +981,6 @@ grpc_cc_library(
         "src/core/lib/transport/metadata.h",
         "src/core/lib/transport/metadata_batch.h",
         "src/core/lib/transport/pid_controller.h",
-        "src/core/lib/transport/service_config.h",
         "src/core/lib/transport/static_metadata.h",
         "src/core/lib/transport/status_conversion.h",
         "src/core/lib/transport/status_metadata.h",
@@ -1072,6 +1070,7 @@ grpc_cc_library(
         "src/core/ext/filters/client_channel/resolving_lb_policy.cc",
         "src/core/ext/filters/client_channel/retry_throttle.cc",
         "src/core/ext/filters/client_channel/server_address.cc",
+        "src/core/ext/filters/client_channel/service_config.cc",
         "src/core/ext/filters/client_channel/subchannel.cc",
         "src/core/ext/filters/client_channel/subchannel_pool_interface.cc",
     ],
@@ -1099,6 +1098,7 @@ grpc_cc_library(
         "src/core/ext/filters/client_channel/resolving_lb_policy.h",
         "src/core/ext/filters/client_channel/retry_throttle.h",
         "src/core/ext/filters/client_channel/server_address.h",
+        "src/core/ext/filters/client_channel/service_config.h",
         "src/core/ext/filters/client_channel/subchannel.h",
         "src/core/ext/filters/client_channel/subchannel_pool_interface.h",
     ],
@@ -1169,6 +1169,7 @@ grpc_cc_library(
     language = "c++",
     deps = [
         "grpc_base",
+        "grpc_client_channel",
     ],
 )
 
