@@ -111,6 +111,8 @@ class TestGevent(setuptools.Command):
     """Command to run tests w/gevent."""
 
     BANNED_TESTS = (
+        # Fork support is not compatible with gevent
+        'fork._fork_interop_test.ForkInteropTest',
         # These tests send a lot of RPCs and are really slow on gevent.  They will
         # eventually succeed, but need to dig into performance issues.
         'unit._cython._no_messages_server_completion_queue_per_call_test.Test.test_rpcs',
@@ -145,7 +147,9 @@ class TestGevent(setuptools.Command):
         # TODO(https://github.com/grpc/grpc/issues/17330) enable these three tests
         'channelz._channelz_servicer_test.ChannelzServicerTest.test_many_subchannels',
         'channelz._channelz_servicer_test.ChannelzServicerTest.test_many_subchannels_and_sockets',
-        'channelz._channelz_servicer_test.ChannelzServicerTest.test_streaming_rpc'
+        'channelz._channelz_servicer_test.ChannelzServicerTest.test_streaming_rpc',
+        # TODO(https://github.com/grpc/grpc/issues/15411) enable this test
+        'unit._cython._channel_test.ChannelTest.test_negative_deadline_connectivity'
     )
     description = 'run tests with gevent.  Assumes grpc/gevent are installed'
     user_options = []

@@ -112,6 +112,8 @@ class ClientCallbackReaderWriter {
   virtual void Write(const Request* req, WriteOptions options) = 0;
   virtual void WritesDone() = 0;
   virtual void Read(Response* resp) = 0;
+  virtual void AddHold(int holds) = 0;
+  virtual void RemoveHold() = 0;
 
  protected:
   void BindReactor(ClientBidiReactor<Request, Response>* reactor) {
@@ -125,6 +127,8 @@ class ClientCallbackReader {
   virtual ~ClientCallbackReader() {}
   virtual void StartCall() = 0;
   virtual void Read(Response* resp) = 0;
+  virtual void AddHold(int holds) = 0;
+  virtual void RemoveHold() = 0;
 
  protected:
   void BindReactor(ClientReadReactor<Response>* reactor) {
@@ -143,6 +147,9 @@ class ClientCallbackWriter {
     Write(req, options.set_last_message());
   }
   virtual void WritesDone() = 0;
+
+  virtual void AddHold(int holds) = 0;
+  virtual void RemoveHold() = 0;
 
  protected:
   void BindReactor(ClientWriteReactor<Request>* reactor) {
@@ -174,6 +181,29 @@ class ClientBidiReactor {
   }
   void StartWritesDone() { stream_->WritesDone(); }
 
+  /// Holds are needed if (and only if) this stream has operations that take
+  /// place on it after StartCall but from outside one of the reactions
+  /// (OnReadDone, etc). This is _not_ a common use of the streaming API.
+  ///
+  /// Holds must be added before calling StartCall. If a stream still has a hold
+  /// in place, its resources will not be destroyed even if the status has
+  /// already come in from the wire and there are currently no active callbacks
+  /// outstanding. Similarly, the stream will not call OnDone if there are still
+  /// holds on it.
+  ///
+  /// For example, if a StartRead or StartWrite operation is going to be
+  /// initiated from elsewhere in the application, the application should call
+  /// AddHold or AddMultipleHolds before StartCall.  If there is going to be,
+  /// for example, a read-flow and a write-flow taking place outside the
+  /// reactions, then call AddMultipleHolds(2) before StartCall. When the
+  /// application knows that it won't issue any more Read operations (such as
+  /// when a read comes back as not ok), it should issue a RemoveHold(). It
+  /// should also call RemoveHold() again after it does StartWriteLast or
+  /// StartWritesDone that indicates that there will be no more Write ops.
+  void AddHold() { AddMultipleHolds(1); }
+  void AddMultipleHolds(int holds) { stream_->AddHold(holds); }
+  void RemoveHold() { stream_->RemoveHold(); }
+
  private:
   friend class ClientCallbackReaderWriter<Request, Response>;
   void BindStream(ClientCallbackReaderWriter<Request, Response>* stream) {
@@ -192,6 +222,10 @@ class ClientReadReactor {
 
   void StartCall() { reader_->StartCall(); }
   void StartRead(Response* resp) { reader_->Read(resp); }
+
+  void AddHold() { AddMultipleHolds(1); }
+  void AddMultipleHolds(int holds) { reader_->AddHold(holds); }
+  void RemoveHold() { reader_->RemoveHold(); }
 
  private:
   friend class ClientCallbackReader<Response>;
@@ -217,6 +251,10 @@ class ClientWriteReactor {
     StartWrite(req, std::move(options.set_last_message()));
   }
   void StartWritesDone() { writer_->WritesDone(); }
+
+  void AddHold() { AddMultipleHolds(1); }
+  void AddMultipleHolds(int holds) { writer_->AddHold(holds); }
+  void RemoveHold() { writer_->RemoveHold(); }
 
  private:
   friend class ClientCallbackWriter<Request>;
@@ -268,9 +306,8 @@ class ClientCallbackReaderWriterImpl
     // This call initiates two batches, plus any backlog, each with a callback
     // 1. Send initial metadata (unless corked) + recv initial metadata
     // 2. Any read backlog
-    // 3. Recv trailing metadata, on_completion callback
-    // 4. Any write backlog
-    // 5. See if the call can finish (if other callbacks were triggered already)
+    // 3. Any write backlog
+    // 4. Recv trailing metadata, on_completion callback
     started_ = true;
 
     start_tag_.Set(call_.call(),
@@ -308,12 +345,6 @@ class ClientCallbackReaderWriterImpl
       call_.PerformOps(&read_ops_);
     }
 
-    finish_tag_.Set(call_.call(), [this](bool ok) { MaybeFinish(); },
-                    &finish_ops_);
-    finish_ops_.ClientRecvStatus(context_, &finish_status_);
-    finish_ops_.set_core_cq_tag(&finish_tag_);
-    call_.PerformOps(&finish_ops_);
-
     if (write_ops_at_start_) {
       call_.PerformOps(&write_ops_);
     }
@@ -321,7 +352,12 @@ class ClientCallbackReaderWriterImpl
     if (writes_done_ops_at_start_) {
       call_.PerformOps(&writes_done_ops_);
     }
-    MaybeFinish();
+
+    finish_tag_.Set(call_.call(), [this](bool ok) { MaybeFinish(); },
+                    &finish_ops_);
+    finish_ops_.ClientRecvStatus(context_, &finish_status_);
+    finish_ops_.set_core_cq_tag(&finish_tag_);
+    call_.PerformOps(&finish_ops_);
   }
 
   void Read(Response* msg) override {
@@ -376,6 +412,9 @@ class ClientCallbackReaderWriterImpl
     }
   }
 
+  virtual void AddHold(int holds) override { callbacks_outstanding_ += holds; }
+  virtual void RemoveHold() override { MaybeFinish(); }
+
  private:
   friend class ClientCallbackReaderWriterFactory<Request, Response>;
 
@@ -414,8 +453,8 @@ class ClientCallbackReaderWriterImpl
   CallbackWithSuccessTag read_tag_;
   bool read_ops_at_start_{false};
 
-  // Minimum of 3 callbacks to pre-register for StartCall, start, and finish
-  std::atomic_int callbacks_outstanding_{3};
+  // Minimum of 2 callbacks to pre-register for start and finish
+  std::atomic_int callbacks_outstanding_{2};
   bool started_{false};
 };
 
@@ -468,7 +507,6 @@ class ClientCallbackReaderImpl
     // 1. Send initial metadata (unless corked) + recv initial metadata
     // 2. Any backlog
     // 3. Recv trailing metadata, on_completion callback
-    // 4. See if the call can finish (if other callbacks were triggered already)
     started_ = true;
 
     start_tag_.Set(call_.call(),
@@ -500,8 +538,6 @@ class ClientCallbackReaderImpl
     finish_ops_.ClientRecvStatus(context_, &finish_status_);
     finish_ops_.set_core_cq_tag(&finish_tag_);
     call_.PerformOps(&finish_ops_);
-
-    MaybeFinish();
   }
 
   void Read(Response* msg) override {
@@ -513,6 +549,9 @@ class ClientCallbackReaderImpl
       read_ops_at_start_ = true;
     }
   }
+
+  virtual void AddHold(int holds) override { callbacks_outstanding_ += holds; }
+  virtual void RemoveHold() override { MaybeFinish(); }
 
  private:
   friend class ClientCallbackReaderFactory<Response>;
@@ -545,8 +584,8 @@ class ClientCallbackReaderImpl
   CallbackWithSuccessTag read_tag_;
   bool read_ops_at_start_{false};
 
-  // Minimum of 3 callbacks to pre-register for StartCall, start, and finish
-  std::atomic_int callbacks_outstanding_{3};
+  // Minimum of 2 callbacks to pre-register for start and finish
+  std::atomic_int callbacks_outstanding_{2};
   bool started_{false};
 };
 
@@ -597,9 +636,8 @@ class ClientCallbackWriterImpl
   void StartCall() override {
     // This call initiates two batches, plus any backlog, each with a callback
     // 1. Send initial metadata (unless corked) + recv initial metadata
-    // 2. Recv trailing metadata, on_completion callback
-    // 3. Any backlog
-    // 4. See if the call can finish (if other callbacks were triggered already)
+    // 2. Any backlog
+    // 3. Recv trailing metadata, on_completion callback
     started_ = true;
 
     start_tag_.Set(call_.call(),
@@ -626,12 +664,6 @@ class ClientCallbackWriterImpl
                    &write_ops_);
     write_ops_.set_core_cq_tag(&write_tag_);
 
-    finish_tag_.Set(call_.call(), [this](bool ok) { MaybeFinish(); },
-                    &finish_ops_);
-    finish_ops_.ClientRecvStatus(context_, &finish_status_);
-    finish_ops_.set_core_cq_tag(&finish_tag_);
-    call_.PerformOps(&finish_ops_);
-
     if (write_ops_at_start_) {
       call_.PerformOps(&write_ops_);
     }
@@ -640,7 +672,11 @@ class ClientCallbackWriterImpl
       call_.PerformOps(&writes_done_ops_);
     }
 
-    MaybeFinish();
+    finish_tag_.Set(call_.call(), [this](bool ok) { MaybeFinish(); },
+                    &finish_ops_);
+    finish_ops_.ClientRecvStatus(context_, &finish_status_);
+    finish_ops_.set_core_cq_tag(&finish_tag_);
+    call_.PerformOps(&finish_ops_);
   }
 
   void Write(const Request* msg, WriteOptions options) override {
@@ -685,6 +721,9 @@ class ClientCallbackWriterImpl
     }
   }
 
+  virtual void AddHold(int holds) override { callbacks_outstanding_ += holds; }
+  virtual void RemoveHold() override { MaybeFinish(); }
+
  private:
   friend class ClientCallbackWriterFactory<Request>;
 
@@ -722,8 +761,8 @@ class ClientCallbackWriterImpl
   CallbackWithSuccessTag writes_done_tag_;
   bool writes_done_ops_at_start_{false};
 
-  // Minimum of 3 callbacks to pre-register for StartCall, start, and finish
-  std::atomic_int callbacks_outstanding_{3};
+  // Minimum of 2 callbacks to pre-register for start and finish
+  std::atomic_int callbacks_outstanding_{2};
   bool started_{false};
 };
 

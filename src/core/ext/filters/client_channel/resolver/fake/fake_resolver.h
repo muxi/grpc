@@ -44,7 +44,9 @@ class FakeResolverResponseGenerator
   FakeResolverResponseGenerator() {}
 
   // Instructs the fake resolver associated with the response generator
-  // instance to trigger a new resolution with the specified response.
+  // instance to trigger a new resolution with the specified response. If the
+  // resolver is not available yet, delays response setting until it is. This
+  // can be called at most once before the resolver is available.
   void SetResponse(grpc_channel_args* next_response);
 
   // Sets the re-resolution response, which is returned by the fake resolver
@@ -56,8 +58,7 @@ class FakeResolverResponseGenerator
   // is called.
   void SetReresolutionResponse(grpc_channel_args* response);
 
-  // Tells the resolver to return a transient failure (signalled by
-  // returning a null result with no error).
+  // Tells the resolver to return a transient failure.
   void SetFailure();
 
   // Same as SetFailure(), but instead of returning the error
@@ -79,6 +80,7 @@ class FakeResolverResponseGenerator
   static void SetFailureLocked(void* arg, grpc_error* error);
 
   FakeResolver* resolver_ = nullptr;  // Do not own.
+  grpc_channel_args* response_ = nullptr;
 };
 
 }  // namespace grpc_core
