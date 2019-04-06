@@ -25,10 +25,8 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@protocol GRPCResponseHandler;
+@class GRPCInterceptorManager;
 @class GRPCInterceptor;
-@class GRPCRequestOptions;
-@class GRPCCallOptions;
 
 @protocol GRPCInterceptorInterface
 
@@ -55,7 +53,7 @@ NS_ASSUME_NONNULL_BEGIN
  * Create an interceptor object. gRPC uses the returned object as the interceptor for the current
  * call
  */
-- (GRPCInterceptor *)createInterceptorWithNextInterface:(id<GRPCInterceptorInterface>)nextInterface;
+- (GRPCInterceptor *)createInterceptorWithManager:(GRPCInterceptorManager *)interceptorManager;
 
 @end
 
