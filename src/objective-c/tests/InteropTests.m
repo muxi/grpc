@@ -24,6 +24,7 @@
 #import <GRPCClient/GRPCCall+ChannelArg.h>
 #import <GRPCClient/GRPCCall+Cronet.h>
 #import <GRPCClient/GRPCCall+Tests.h>
+#import <GRPCClient/GRPCInteceptor.h>
 #import <GRPCClient/internal_testing/GRPCCall+InternalTests.h>
 #import <ProtoRPC/ProtoRPC.h>
 #import <RemoteTest/Messages.pbobjc.h>
@@ -145,6 +146,20 @@ BOOL isRemoteInteropTest(NSString *host) {
 
 - (dispatch_queue_t)dispatchQueue {
   return _dispatchQueue;
+}
+
+@end
+
+@interface TestDefaultInterceptorFactory : NSObject<GRPCInterceptorFactory>
+
+- (GRPCInterceptor *)createInterceptorWithManager:(GRPCInterceptorManager *)interceptorManager;
+
+@end
+
+@implementation TestDefaultInterceptorFactory
+
+- (GRPCInterceptor *)createInterceptorWithManager:(GRPCInterceptorManager *)interceptorManager {
+  return [[GRPCInterceptor alloc] initWithInterceptorManager:interceptorManager];
 }
 
 @end
@@ -923,5 +938,58 @@ BOOL isRemoteInteropTest(NSString *host) {
   [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];
 }
 #endif
+
+- (void)testDefaultInterceptor {
+  XCTAssertNotNil([[self class] host]);
+  __weak XCTestExpectation *expectation = [self expectationWithDescription:@"PingPongWithV2API"];
+
+  NSArray *requests = @[ @27182, @8, @1828, @45904 ];
+  NSArray *responses = @[ @31415, @9, @2653, @58979 ];
+
+  __block int index = 0;
+
+  id request = [RMTStreamingOutputCallRequest messageWithPayloadSize:requests[index]
+                                               requestedResponseSize:responses[index]];
+  GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
+  options.transportType = [[self class] transportType];
+  options.PEMRootCertificates = [[self class] PEMRootCertificates];
+  options.hostNameOverride = [[self class] hostNameOverride];
+  options.interceptorFactories = @[ [[TestDefaultInterceptorFactory alloc] init] ];
+
+  __block GRPCStreamingProtoCall *call = [_service
+                                          fullDuplexCallWithResponseHandler:[[InteropTestsBlockCallbacks alloc]
+                                                                             initWithInitialMetadataCallback:nil
+                                                                             messageCallback:^(id message) {
+                                                                               XCTAssertLessThan(index, 4,
+                                                                                                 @"More than 4 responses received.");
+                                                                               id expected = [RMTStreamingOutputCallResponse
+                                                                                              messageWithPayloadSize:responses[index]];
+                                                                               XCTAssertEqualObjects(message, expected);
+                                                                               index += 1;
+                                                                               if (index < 4) {
+                                                                                 id request = [RMTStreamingOutputCallRequest
+                                                                                               messageWithPayloadSize:requests[index]
+                                                                                               requestedResponseSize:responses[index]];
+                                                                                 [call writeMessage:request];
+                                                                               } else {
+                                                                                 [call finish];
+                                                                               }
+                                                                             }
+                                                                             closeCallback:^(NSDictionary *trailingMetadata,
+                                                                                             NSError *error) {
+                                                                               XCTAssertNil(error,
+                                                                                            @"Finished with unexpected error: %@",
+                                                                                            error);
+                                                                               XCTAssertEqual(index, 4,
+                                                                                              @"Received %i responses instead of 4.",
+                                                                                              index);
+                                                                               [expectation fulfill];
+                                                                             }]
+                                          callOptions:options];
+  [call start];
+  [call writeMessage:request];
+
+  [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];
+}
 
 @end
