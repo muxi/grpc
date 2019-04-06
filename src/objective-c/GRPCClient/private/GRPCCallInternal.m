@@ -13,8 +13,6 @@
   /** The handler of responses. */
   id<GRPCResponseHandler> _handler;
 
-  // Thread safety of ivars below are protected by _dispatchQueue.
-
   /**
    * Make use of legacy GRPCCall to make calls. Nullified when call is finished.
    */
@@ -36,20 +34,25 @@
 }
 
 - (instancetype)init {
-  // Set queue QoS only when iOS version is 8.0 or above and Xcode version is 9.0 or above
+  if ((self = [super init])) {
+    // Set queue QoS only when iOS version is 8.0 or above and Xcode version is 9.0 or above
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 110000 || __MAC_OS_X_VERSION_MAX_ALLOWED >= 101300
-  if (@available(iOS 8.0, macOS 10.10, *)) {
-    _dispatchQueue = dispatch_queue_create(
-                                           NULL,
-                                           dispatch_queue_attr_make_with_qos_class(DISPATCH_QUEUE_SERIAL, QOS_CLASS_DEFAULT, 0));
-  } else {
+    if (@available(iOS 8.0, macOS 10.10, *)) {
+      _dispatchQueue = dispatch_queue_create(
+                                             NULL,
+                                             dispatch_queue_attr_make_with_qos_class(DISPATCH_QUEUE_SERIAL, QOS_CLASS_DEFAULT, 0));
+    } else {
 #else
-  {
+    {
 #endif
-    _dispatchQueue = dispatch_queue_create(NULL, DISPATCH_QUEUE_SERIAL);
+      _dispatchQueue = dispatch_queue_create(NULL, DISPATCH_QUEUE_SERIAL);
+    }
   }
+  return self;
+}
 
-  return [self initWithNextInterface:nil dispatchQueue:_dispatchQueue];
+- (dispatch_queue_t)requestDispatchQueue {
+  return _dispatchQueue;
 }
 
 - (void)startWithRequestOptions:(GRPCRequestOptions *)requestOptions
@@ -82,7 +85,6 @@
     _handler = responseHandler;
     _initialMetadataPublished = NO;
     _pipe = [GRXBufferedPipe pipe];
-    dispatch_set_target_queue(_dispatchQueue, responseHandler.dispatchQueue);
     _started = NO;
     _canceled = NO;
     _finished = NO;
@@ -321,3 +323,5 @@
   }
   [copiedCall receiveNextMessages:numberOfMessages];
 }
+
+@end

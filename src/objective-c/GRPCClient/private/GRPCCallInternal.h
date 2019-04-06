@@ -3,12 +3,12 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface GRPCCall2Internal : GRPCInterceptor
+@interface GRPCCall2Internal : NSObject<GRPCInterceptorInterface>
 
-- (nullable instancetype)init;
+- (instancetype)init;
 
 - (void)startWithRequestOptions:(GRPCRequestOptions *)requestOptions
-                responseHandler:(id<GRPCRawResponseHandler>)responseHandler
+                responseHandler:(id<GRPCResponseHandler>)responseHandler
                     callOptions:(nullable GRPCCallOptions *)callOptions;
 
 - (void)writeData:(NSData *)data;
