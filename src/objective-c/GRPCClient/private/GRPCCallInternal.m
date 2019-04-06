@@ -255,11 +255,8 @@
   @synchronized(self) {
     if (initialMetadata != nil &&
         [_handler respondsToSelector:@selector(didReceiveInitialMetadata:)]) {
-      dispatch_async(_dispatchQueue, ^{
-        id<GRPCResponseHandler> copiedHandler = nil;
-        @synchronized(self) {
-          copiedHandler = self->_handler;
-        }
+      id<GRPCResponseHandler> copiedHandler = _handler;
+      dispatch_async(_handler.dispatchQueue, ^{
         [copiedHandler didReceiveInitialMetadata:initialMetadata];
       });
     }
@@ -269,11 +266,8 @@
 - (void)issueMessage:(id)message {
   @synchronized(self) {
     if (message != nil && [_handler respondsToSelector:@selector(didReceiveRawMessage:)]) {
-      dispatch_async(_dispatchQueue, ^{
-        id<GRPCResponseHandler> copiedHandler = nil;
-        @synchronized(self) {
-          copiedHandler = self->_handler;
-        }
+      id<GRPCResponseHandler> copiedHandler = _handler;
+      dispatch_async(_handler.dispatchQueue, ^{
         [copiedHandler didReceiveRawMessage:message];
       });
     }
@@ -283,13 +277,10 @@
 - (void)issueClosedWithTrailingMetadata:(NSDictionary *)trailingMetadata error:(NSError *)error {
   @synchronized(self) {
     if ([_handler respondsToSelector:@selector(didCloseWithTrailingMetadata:error:)]) {
-      dispatch_async(_dispatchQueue, ^{
-        id<GRPCResponseHandler> copiedHandler = nil;
-        @synchronized(self) {
-          copiedHandler = self->_handler;
-          // Clean up _handler so that no more responses are reported to the handler.
-          self->_handler = nil;
-        }
+      id<GRPCResponseHandler> copiedHandler = _handler;
+      // Clean up _handler so that no more responses are reported to the handler.
+      _handler = nil;
+      dispatch_async(copiedHandler.dispatchQueue, ^{
         [copiedHandler didCloseWithTrailingMetadata:trailingMetadata error:error];
       });
     } else {
@@ -301,11 +292,8 @@
 - (void)issueDidWriteData {
   @synchronized(self) {
     if (_callOptions.enableFlowControl && [_handler respondsToSelector:@selector(didWriteData)]) {
-      dispatch_async(_dispatchQueue, ^{
-        id<GRPCResponseHandler> copiedHandler = nil;
-        @synchronized(self) {
-          copiedHandler = self->_handler;
-        };
+      id<GRPCResponseHandler> copiedHandler = _handler;
+      dispatch_async(copiedHandler.dispatchQueue, ^{
         [copiedHandler didWriteData];
       });
     }
