@@ -43,14 +43,15 @@
 }
 
 - (void)startNextInterceptorWithRequest:(GRPCRequestOptions *)requestOptions
-                        responseHandler:(id<GRPCResponseHandler>)responseHandler
                             callOptions:(GRPCCallOptions *)callOptions {
+  if ([_nextInterceptor )
   id<GRPCInterceptorInterface> copiedNextInterceptor = _nextInterceptor;
   dispatch_async(copiedNextInterceptor.requestDispatchQueue, ^{
     [copiedNextInterceptor startWithRequestOptions:requestOptions
-                                   responseHandler:responseHandler
                                        callOptions:callOptions];
   });
+  // DEBUG
+  NSLog(@"startNext");
 }
 
 - (void)writeNextInterceptorWithData:(NSData *)data {
@@ -58,6 +59,8 @@
   dispatch_async(copiedNextInterceptor.requestDispatchQueue, ^{
     [copiedNextInterceptor writeData:data];
   });
+  // DEBUG
+  NSLog(@"writeNext");
 }
 
 - (void)finishNextInterceptor {
@@ -65,6 +68,8 @@
   dispatch_async(copiedNextInterceptor.requestDispatchQueue, ^{
     [copiedNextInterceptor finish];
   });
+  // DEBUG
+  NSLog(@"finishNext");
 }
 
 - (void)cancelNextInterceptor {
@@ -90,14 +95,18 @@
   dispatch_async(copiedPreviousInterceptor.dispatchQueue, ^{
     [copiedPreviousInterceptor didReceiveInitialMetadata:initialMetadata];
   });
+  // DEBUG
+  NSLog(@"initPrevious");
 }
 
 /** Forward a received message to the previous interceptor in the chain */
 - (void)forwardPreviousIntercetporWithData:(nullable NSData *)data {
   id<GRPCResponseHandler> copiedPreviousInterceptor = _previousInterceptor;
   dispatch_async(copiedPreviousInterceptor.dispatchQueue, ^{
-    [copiedPreviousInterceptor didReceiveRawMessage:data];
+    [copiedPreviousInterceptor didReceiveData:data];
   });
+  // DEBUG
+  NSLog(@"dataPrevious");
 }
 
 /** Forward call close and trailing metadata to the previous interceptor in the chain */
@@ -109,6 +118,8 @@
     [copiedPreviousInterceptor didCloseWithTrailingMetadata:trailingMetadata
                                                       error:error];
   });
+  // DEBUG
+  NSLog(@"closePrevious");
 }
 
 /** Forward write completion to the previous interceptor in the chain */
@@ -117,6 +128,8 @@
   dispatch_async(copiedPreviousInterceptor.dispatchQueue, ^{
     [copiedPreviousInterceptor didWriteData];
   });
+  // DEBUG
+  NSLog(@"didWritePrevious");
 }
 
 @end
@@ -124,32 +137,33 @@
 
 @implementation GRPCInterceptor {
   GRPCInterceptorManager *_manager;
-  dispatch_queue_t _dispatchQueue;
+  dispatch_queue_t _requestDispatchQueue;
+  dispatch_queue_t _responseDispatchQueue;
 }
 
 - (instancetype)initWithInterceptorManager:(GRPCInterceptorManager *)interceptorManager
-                             dispatchQueue:(nonnull dispatch_queue_t)dispatchQueue {
+                      requestDispatchQueue:(dispatch_queue_t)requestDispatchQueue
+                     responseDispatchQueue:(dispatch_queue_t)responseDispatchQueue {
   if ((self = [super init])) {
     _manager = interceptorManager;
-    _dispatchQueue = dispatchQueue;
+    _requestDispatchQueue = requestDispatchQueue;
+    _responseDispatchQueue = responseDispatchQueue;
   }
 
   return self;
 }
 
 - (dispatch_queue_t)requestDispatchQueue {
-  return _dispatchQueue;
+  return _requestDispatchQueue;
 }
 
 - (dispatch_queue_t)dispatchQueue {
-  return _dispatchQueue;
+  return _responseDispatchQueue;
 }
 
 - (void)startWithRequestOptions:(GRPCRequestOptions *)requestOptions
-                responseHandler:(id<GRPCResponseHandler>)responseHandler
                     callOptions:(GRPCCallOptions *)callOptions {
   [_manager startNextInterceptorWithRequest:requestOptions
-                            responseHandler:responseHandler
                                 callOptions:callOptions];
 }
 
@@ -182,7 +196,13 @@
   [_manager forwardPreviousInterceptorWithInitialMetadata:initialMetadata];
 }
 
-- (void)didReceiveData:(NSData *)data {
+- (void)didReceiveRawMessage:(NSData *)message {
+  NSAssert(NO, @"The method didReceiveRawMessage is deprecated and cannot be used with interceptor");
+  NSLog(@"The method didReceiveRawMessage is deprecated and cannot be used with interceptor");
+  abort();
+}
+
+- (void)didReceiveData:(id)data {
   [_manager forwardPreviousIntercetporWithData:data];
 }
 

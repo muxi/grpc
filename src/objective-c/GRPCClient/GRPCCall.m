@@ -137,14 +137,30 @@ const char *kCFStreamVarName = "grpc_cfstream";
     _callOptions = [[GRPCCallOptions alloc] init];
   }
 
-  id<GRPCInterceptorInterface> nextInterceptor = [[GRPCCall2Internal alloc] init];
+  GRPCCall2Internal *internalCall = [[GRPCCall2Internal alloc] init];
+  id<GRPCInterceptorInterface> nextInterceptor = internalCall;
   GRPCInterceptorManager *nextManager = nil;
   NSArray *interceptorFactories = _callOptions.interceptorFactories;
-  for (int i = (int)interceptorFactories.count - 1; i >= 0; i--) {
-    GRPCInterceptorManager *manager = [[GRPCInterceptorManager alloc] initWithNextInerceptor:nextInterceptor];
-    GRPCInterceptor *interceptor = [interceptorFactories[i] createInterceptorWithManager:manager];
-    [nextManager setPreviousInterceptor:interceptor];
-    nextInterceptor = interceptor;
+  if (interceptorFactories.count == 0) {
+    [internalCall setResponseHandler:_responseHandler];
+  } else {
+    for (int i = (int)interceptorFactories.count - 1; i >= 0; i--) {
+      GRPCInterceptorManager *manager = [[GRPCInterceptorManager alloc] initWithNextInerceptor:nextInterceptor];
+      GRPCInterceptor *interceptor = [interceptorFactories[i] createInterceptorWithManager:manager];
+      NSAssert(interceptor != nil, @"Failed to create interceptor");
+      if (interceptor == nil) {
+        return;
+      }
+      if (i == (int)interceptorFactories.count - 1) {
+        [internalCall setResponseHandler:interceptor];
+      } else {
+        [nextManager setPreviousInterceptor:interceptor];
+      }
+      nextInterceptor = interceptor;
+      nextManager = manager;
+    }
+
+    [nextManager setPreviousInterceptor:_responseHandler];
   }
 
   @synchronized(self) {
@@ -152,10 +168,8 @@ const char *kCFStreamVarName = "grpc_cfstream";
 
     GRPCRequestOptions *requestOptions = [_requestOptions copy];
     GRPCCallOptions *callOptions = [_callOptions copy];
-    id<GRPCResponseHandler> responseHandler = _responseHandler;
     dispatch_async(nextInterceptor.requestDispatchQueue, ^{
       [nextInterceptor startWithRequestOptions:requestOptions
-                               responseHandler:responseHandler
                                    callOptions:callOptions];
     });
   }

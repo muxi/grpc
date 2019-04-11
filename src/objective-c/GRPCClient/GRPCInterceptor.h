@@ -34,10 +34,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property(readonly) dispatch_queue_t requestDispatchQueue;
 
 - (void)startWithRequestOptions:(GRPCRequestOptions *)requestOptions
-                responseHandler:(id<GRPCResponseHandler>)responseHandler
                     callOptions:(GRPCCallOptions *)callOptions;
 
-- (void)writeData:(NSData *)data;
+- (void)writeData:(id)data;
 
 - (void)finish;
 
@@ -75,11 +74,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 /** Notify the next interceptor in the chain to start the call and pass arguments */
 - (void)startNextInterceptorWithRequest:(GRPCRequestOptions *)requestOptions
-                        responseHandler:(id<GRPCResponseHandler>)responseHandler
                             callOptions:(GRPCCallOptions *)callOptions;
 
 /** Pass a message to be sent to the next interceptor in the chain */
-- (void)writeNextInterceptorWithData:(NSData *)data;
+- (void)writeNextInterceptorWithData:(id)data;
 
 /** Notify the next interceptor in the chain to finish the call */
 - (void)finishNextInterceptor;
@@ -96,7 +94,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)forwardPreviousInterceptorWithInitialMetadata:(nullable NSDictionary *)initialMetadata;
 
 /** Forward a received message to the previous interceptor in the chain */
-- (void)forwardPreviousIntercetporWithData:(nullable NSData *)data;
+- (void)forwardPreviousIntercetporWithData:(nullable id)data;
 
 /** Forward call close and trailing metadata to the previous interceptor in the chain */
 - (void)forwardPreviousInterceptorCloseWithTrailingMetadata:
@@ -129,21 +127,22 @@ NS_ASSUME_NONNULL_BEGIN
  * that this interceptor's methods are dispatched onto.
  */
 - (nullable instancetype)initWithInterceptorManager:(GRPCInterceptorManager *)interceptorManager
-                                      dispatchQueue:(dispatch_queue_t)dispatchQueue NS_DESIGNATED_INITIALIZER;
+                               requestDispatchQueue:(dispatch_queue_t)requestDispatchQueue
+                              responseDispatchQueue:(dispatch_queue_t)responseDispatchQueue NS_DESIGNATED_INITIALIZER;
 
 // Default implementation of GRPCInterceptorInterface
 
 - (void)startWithRequestOptions:(GRPCRequestOptions *)requestOptions
-                responseHandler:(id<GRPCResponseHandler>)responseHandler
                     callOptions:(GRPCCallOptions *)callOptions;
-- (void)writeData:(NSData *)data;
+- (void)writeData:(id)data;
 - (void)finish;
 - (void)cancel;
+- (void)receiveNextMessages:(NSUInteger)numberOfMessages;
 
 // Default implementation of GRPCResponeHandler
 
 - (void)didReceiveInitialMetadata:(nullable NSDictionary *)initialMetadata;
-- (void)didReceiveData:(nullable NSData *)data;
+- (void)didReceiveData:(id)data;
 - (void)didCloseWithTrailingMetadata:(nullable NSDictionary *)trailingMetadata
                                error:(nullable NSError *)error;
 - (void)didWriteData;

@@ -7,8 +7,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (instancetype)init;
 
+- (void)setResponseHandler:(id<GRPCResponseHandler>)responseHandler;
+
 - (void)startWithRequestOptions:(GRPCRequestOptions *)requestOptions
-                responseHandler:(id<GRPCResponseHandler>)responseHandler
                     callOptions:(nullable GRPCCallOptions *)callOptions;
 
 - (void)writeData:(NSData *)data;

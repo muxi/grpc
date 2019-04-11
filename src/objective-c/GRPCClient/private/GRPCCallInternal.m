@@ -51,17 +51,25 @@
   return self;
 }
 
+- (void)setResponseHandler:(id<GRPCResponseHandler>)responseHandler {
+  @synchronized (self) {
+    NSAssert(!_started, @"Call already started.");
+    if (_started) {
+      return;
+    }
+    _handler = responseHandler;
+  }
+}
+
 - (dispatch_queue_t)requestDispatchQueue {
   return _dispatchQueue;
 }
 
 - (void)startWithRequestOptions:(GRPCRequestOptions *)requestOptions
-                responseHandler:(id<GRPCResponseHandler>)responseHandler
                     callOptions:(GRPCCallOptions *)callOptions {
   NSAssert(requestOptions.host.length != 0 && requestOptions.path.length != 0,
            @"Neither host nor path can be nil.");
   NSAssert(requestOptions.safety <= GRPCCallSafetyCacheableRequest, @"Invalid call safety value.");
-  NSAssert(responseHandler != nil, @"Response handler required.");
   if (requestOptions.host.length == 0 || requestOptions.path.length == 0) {
     NSLog(@"Invalid host and path.");
     return;
@@ -70,19 +78,20 @@
     NSLog(@"Invalid call safety.");
     return;
   }
-  if (responseHandler == nil) {
-    NSLog(@"Invalid response handler.");
-    return;
-  }
 
   @synchronized (self) {
+    NSAssert(_handler != nil, @"Response handler required.");
+    if (_handler == nil) {
+      NSLog(@"Invalid response handler.");
+      return;
+    }
+
     _requestOptions = requestOptions;
     if (callOptions == nil) {
       _callOptions = [[GRPCCallOptions alloc] init];
     } else {
       _callOptions = [callOptions copy];
     }
-    _handler = responseHandler;
     _initialMetadataPublished = NO;
     _pipe = [GRXBufferedPipe pipe];
     _started = NO;
@@ -265,11 +274,18 @@
 
 - (void)issueMessage:(id)message {
   @synchronized(self) {
-    if (message != nil && [_handler respondsToSelector:@selector(didReceiveRawMessage:)]) {
-      id<GRPCResponseHandler> copiedHandler = _handler;
-      dispatch_async(_handler.dispatchQueue, ^{
-        [copiedHandler didReceiveRawMessage:message];
-      });
+    if (message != nil) {
+      if ([_handler respondsToSelector:@selector(didReceiveData:)]) {
+        id<GRPCResponseHandler> copiedHandler = _handler;
+        dispatch_async(_handler.dispatchQueue, ^{
+          [copiedHandler didReceiveData:message];
+        });
+      } else if ([_handler respondsToSelector:@selector(didReceiveRawMessage:)]) {
+        id<GRPCResponseHandler> copiedHandler = _handler;
+        dispatch_async(_handler.dispatchQueue, ^{
+          [copiedHandler didReceiveRawMessage:message];
+        });
+      }
     }
   }
 }
