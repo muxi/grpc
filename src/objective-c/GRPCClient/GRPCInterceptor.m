@@ -44,67 +44,80 @@
 
 - (void)startNextInterceptorWithRequest:(GRPCRequestOptions *)requestOptions
                             callOptions:(GRPCCallOptions *)callOptions {
-  if ([_nextInterceptor )
-  id<GRPCInterceptorInterface> copiedNextInterceptor = _nextInterceptor;
-  dispatch_async(copiedNextInterceptor.requestDispatchQueue, ^{
-    [copiedNextInterceptor startWithRequestOptions:requestOptions
-                                       callOptions:callOptions];
-  });
+  if ([_nextInterceptor respondsToSelector:@selector(startWithRequestOptions:callOptions:)]) {
+    id<GRPCInterceptorInterface> copiedNextInterceptor = _nextInterceptor;
+    dispatch_async(copiedNextInterceptor.requestDispatchQueue, ^{
+      [copiedNextInterceptor startWithRequestOptions:requestOptions
+                                         callOptions:callOptions];
+    });
+  }
   // DEBUG
   NSLog(@"startNext");
 }
 
-- (void)writeNextInterceptorWithData:(NSData *)data {
-  id<GRPCInterceptorInterface> copiedNextInterceptor = _nextInterceptor;
-  dispatch_async(copiedNextInterceptor.requestDispatchQueue, ^{
-    [copiedNextInterceptor writeData:data];
-  });
+- (void)writeNextInterceptorWithData:(id)data {
+  if ([_nextInterceptor respondsToSelector:@selector(writeData:)]) {
+    id<GRPCInterceptorInterface> copiedNextInterceptor = _nextInterceptor;
+    dispatch_async(copiedNextInterceptor.requestDispatchQueue, ^{
+      [copiedNextInterceptor writeData:data];
+    });
+  }
   // DEBUG
   NSLog(@"writeNext");
 }
 
 - (void)finishNextInterceptor {
-  id<GRPCInterceptorInterface> copiedNextInterceptor = _nextInterceptor;
-  dispatch_async(copiedNextInterceptor.requestDispatchQueue, ^{
-    [copiedNextInterceptor finish];
-  });
+  if ([_nextInterceptor respondsToSelector:@selector(finish)]) {
+    id<GRPCInterceptorInterface> copiedNextInterceptor = _nextInterceptor;
+    dispatch_async(copiedNextInterceptor.requestDispatchQueue, ^{
+      [copiedNextInterceptor finish];
+    });
+  }
   // DEBUG
   NSLog(@"finishNext");
 }
 
 - (void)cancelNextInterceptor {
-  id<GRPCInterceptorInterface> copiedNextInterceptor = _nextInterceptor;
-  dispatch_async(copiedNextInterceptor.requestDispatchQueue, ^{
-    [copiedNextInterceptor cancel];
-  });
+  if ([_nextInterceptor respondsToSelector:@selector(cancel)]) {
+    id<GRPCInterceptorInterface> copiedNextInterceptor = _nextInterceptor;
+    dispatch_async(copiedNextInterceptor.requestDispatchQueue, ^{
+      [copiedNextInterceptor cancel];
+    });
+  }
 }
 
 /** Notify the next interceptor in the chain to receive more messages */
 - (void)receiveNextInterceptorMessages:(NSUInteger)numberOfMessages {
-  id<GRPCInterceptorInterface> copiedNextInterceptor = _nextInterceptor;
-  dispatch_async(copiedNextInterceptor.requestDispatchQueue, ^{
-    [copiedNextInterceptor receiveNextMessages:numberOfMessages];
-  });
+  if ([_nextInterceptor respondsToSelector:@selector(receiveNextMessages:)]) {
+    id<GRPCInterceptorInterface> copiedNextInterceptor = _nextInterceptor;
+    dispatch_async(copiedNextInterceptor.requestDispatchQueue, ^{
+      [copiedNextInterceptor receiveNextMessages:numberOfMessages];
+    });
+  }
 }
 
 // Methods to forward GRPCResponseHandler callbacks to the previous object
 
 /** Forward initial metadata to the previous interceptor in the chain */
 - (void)forwardPreviousInterceptorWithInitialMetadata:(nullable NSDictionary *)initialMetadata {
-  id<GRPCResponseHandler> copiedPreviousInterceptor = _previousInterceptor;
-  dispatch_async(copiedPreviousInterceptor.dispatchQueue, ^{
-    [copiedPreviousInterceptor didReceiveInitialMetadata:initialMetadata];
-  });
+  if ([_previousInterceptor respondsToSelector:@selector(didReceiveInitialMetadata:)]) {
+    id<GRPCResponseHandler> copiedPreviousInterceptor = _previousInterceptor;
+    dispatch_async(copiedPreviousInterceptor.dispatchQueue, ^{
+      [copiedPreviousInterceptor didReceiveInitialMetadata:initialMetadata];
+    });
+  }
   // DEBUG
   NSLog(@"initPrevious");
 }
 
 /** Forward a received message to the previous interceptor in the chain */
-- (void)forwardPreviousIntercetporWithData:(nullable NSData *)data {
-  id<GRPCResponseHandler> copiedPreviousInterceptor = _previousInterceptor;
-  dispatch_async(copiedPreviousInterceptor.dispatchQueue, ^{
-    [copiedPreviousInterceptor didReceiveData:data];
-  });
+- (void)forwardPreviousIntercetporWithData:(id)data {
+  if ([_previousInterceptor respondsToSelector:@selector(didReceiveData:)]) {
+    id<GRPCResponseHandler> copiedPreviousInterceptor = _previousInterceptor;
+    dispatch_async(copiedPreviousInterceptor.dispatchQueue, ^{
+      [copiedPreviousInterceptor didReceiveData:data];
+    });
+  }
   // DEBUG
   NSLog(@"dataPrevious");
 }
@@ -113,27 +126,30 @@
 - (void)forwardPreviousInterceptorCloseWithTrailingMetadata:
 (nullable NSDictionary *)trailingMetadata
                                                       error:(nullable NSError *)error {
-  id<GRPCResponseHandler> copiedPreviousInterceptor = _previousInterceptor;
-  dispatch_async(copiedPreviousInterceptor.dispatchQueue, ^{
-    [copiedPreviousInterceptor didCloseWithTrailingMetadata:trailingMetadata
-                                                      error:error];
-  });
+  if ([_previousInterceptor respondsToSelector:@selector(didCloseWithTrailingMetadata:error:)]) {
+    id<GRPCResponseHandler> copiedPreviousInterceptor = _previousInterceptor;
+    dispatch_async(copiedPreviousInterceptor.dispatchQueue, ^{
+      [copiedPreviousInterceptor didCloseWithTrailingMetadata:trailingMetadata
+                                                        error:error];
+    });
+  }
   // DEBUG
   NSLog(@"closePrevious");
 }
 
 /** Forward write completion to the previous interceptor in the chain */
 - (void)forwardPreviousInterceptorDidWriteData {
-  id<GRPCResponseHandler> copiedPreviousInterceptor = _previousInterceptor;
-  dispatch_async(copiedPreviousInterceptor.dispatchQueue, ^{
-    [copiedPreviousInterceptor didWriteData];
-  });
+  if ([_previousInterceptor respondsToSelector:@selector(didWriteData)]) {
+    id<GRPCResponseHandler> copiedPreviousInterceptor = _previousInterceptor;
+    dispatch_async(copiedPreviousInterceptor.dispatchQueue, ^{
+      [copiedPreviousInterceptor didWriteData];
+    });
+  }
   // DEBUG
   NSLog(@"didWritePrevious");
 }
 
 @end
-
 
 @implementation GRPCInterceptor {
   GRPCInterceptorManager *_manager;
@@ -167,7 +183,7 @@
                                 callOptions:callOptions];
 }
 
-- (void)writeData:(NSData *)data {
+- (void)writeData:(id)data {
   [_manager writeNextInterceptorWithData:data];
 }
 
@@ -196,7 +212,7 @@
   [_manager forwardPreviousInterceptorWithInitialMetadata:initialMetadata];
 }
 
-- (void)didReceiveRawMessage:(NSData *)message {
+- (void)didReceiveRawMessage:(id)message {
   NSAssert(NO, @"The method didReceiveRawMessage is deprecated and cannot be used with interceptor");
   NSLog(@"The method didReceiveRawMessage is deprecated and cannot be used with interceptor");
   abort();

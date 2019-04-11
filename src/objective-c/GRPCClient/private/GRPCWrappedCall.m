@@ -267,6 +267,10 @@
   [GRPCOpBatchLog addOpBatchToLog:operations];
 #endif
 
+  // DEBUG
+  for (id op in operations) {
+    NSLog(@"Operation start: %p -> %@", operations, op);
+  }
   @synchronized(self) {
     if (_call != NULL) {
       size_t nops = operations.count;
@@ -285,6 +289,8 @@
                                     }
                                   }
                                   for (GRPCOperation *operation in operations) {
+                                    // DEBUG
+                                    NSLog(@"Operation finish: %@", operation);
                                     [operation finish];
                                   }
                                 }),

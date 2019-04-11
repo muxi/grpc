@@ -28,7 +28,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class GRPCInterceptorManager;
 @class GRPCInterceptor;
 
-@protocol GRPCInterceptorInterface
+@protocol GRPCInterceptorInterface<NSObject>
 
 /** The queue on which all methods of this interceptor should be dispatched on */
 @property(readonly) dispatch_queue_t requestDispatchQueue;

@@ -1181,9 +1181,18 @@ BOOL isRemoteInteropTest(NSString *host) {
   XCTAssertNotNil([[self class] host]);
   __weak XCTestExpectation *expectation = [self expectationWithDescription:@"PingPongWithV2API"];
 
+  __block NSUInteger startCount = 0;
+  __block NSUInteger writeDataCount = 0;
+  __block NSUInteger finishCount = 0;
+  __block NSUInteger receiveNextMessageCount = 0;
+  __block NSUInteger responseHeaderCount = 0;
+  __block NSUInteger responseDataCount = 0;
+  __block NSUInteger responseCloseCount = 0;
+  __block NSUInteger didWriteDataCount = 0;
   id<GRPCInterceptorFactory> factory =
   [[HookInterceptorFactory alloc] initWithDispatchQueue:dispatch_queue_create(NULL, DISPATCH_QUEUE_SERIAL)
                                        startHook:^(GRPCRequestOptions *requestOptions, GRPCCallOptions *callOptions, GRPCInterceptorManager *manager) {
+                                         startCount++;
                                          NSLog(@"Interceptor - started call, %@, %@", requestOptions, callOptions);
                                          XCTAssertEqualObjects(requestOptions.host, [[self class] host]);
                                          XCTAssertEqualObjects(requestOptions.path, @"/grpc.testing.TestService/FullDuplexCall");
@@ -1191,33 +1200,40 @@ BOOL isRemoteInteropTest(NSString *host) {
                                          [manager startNextInterceptorWithRequest:[requestOptions copy] callOptions:[callOptions copy]];
                                        }
                                           writeDataHook:^(NSData *data, GRPCInterceptorManager *manager) {
-                                             NSLog(@"Interceptor - send data, %@", data);
-                                             XCTAssertNotEqual(data.length, 0);
-                                             [manager writeNextInterceptorWithData:data];
-                                           }
-                                      finishHook:^(GRPCInterceptorManager *manager) {
-                                        NSLog(@"Interceptor - finish call");
-                                        [manager finishNextInterceptor];
-                                      }
+                                            writeDataCount++;
+                                            NSLog(@"Interceptor - send data, %@", data);
+                                            XCTAssertNotEqual(data.length, 0);
+                                            [manager writeNextInterceptorWithData:data];
+                                          }
+                                             finishHook:^(GRPCInterceptorManager *manager) {
+                                               finishCount++;
+                                               NSLog(@"Interceptor - finish call");
+                                               [manager finishNextInterceptor];
+                                             }
                          receiveNextMessagesHook:^(NSUInteger numberOfMessages, GRPCInterceptorManager *manager) {
+                           receiveNextMessageCount++;
                            NSLog(@"Interceptor - receive next messages, %lu", (unsigned long)numberOfMessages);
                            [manager receiveNextInterceptorMessages:numberOfMessages];
                          }
                               responseHeaderHook:^(NSDictionary *initialMetadata, GRPCInterceptorManager *manager) {
+                                responseHeaderCount++;
                                 NSLog(@"Interceptor - received initial metadata, %@", initialMetadata);
                                 [manager forwardPreviousInterceptorWithInitialMetadata:initialMetadata];
                               }
                                 responseDataHook:^(NSData *data, GRPCInterceptorManager *manager) {
+                                  responseDataCount++;
                                   NSLog(@"Interceptor - received data, %@", data);
                                   XCTAssertNotEqual(data.length, 0);
                                   [manager forwardPreviousIntercetporWithData:data];
                                 }
                                responseCloseHook:^(NSDictionary *trailingMetadata, NSError *error, GRPCInterceptorManager *manager) {
+                                 responseCloseCount++;
                                  NSLog(@"Interceptor - received close, %@, %@", trailingMetadata, error);
                                  [manager forwardPreviousInterceptorCloseWithTrailingMetadata:trailingMetadata
                                                                                         error:error];
                                }
                                 didWriteDataHook:^(GRPCInterceptorManager *manager) {
+                                  didWriteDataCount++;
                                   NSLog(@"Interceptor - received did-write-data");
                                   [manager forwardPreviousInterceptorDidWriteData];
                                 }];
@@ -1278,6 +1294,14 @@ BOOL isRemoteInteropTest(NSString *host) {
   [call writeMessage:request];
 
   [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];
+  XCTAssertEqual(startCount, 1);
+  XCTAssertEqual(writeDataCount, 4);
+  XCTAssertEqual(finishCount, 1);
+  XCTAssertEqual(receiveNextMessageCount, 4);
+  XCTAssertEqual(responseHeaderCount, 1);
+  XCTAssertEqual(responseDataCount, 4);
+  XCTAssertEqual(responseCloseCount, 1);
+  XCTAssertEqual(didWriteDataCount, 4);
 }
 
 - (void)testHijackingInterceptor {

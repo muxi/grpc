@@ -267,9 +267,9 @@ extern NSString *const kGRPCTrailersKey;
 - (void)cancel;
 
 /**
- * Send a message to the server. Data are sent as raw bytes in gRPC message frames.
+ * Send a message to the server. The data is subject to marshaller serialization and compression.
  */
-- (void)writeData:(NSData *)data;
+- (void)writeData:(id)data;
 
 /**
  * Finish the RPC request and half-close the call. The server may still send messages and/or

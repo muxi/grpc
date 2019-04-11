@@ -98,6 +98,12 @@ const char *kCFStreamVarName = "grpc_cfstream";
    * Points to the first interceptor in the interceptor chain.
    */
   id<GRPCInterceptorInterface> _firstInterceptor;
+
+  /**
+   * The actual call options being used by this call. It is different from the user-provided
+   * call options when the user provided a NULL call options object.
+   */
+  GRPCCallOptions *_actualCallOptions;
 }
 
 - (instancetype)initWithRequestOptions:(GRPCRequestOptions *)requestOptions
@@ -120,7 +126,40 @@ const char *kCFStreamVarName = "grpc_cfstream";
   if ((self = [super init])) {
     _requestOptions = [requestOptions copy];
     _callOptions = [callOptions copy];
+    if (!_callOptions) {
+      _actualCallOptions = [[GRPCCallOptions alloc] init];
+    } else {
+      _actualCallOptions = [callOptions copy];
+    }
     _responseHandler = responseHandler;
+
+    // Initialize the interceptor chain
+    GRPCCall2Internal *internalCall = [[GRPCCall2Internal alloc] init];
+    id<GRPCInterceptorInterface> nextInterceptor = internalCall;
+    GRPCInterceptorManager *nextManager = nil;
+    NSArray *interceptorFactories = _actualCallOptions.interceptorFactories;
+    if (interceptorFactories.count == 0) {
+      [internalCall setResponseHandler:_responseHandler];
+    } else {
+      for (int i = (int)interceptorFactories.count - 1; i >= 0; i--) {
+        GRPCInterceptorManager *manager = [[GRPCInterceptorManager alloc] initWithNextInerceptor:nextInterceptor];
+        GRPCInterceptor *interceptor = [interceptorFactories[i] createInterceptorWithManager:manager];
+        NSAssert(interceptor != nil, @"Failed to create interceptor");
+        if (interceptor == nil) {
+          return nil;
+        }
+        if (i == (int)interceptorFactories.count - 1) {
+          [internalCall setResponseHandler:interceptor];
+        } else {
+          [nextManager setPreviousInterceptor:interceptor];
+        }
+        nextInterceptor = interceptor;
+        nextManager = manager;
+      }
+
+      [nextManager setPreviousInterceptor:_responseHandler];
+    }
+    _firstInterceptor = nextInterceptor;
   }
 
   return self;
@@ -133,86 +172,66 @@ const char *kCFStreamVarName = "grpc_cfstream";
 }
 
 - (void)start {
-  if (!_callOptions) {
-    _callOptions = [[GRPCCallOptions alloc] init];
-  }
-
-  GRPCCall2Internal *internalCall = [[GRPCCall2Internal alloc] init];
-  id<GRPCInterceptorInterface> nextInterceptor = internalCall;
-  GRPCInterceptorManager *nextManager = nil;
-  NSArray *interceptorFactories = _callOptions.interceptorFactories;
-  if (interceptorFactories.count == 0) {
-    [internalCall setResponseHandler:_responseHandler];
-  } else {
-    for (int i = (int)interceptorFactories.count - 1; i >= 0; i--) {
-      GRPCInterceptorManager *manager = [[GRPCInterceptorManager alloc] initWithNextInerceptor:nextInterceptor];
-      GRPCInterceptor *interceptor = [interceptorFactories[i] createInterceptorWithManager:manager];
-      NSAssert(interceptor != nil, @"Failed to create interceptor");
-      if (interceptor == nil) {
-        return;
-      }
-      if (i == (int)interceptorFactories.count - 1) {
-        [internalCall setResponseHandler:interceptor];
-      } else {
-        [nextManager setPreviousInterceptor:interceptor];
-      }
-      nextInterceptor = interceptor;
-      nextManager = manager;
-    }
-
-    [nextManager setPreviousInterceptor:_responseHandler];
-  }
-
+  id<GRPCInterceptorInterface> copiedFirstInterceptor;
   @synchronized(self) {
-    _firstInterceptor = nextInterceptor;
-
-    GRPCRequestOptions *requestOptions = [_requestOptions copy];
-    GRPCCallOptions *callOptions = [_callOptions copy];
-    dispatch_async(nextInterceptor.requestDispatchQueue, ^{
-      [nextInterceptor startWithRequestOptions:requestOptions
-                                   callOptions:callOptions];
+    copiedFirstInterceptor = _firstInterceptor;
+  }
+  GRPCRequestOptions *requestOptions = [_requestOptions copy];
+  GRPCCallOptions *callOptions = [_actualCallOptions copy];
+  if ([copiedFirstInterceptor respondsToSelector:@selector(startWithRequestOptions:callOptions:)]) {
+    dispatch_async(copiedFirstInterceptor.requestDispatchQueue, ^{
+      [copiedFirstInterceptor startWithRequestOptions:requestOptions
+                                          callOptions:callOptions];
     });
   }
 }
 
 - (void)cancel {
-  id<GRPCInterceptorInterface> copiedNextInterceptor;
+  id<GRPCInterceptorInterface> copiedFirstInterceptor;
   @synchronized(self) {
-    copiedNextInterceptor = _firstInterceptor;
+    copiedFirstInterceptor = _firstInterceptor;
   }
-  dispatch_async(copiedNextInterceptor.requestDispatchQueue, ^{
-    [copiedNextInterceptor cancel];
-  });
+  if ([copiedFirstInterceptor respondsToSelector:@selector(cancel)]) {
+    dispatch_async(copiedFirstInterceptor.requestDispatchQueue, ^{
+      [copiedFirstInterceptor cancel];
+    });
+  }
 }
 
-- (void)writeData:(NSData *)data {
-  id<GRPCInterceptorInterface> copiedNextInterceptor;
+- (void)writeData:(id)data {
+  id<GRPCInterceptorInterface> copiedFirstInterceptor;
   @synchronized (self) {
-    copiedNextInterceptor = _firstInterceptor;
+    copiedFirstInterceptor = _firstInterceptor;
   }
-  dispatch_async(copiedNextInterceptor.requestDispatchQueue, ^{
-    [copiedNextInterceptor writeData:data];
-  });
+  if ([copiedFirstInterceptor respondsToSelector:@selector(writeData:)]) {
+    dispatch_async(copiedFirstInterceptor.requestDispatchQueue, ^{
+      [copiedFirstInterceptor writeData:data];
+    });
+  }
 }
 
 - (void)finish {
-  id<GRPCInterceptorInterface> copiedNextInterceptor;
+  id<GRPCInterceptorInterface> copiedFirstInterceptor;
   @synchronized (self) {
-    copiedNextInterceptor = _firstInterceptor;
+    copiedFirstInterceptor = _firstInterceptor;
   }
-  dispatch_async(copiedNextInterceptor.requestDispatchQueue, ^{
-    [copiedNextInterceptor finish];
-  });
+  if ([copiedFirstInterceptor respondsToSelector:@selector(finish)]) {
+    dispatch_async(copiedFirstInterceptor.requestDispatchQueue, ^{
+      [copiedFirstInterceptor finish];
+    });
+  }
 }
 
 - (void)receiveNextMessages:(NSUInteger)numberOfMessages {
-  id<GRPCInterceptorInterface> copiedNextInterceptor;
+  id<GRPCInterceptorInterface> copiedFirstInterceptor;
   @synchronized (self) {
-    copiedNextInterceptor = _firstInterceptor;
+    copiedFirstInterceptor = _firstInterceptor;
   }
-  dispatch_async(copiedNextInterceptor.requestDispatchQueue, ^{
-    [copiedNextInterceptor receiveNextMessages:numberOfMessages];
-  });
+  if ([copiedFirstInterceptor respondsToSelector:@selector(receiveNextMessages:)]) {
+    dispatch_async(copiedFirstInterceptor.requestDispatchQueue, ^{
+      [copiedFirstInterceptor receiveNextMessages:numberOfMessages];
+    });
+  }
 }
 
 @end
@@ -575,6 +594,9 @@ const char *kCFStreamVarName = "grpc_cfstream";
   @synchronized(self) {
     _pendingReceiveNextMessages += numberOfMessages;
 
+    if (_state != GRXWriterStateStarted || !_callOptions.enableFlowControl) {
+      return;
+    }
     [self maybeStartNextRead];
   }
 }

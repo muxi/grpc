@@ -47,6 +47,7 @@
 #endif
       _dispatchQueue = dispatch_queue_create(NULL, DISPATCH_QUEUE_SERIAL);
     }
+    _pipe = [GRXBufferedPipe pipe];
   }
   return self;
 }
@@ -58,6 +59,10 @@
       return;
     }
     _handler = responseHandler;
+    _initialMetadataPublished = NO;
+    _started = NO;
+    _canceled = NO;
+    _finished = NO;
   }
 }
 
@@ -85,18 +90,12 @@
       NSLog(@"Invalid response handler.");
       return;
     }
-
     _requestOptions = requestOptions;
     if (callOptions == nil) {
       _callOptions = [[GRPCCallOptions alloc] init];
     } else {
       _callOptions = [callOptions copy];
     }
-    _initialMetadataPublished = NO;
-    _pipe = [GRXBufferedPipe pipe];
-    _started = NO;
-    _canceled = NO;
-    _finished = NO;
   }
 
   [self start];
@@ -216,7 +215,7 @@
   [copiedCall cancel];
 }
 
-- (void)writeData:(NSData *)data {
+- (void)writeData:(id)data {
   GRXBufferedPipe *copiedPipe = nil;
   @synchronized(self) {
     NSAssert(!_canceled, @"Call already canceled.");
