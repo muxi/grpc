@@ -1304,8 +1304,114 @@ BOOL isRemoteInteropTest(NSString *host) {
   XCTAssertEqual(didWriteDataCount, 4);
 }
 
+// Chain a default interceptor and a hook interceptor which, after two writes, cancels the call
+// under the hood but forward further data to the user.
 - (void)testHijackingInterceptor {
+  NSUInteger kCancelAfterWrites = 2;
+  XCTAssertNotNil([[self class] host]);
+  __weak XCTestExpectation *expectation = [self expectationWithDescription:@"PingPongWithV2API"];
 
+  NSArray *responses = @[ @1, @2, @3, @4 ];
+  __block int index = 0;
+
+  __block NSUInteger startCount = 0;
+  __block NSUInteger writeDataCount = 0;
+  __block NSUInteger finishCount = 0;
+  __block NSUInteger responseHeaderCount = 0;
+  __block NSUInteger responseDataCount = 0;
+  __block NSUInteger responseCloseCount = 0;
+  id<GRPCInterceptorFactory> factory =
+  [[HookInterceptorFactory alloc] initWithDispatchQueue:dispatch_queue_create(NULL, DISPATCH_QUEUE_SERIAL)
+                                              startHook:^(GRPCRequestOptions *requestOptions, GRPCCallOptions *callOptions, GRPCInterceptorManager *manager) {
+                                                startCount++;
+                                                [manager startNextInterceptorWithRequest:[requestOptions copy] callOptions:[callOptions copy]];
+                                              }
+                                          writeDataHook:^(NSData *data, GRPCInterceptorManager *manager) {
+                                            writeDataCount++;
+                                            if (index < kCancelAfterWrites) {
+                                              [manager writeNextInterceptorWithData:data];
+                                            } else if (index == kCancelAfterWrites) {
+                                              [manager cancelNextInterceptor];
+                                              [manager forwardPreviousIntercetporWithData:[[RMTStreamingOutputCallResponse messageWithPayloadSize:responses[index]] data]];
+                                            } else { // (index > kCancelAfterWrites)
+                                              [manager forwardPreviousIntercetporWithData:[[RMTStreamingOutputCallResponse messageWithPayloadSize:responses[index]] data]];
+                                            }
+                                          }
+                                             finishHook:^(GRPCInterceptorManager *manager) {
+                                               finishCount++;
+                                               // finish must happen after the hijacking, so directly reply with a close
+                                               [manager forwardPreviousInterceptorCloseWithTrailingMetadata:@{ @"grpc-status" : @"0" } error:nil];
+                                             }
+                                receiveNextMessagesHook:nil
+                                     responseHeaderHook:^(NSDictionary *initialMetadata, GRPCInterceptorManager *manager) {
+                                       responseHeaderCount++;
+                                       [manager forwardPreviousInterceptorWithInitialMetadata:initialMetadata];
+                                     }
+                                       responseDataHook:^(NSData *data, GRPCInterceptorManager *manager) {
+                                         responseDataCount++;
+                                         [manager forwardPreviousIntercetporWithData:data];
+                                       }
+                                      responseCloseHook:^(NSDictionary *trailingMetadata, NSError *error, GRPCInterceptorManager *manager) {
+                                        responseCloseCount++;
+                                        // since we canceled the call, it should return cancel error
+                                        XCTAssertNil(trailingMetadata);
+                                        XCTAssertNotNil(error);
+                                        XCTAssertEqual(error.code, GRPC_STATUS_CANCELLED);
+                                      }
+                                       didWriteDataHook:nil];
+
+  NSArray *requests = @[ @1, @2, @3, @4 ];
+
+  id request = [RMTStreamingOutputCallRequest messageWithPayloadSize:requests[index]
+                                               requestedResponseSize:responses[index]];
+  GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
+  options.transportType = [[self class] transportType];
+  options.PEMRootCertificates = [[self class] PEMRootCertificates];
+  options.hostNameOverride = [[self class] hostNameOverride];
+  options.interceptorFactories = @[ [[DefaultInterceptorFactory alloc] init], factory ];
+
+  __block GRPCStreamingProtoCall *call = [_service
+                                          fullDuplexCallWithResponseHandler:[[InteropTestsBlockCallbacks alloc]
+                                                                             initWithInitialMetadataCallback:nil
+                                                                             messageCallback:^(id message) {
+                                                                               XCTAssertLessThan(index, 4,
+                                                                                                 @"More than 4 responses received.");
+                                                                               id expected = [RMTStreamingOutputCallResponse
+                                                                                              messageWithPayloadSize:responses[index]];
+                                                                               XCTAssertEqualObjects(message, expected);
+                                                                               index += 1;
+                                                                               if (index < 4) {
+                                                                                 id request = [RMTStreamingOutputCallRequest
+                                                                                               messageWithPayloadSize:requests[index]
+                                                                                               requestedResponseSize:responses[index]];
+                                                                                 [call writeMessage:request];
+                                                                                 [call receiveNextMessage];
+                                                                               } else {
+                                                                                 [call finish];
+                                                                               }
+                                                                             }
+                                                                             closeCallback:^(NSDictionary *trailingMetadata,
+                                                                                             NSError *error) {
+                                                                               XCTAssertNil(error,
+                                                                                            @"Finished with unexpected error: %@",
+                                                                                            error);
+                                                                               XCTAssertEqual(index, 4,
+                                                                                              @"Received %i responses instead of 4.",
+                                                                                              index);
+                                                                               [expectation fulfill];
+                                                                             }]
+                                          callOptions:options];
+  [call start];
+  [call receiveNextMessage];
+  [call writeMessage:request];
+
+  [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];
+  XCTAssertEqual(startCount, 1);
+  XCTAssertEqual(writeDataCount, 4);
+  XCTAssertEqual(finishCount, 1);
+  XCTAssertEqual(responseHeaderCount, 1);
+  XCTAssertEqual(responseDataCount, 2);
+  XCTAssertEqual(responseCloseCount, 1);
 }
 
 @end
