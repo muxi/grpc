@@ -114,9 +114,6 @@
     }
 
     _started = YES;
-    if (!_callOptions) {
-      _callOptions = [[GRPCCallOptions alloc] init];
-    }
 
     _call = [[GRPCCall alloc] initWithHost:_requestOptions.host
                                       path:_requestOptions.path
@@ -130,6 +127,7 @@
                                      }
                                    }
                                  }];
+    [_call setResponseDispatchQueue:_dispatchQueue];
     if (_callOptions.initialMetadata) {
       [_call.requestHeaders addEntriesFromDictionary:_callOptions.initialMetadata];
     }
@@ -192,14 +190,9 @@
     _pipe = nil;
 
     if ([_handler respondsToSelector:@selector(didCloseWithTrailingMetadata:error:)]) {
-      dispatch_async(_dispatchQueue, ^{
-        // Copy to local so that block is freed after cancellation completes.
-        id<GRPCResponseHandler> copiedHandler = nil;
-        @synchronized(self) {
-          copiedHandler = self->_handler;
-          self->_handler = nil;
-        }
-
+      id<GRPCResponseHandler> copiedHandler = _handler;
+      _handler = nil;
+      dispatch_async(copiedHandler.dispatchQueue, ^{
         [copiedHandler didCloseWithTrailingMetadata:nil
                                               error:[NSError errorWithDomain:kGRPCErrorDomain
                                                                         code:GRPCErrorCodeCancelled
