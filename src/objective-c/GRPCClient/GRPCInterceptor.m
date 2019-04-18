@@ -51,8 +51,6 @@
                                          callOptions:callOptions];
     });
   }
-  // DEBUG
-  NSLog(@"startNext");
 }
 
 - (void)writeNextInterceptorWithData:(id)data {
@@ -62,8 +60,6 @@
       [copiedNextInterceptor writeData:data];
     });
   }
-  // DEBUG
-  NSLog(@"writeNext");
 }
 
 - (void)finishNextInterceptor {
@@ -73,8 +69,6 @@
       [copiedNextInterceptor finish];
     });
   }
-  // DEBUG
-  NSLog(@"finishNext");
 }
 
 - (void)cancelNextInterceptor {
@@ -106,8 +100,6 @@
       [copiedPreviousInterceptor didReceiveInitialMetadata:initialMetadata];
     });
   }
-  // DEBUG
-  NSLog(@"initPrevious");
 }
 
 /** Forward a received message to the previous interceptor in the chain */
@@ -118,8 +110,6 @@
       [copiedPreviousInterceptor didReceiveData:data];
     });
   }
-  // DEBUG
-  NSLog(@"dataPrevious");
 }
 
 /** Forward call close and trailing metadata to the previous interceptor in the chain */
@@ -133,8 +123,6 @@
                                                         error:error];
     });
   }
-  // DEBUG
-  NSLog(@"closePrevious");
 }
 
 /** Forward write completion to the previous interceptor in the chain */
@@ -145,8 +133,6 @@
       [copiedPreviousInterceptor didWriteData];
     });
   }
-  // DEBUG
-  NSLog(@"didWritePrevious");
 }
 
 @end
