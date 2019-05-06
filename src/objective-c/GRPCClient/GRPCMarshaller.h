@@ -25,12 +25,12 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * Serialize a message.
  */
-- (nullable NSData *)serialize:(id)data error:(nullable NSError **)error;
+- (nullable NSData *)serialize:(id)data error:(NSError ** _Nullable)error;
 
 /**
  * Deserialize a message.
  */
-- (nullable id)deserialize:(NSData *)data error:(nullable NSError **)error;
+- (nullable id)deserialize:(NSData *)data error:(NSError ** _Nullable)error;
 
 @end
 

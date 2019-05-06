@@ -1,10 +1,10 @@
 #import "GRPCCallInternal.h"
 
 #import <GRPCClient/GRPCCall.h>
+#import <GRPCClient/GRPCMarshaller.h>
 #import <RxLibrary/GRXBufferedPipe.h>
 
 #import "GRPCCall+V2API.h"
-#import "GRPCClient/GRPCMarshaller.h>
 
 @implementation GRPCCall2Internal {
   /** Request for the call. */
@@ -228,7 +228,7 @@
 
     id<GRPCMarshaller> marshaller = _callOptions.marshaller;
     if (marshaller != nil) {
-      copiedData = [marshaller serialize:data];
+      copiedData = [marshaller serialize:data error:nil];
     }
   }
   [copiedPipe writeValue:copiedData != nil ? copiedData : data];
