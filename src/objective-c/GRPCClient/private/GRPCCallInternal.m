@@ -4,6 +4,7 @@
 #import <RxLibrary/GRXBufferedPipe.h>
 
 #import "GRPCCall+V2API.h"
+#import "GRPCClient/GRPCMarshaller.h>
 
 @implementation GRPCCall2Internal {
   /** Request for the call. */
@@ -210,6 +211,7 @@
 
 - (void)writeData:(id)data {
   GRXBufferedPipe *copiedPipe = nil;
+  id copiedData = nil;
   @synchronized(self) {
     NSAssert(!_canceled, @"Call already canceled.");
     NSAssert(!_finished, @"Call is half-closed before sending data.");
@@ -223,8 +225,13 @@
     if (_pipe) {
       copiedPipe = _pipe;
     }
+
+    id<GRPCMarshaller> marshaller = _callOptions.marshaller;
+    if (marshaller != nil) {
+      copiedData = [marshaller serialize:data];
+    }
   }
-  [copiedPipe writeValue:data];
+  [copiedPipe writeValue:copiedData != nil ? copiedData : data];
 }
 
 - (void)finish {
@@ -267,15 +274,21 @@
 - (void)issueMessage:(id)message {
   @synchronized(self) {
     if (message != nil) {
+      id copiedMessage = message;
+      id<GRPCMarshaller> marshaller = _callOptions.marshaller;
+      if (marshaller != nil) {
+        NSError *error;
+        copiedMessage = [marshaller deserialize:message error:&error];
+      }
       if ([_handler respondsToSelector:@selector(didReceiveData:)]) {
         id<GRPCResponseHandler> copiedHandler = _handler;
         dispatch_async(_handler.dispatchQueue, ^{
-          [copiedHandler didReceiveData:message];
+          [copiedHandler didReceiveData:copiedMessage];
         });
       } else if ([_handler respondsToSelector:@selector(didReceiveRawMessage:)]) {
         id<GRPCResponseHandler> copiedHandler = _handler;
         dispatch_async(_handler.dispatchQueue, ^{
-          [copiedHandler didReceiveRawMessage:message];
+          [copiedHandler didReceiveRawMessage:copiedMessage];
         });
       }
     }

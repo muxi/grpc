@@ -18,6 +18,8 @@
 
 #import <Foundation/Foundation.h>
 
+@protocol GRPCMarshaller;
+
 NS_ASSUME_NONNULL_BEGIN
 
 /**
@@ -105,6 +107,15 @@ typedef NS_ENUM(NSUInteger, GRPCTransportType) {
  * not take effect if done so.
  */
 @property(copy, readonly) NSArray *interceptorFactories;
+
+/**
+ * An object that does [de]serialization of request and response messages. If protobuf and ProtoRPC
+ * is used, its value should be a GRPCProtoMarshaller object (which is set automatically by
+ * ProtoRPC). Users may provide their own marshaller. If it is nil, no [de]serialization is
+ * performed on the request and response messages.
+ */
+@property(copy, readonly) id<GRPCMarshaller> marshaller;
+
 
 // OAuth2 parameters. Users of gRPC may specify one of the following two parameters.
 
@@ -268,6 +279,15 @@ typedef NS_ENUM(NSUInteger, GRPCTransportType) {
  * not take effect if done so.
  */
 @property(copy, readwrite) NSArray *interceptorFactories;
+
+/**
+ * An object that does [de]serialization of request and response messages. If protobuf and ProtoRPC
+ * is used, its value should be a GRPCProtoMarshaller object (which is set automatically by
+ * ProtoRPC). Users may provide their own marshaller. If it is nil, no [de]serialization is
+ * performed on the request and response messages.
+ */
+@property(copy, readwrite) id<GRPCMarshaller> marshaller;
+
 
 // OAuth2 parameters. Users of gRPC may specify one of the following two parameters.
 

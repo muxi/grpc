@@ -17,6 +17,7 @@
  */
 
 #import "ProtoRPC.h"
+#import "ProtoMarshaller.h"
 
 #if GPB_USE_PROTOBUF_FRAMEWORK_IMPORTS
 #import <Protobuf/GPBProtocolBuffers.h>
@@ -90,7 +91,6 @@ static NSError *ErrorForBadProto(id proto, Class expectedClass, NSError *parsing
 @implementation GRPCStreamingProtoCall {
   GRPCRequestOptions *_requestOptions;
   id<GRPCProtoResponseHandler> _handler;
-  GRPCCallOptions *_callOptions;
   Class _responseClass;
 
   GRPCCall2 *_call;
@@ -114,9 +114,13 @@ static NSError *ErrorForBadProto(id proto, Class expectedClass, NSError *parsing
   }
 
   if ((self = [super init])) {
+
     _requestOptions = [requestOptions copy];
     _handler = handler;
-    _callOptions = [callOptions copy];
+    GRPCMutableCallOptions *newCallOptions = [callOptions mutableCopy];
+    if (newCallOptions == nil) {
+      newCallOptions = [[GRPCMutableCallOptions alloc] init];
+    }
     _responseClass = responseClass;
 
     // Set queue QoS only when iOS version is 8.0 or above and Xcode version is 9.0 or above
@@ -133,9 +137,10 @@ static NSError *ErrorForBadProto(id proto, Class expectedClass, NSError *parsing
     }
     dispatch_set_target_queue(_dispatchQueue, handler.dispatchQueue);
 
+    newCallOptions.marshaller = [[GRPCProtoMarshaller alloc] initWithResponseProtoClass:responseClass];
     _call = [[GRPCCall2 alloc] initWithRequestOptions:_requestOptions
                                       responseHandler:self
-                                          callOptions:_callOptions];
+                                          callOptions:newCallOptions];
   }
   return self;
 }
@@ -186,7 +191,7 @@ static NSError *ErrorForBadProto(id proto, Class expectedClass, NSError *parsing
   @synchronized(self) {
     copiedCall = _call;
   }
-  [copiedCall writeData:[message data]];
+  [copiedCall writeData:message];
 }
 
 - (void)finish {
@@ -227,31 +232,15 @@ static NSError *ErrorForBadProto(id proto, Class expectedClass, NSError *parsing
 - (void)didReceiveData:(id)data {
   if (data == nil) return;
 
-  NSError *error = nil;
-  GPBMessage *parsed = [_responseClass parseFromData:data error:&error];
   @synchronized(self) {
-    if (parsed && [_handler respondsToSelector:@selector(didReceiveProtoMessage:)]) {
+    if ([_handler respondsToSelector:@selector(didReceiveProtoMessage:)]) {
       dispatch_async(_dispatchQueue, ^{
         id<GRPCProtoResponseHandler> copiedHandler = nil;
         @synchronized(self) {
           copiedHandler = self->_handler;
         }
-        [copiedHandler didReceiveProtoMessage:parsed];
+        [copiedHandler didReceiveProtoMessage:data];
       });
-    } else if (!parsed &&
-               [_handler respondsToSelector:@selector(didCloseWithTrailingMetadata:error:)]) {
-      dispatch_async(_dispatchQueue, ^{
-        id<GRPCProtoResponseHandler> copiedHandler = nil;
-        @synchronized(self) {
-          copiedHandler = self->_handler;
-          self->_handler = nil;
-        }
-        [copiedHandler
-            didCloseWithTrailingMetadata:nil
-                                   error:ErrorForBadProto(data, self->_responseClass, error)];
-      });
-      [_call cancel];
-      _call = nil;
     }
   }
 }
