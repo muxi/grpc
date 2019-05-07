@@ -210,8 +210,6 @@
 }
 
 - (void)writeData:(id)data {
-  GRXBufferedPipe *copiedPipe = nil;
-  id copiedData = nil;
   @synchronized(self) {
     NSAssert(!_canceled, @"Call already canceled.");
     NSAssert(!_finished, @"Call is half-closed before sending data.");
@@ -222,16 +220,13 @@
       return;
     }
 
-    if (_pipe) {
-      copiedPipe = _pipe;
-    }
-
     id<GRPCMarshaller> marshaller = _callOptions.marshaller;
     if (marshaller != nil) {
-      copiedData = [marshaller serialize:data error:nil];
+      data = [marshaller serialize:data error:nil];
     }
+
+    [_pipe writeValue:data];
   }
-  [copiedPipe writeValue:copiedData != nil ? copiedData : data];
 }
 
 - (void)finish {
