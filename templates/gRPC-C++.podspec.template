@@ -60,9 +60,10 @@
     excl_files += grpcpp_proto_files(filegroups)
     out = [file for file in out if file not in excl_files]
 
-    # Since some C++ source files directly included private headers in C core, we include all the
-    # C core headers in C++ Implementation subspec as well.
+    # Since some C++ source files directly included private and public headers in core, we include
+    # all the core headers in C++ Implementation subspec as well.
     out += [file for file in grpc_private_headers(libs) if not file.startswith("third_party/nanopb/")]
+    out += [file for file in grpc_public_headers(libs)]
 
     out = filter_grpcpp(out)
 
