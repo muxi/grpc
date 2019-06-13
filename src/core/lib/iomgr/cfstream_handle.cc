@@ -29,39 +29,36 @@
 #include <grpc/support/sync.h>
 
 #include "src/core/lib/debug/trace.h"
+#include "src/core/lib/gprpp/ref_counted.h"
+#include "src/core/lib/gprpp/ref_counted_ptr.h"
 #include "src/core/lib/iomgr/closure.h"
 #include "src/core/lib/iomgr/error_cfstream.h"
 #include "src/core/lib/iomgr/exec_ctx.h"
 
 extern grpc_core::TraceFlag grpc_tcp_trace;
+grpc_core::DebugOnlyTraceFlag grpc_trace_cfstream_handle_refcount(false, "cfstream_handle_refcount");
 
 void* CFStreamHandle::Retain(void* info) {
   CFStreamHandle* handle = static_cast<CFStreamHandle*>(info);
-  CFSTREAM_HANDLE_REF(handle, "retain");
-  return info;
+  return static_cast<void*>(handle->Ref().release());
 }
 
 void CFStreamHandle::Release(void* info) {
   CFStreamHandle* handle = static_cast<CFStreamHandle*>(info);
-  CFSTREAM_HANDLE_UNREF(handle, "release");
-}
-
-CFStreamHandle* CFStreamHandle::CreateStreamHandle(
-    CFReadStreamRef read_stream, CFWriteStreamRef write_stream) {
-  return grpc_core::New<CFStreamHandle>(read_stream, write_stream);
+  handle->Unref();
 }
 
 void CFStreamHandle::ReadCallback(CFReadStreamRef stream,
                                   CFStreamEventType type,
-                                  void* client_callback_info) {
+                                  void* clientCallBackInfo) {
   grpc_core::ApplicationCallbackExecCtx callback_exec_ctx;
   grpc_core::ExecCtx exec_ctx;
   grpc_error* error;
   CFErrorRef stream_error;
-  CFStreamHandle* handle = static_cast<CFStreamHandle*>(client_callback_info);
+  CFStreamHandle* handle = static_cast<CFStreamHandle*>(clientCallBackInfo);
   if (grpc_tcp_trace.enabled()) {
-    gpr_log(GPR_DEBUG, "CFStream ReadCallback (%p, %p, %lu, %p)", handle,
-            stream, type, client_callback_info);
+    gpr_log(GPR_DEBUG, "CFStream ReadCallback (%p, %p, %lu, %p)", static_cast<void*>(handle),
+            stream, type, clientCallBackInfo);
   }
   switch (type) {
     case kCFStreamEventOpenCompleted:
@@ -95,7 +92,7 @@ void CFStreamHandle::WriteCallback(CFWriteStreamRef stream,
   CFErrorRef stream_error;
   CFStreamHandle* handle = static_cast<CFStreamHandle*>(clientCallBackInfo);
   if (grpc_tcp_trace.enabled()) {
-    gpr_log(GPR_DEBUG, "CFStream WriteCallback (%p, %p, %lu, %p)", handle,
+    gpr_log(GPR_DEBUG, "CFStream WriteCallback (%p, %p, %lu, %p)", static_cast<void*>(handle),
             stream, type, clientCallBackInfo);
   }
   switch (type) {
@@ -123,7 +120,8 @@ void CFStreamHandle::WriteCallback(CFWriteStreamRef stream,
 }
 
 CFStreamHandle::CFStreamHandle(CFReadStreamRef read_stream,
-                               CFWriteStreamRef write_stream) {
+                               CFWriteStreamRef write_stream)
+    : grpc_core::RefCounted<CFStreamHandle>(&grpc_trace_cfstream_handle_refcount)  {
   gpr_ref_init(&refcount_, 1);
   open_event_.InitEvent();
   read_event_.InitEvent();
@@ -169,28 +167,6 @@ void CFStreamHandle::Shutdown(grpc_error* error) {
   read_event_.SetShutdown(GRPC_ERROR_REF(error));
   write_event_.SetShutdown(GRPC_ERROR_REF(error));
   GRPC_ERROR_UNREF(error);
-}
-
-void CFStreamHandle::Ref(const char* file, int line, const char* reason) {
-  if (grpc_tcp_trace.enabled()) {
-    gpr_atm val = gpr_atm_no_barrier_load(&refcount_.count);
-    gpr_log(file, line, GPR_LOG_SEVERITY_DEBUG,
-            "CFStream Handle ref %p : %s %" PRIdPTR " -> %" PRIdPTR, this,
-            reason, val, val + 1);
-  }
-  gpr_ref(&refcount_);
-}
-
-void CFStreamHandle::Unref(const char* file, int line, const char* reason) {
-  if (grpc_tcp_trace.enabled()) {
-    gpr_atm val = gpr_atm_no_barrier_load(&refcount_.count);
-    gpr_log(GPR_ERROR,
-            "CFStream Handle unref %p : %s %" PRIdPTR " -> %" PRIdPTR, this,
-            reason, val, val - 1);
-  }
-  if (gpr_unref(&refcount_)) {
-    grpc_core::Delete<CFStreamHandle>(this);
-  }
 }
 
 #else

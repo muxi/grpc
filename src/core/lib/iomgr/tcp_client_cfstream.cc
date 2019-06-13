@@ -33,6 +33,7 @@
 
 #include <netinet/in.h>
 
+#include "src/core/lib/gprpp/ref_counted_ptr.h"
 #include "src/core/lib/channel/channel_args.h"
 #include "src/core/lib/gpr/host_port.h"
 #include "src/core/lib/iomgr/cfstream_handle.h"
@@ -52,7 +53,7 @@ typedef struct CFStreamConnect {
 
   CFReadStreamRef read_stream;
   CFWriteStreamRef write_stream;
-  CFStreamHandle* stream_handle;
+  grpc_core::RefCountedPtr<CFStreamHandle> stream_handle;
 
   grpc_timer alarm;
   grpc_closure on_alarm;
@@ -71,7 +72,7 @@ typedef struct CFStreamConnect {
 
 static void CFStreamConnectCleanup(CFStreamConnect* connect) {
   grpc_resource_quota_unref_internal(connect->resource_quota);
-  CFSTREAM_HANDLE_UNREF(connect->stream_handle, "async connect clean up");
+  connect->stream_handle.reset();
   CFRelease(connect->read_stream);
   CFRelease(connect->write_stream);
   gpr_mu_destroy(&connect->mu);
@@ -132,6 +133,7 @@ static void OnOpen(void* arg, grpc_error* error) {
         *endpoint = grpc_cfstream_endpoint_create(
             connect->read_stream, connect->write_stream, connect->addr_name,
             connect->resource_quota, connect->stream_handle);
+        connect->stream_handle.reset();
       }
     } else {
       GRPC_ERROR_REF(error);
@@ -197,8 +199,7 @@ static void CFStreamClientConnect(grpc_closure* closure, grpc_endpoint** ep,
   CFRelease(host);
   connect->read_stream = read_stream;
   connect->write_stream = write_stream;
-  connect->stream_handle =
-      CFStreamHandle::CreateStreamHandle(read_stream, write_stream);
+  connect->stream_handle = grpc_core::RefCountedPtr<CFStreamHandle>(grpc_core::New<CFStreamHandle>(read_stream, write_stream));
   GRPC_CLOSURE_INIT(&connect->on_open, OnOpen, static_cast<void*>(connect),
                     grpc_schedule_on_exec_ctx);
   connect->stream_handle->NotifyOnOpen(&connect->on_open);

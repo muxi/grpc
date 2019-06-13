@@ -30,13 +30,13 @@
 #import <CoreFoundation/CoreFoundation.h>
 
 #include "src/core/lib/gprpp/memory.h"
+#include "src/core/lib/gprpp/ref_counted.h"
 #include "src/core/lib/iomgr/closure.h"
 #include "src/core/lib/iomgr/lockfree_event.h"
 
-class CFStreamHandle final {
+class CFStreamHandle final : public grpc_core::RefCounted<CFStreamHandle> {
  public:
-  static CFStreamHandle* CreateStreamHandle(CFReadStreamRef read_stream,
-                                            CFWriteStreamRef write_stream);
+  CFStreamHandle(CFReadStreamRef read_stream, CFWriteStreamRef write_stream);
   ~CFStreamHandle();
   CFStreamHandle(const CFStreamHandle& ref) = delete;
   CFStreamHandle(CFStreamHandle&& ref) = delete;
@@ -47,11 +47,7 @@ class CFStreamHandle final {
   void NotifyOnWrite(grpc_closure* closure);
   void Shutdown(grpc_error* error);
 
-  void Ref(const char* file = "", int line = 0, const char* reason = nullptr);
-  void Unref(const char* file = "", int line = 0, const char* reason = nullptr);
-
  private:
-  CFStreamHandle(CFReadStreamRef read_stream, CFWriteStreamRef write_stream);
   static void ReadCallback(CFReadStreamRef stream, CFStreamEventType type,
                            void* client_callback_info);
   static void WriteCallback(CFWriteStreamRef stream, CFStreamEventType type,
@@ -66,20 +62,7 @@ class CFStreamHandle final {
   dispatch_queue_t dispatch_queue_;
 
   gpr_refcount refcount_;
-
-  GRPC_ALLOW_CLASS_TO_USE_NON_PUBLIC_NEW
-  GRPC_ALLOW_CLASS_TO_USE_NON_PUBLIC_DELETE
 };
-
-#ifdef DEBUG
-#define CFSTREAM_HANDLE_REF(handle, reason) \
-  (handle)->Ref(__FILE__, __LINE__, (reason))
-#define CFSTREAM_HANDLE_UNREF(handle, reason) \
-  (handle)->Unref(__FILE__, __LINE__, (reason))
-#else
-#define CFSTREAM_HANDLE_REF(handle, reason) (handle)->Ref()
-#define CFSTREAM_HANDLE_UNREF(handle, reason) (handle)->Unref()
-#endif
 
 #endif
 

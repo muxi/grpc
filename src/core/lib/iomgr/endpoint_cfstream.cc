@@ -30,6 +30,7 @@
 #include <grpc/support/string_util.h>
 
 #include "src/core/lib/gpr/string.h"
+#include "src/core/lib/gprpp/ref_counted_ptr.h"
 #include "src/core/lib/iomgr/cfstream_handle.h"
 #include "src/core/lib/iomgr/closure.h"
 #include "src/core/lib/iomgr/endpoint.h"
@@ -45,7 +46,7 @@ typedef struct {
 
   CFReadStreamRef read_stream;
   CFWriteStreamRef write_stream;
-  CFStreamHandle* stream_sync;
+  grpc_core::RefCountedPtr<CFStreamHandle> stream_sync;
 
   grpc_closure* read_cb;
   grpc_closure* write_cb;
@@ -64,7 +65,7 @@ static void CFStreamFree(CFStreamEndpoint* ep) {
   grpc_resource_user_unref(ep->resource_user);
   CFRelease(ep->read_stream);
   CFRelease(ep->write_stream);
-  CFSTREAM_HANDLE_UNREF(ep->stream_sync, "free");
+  ep->stream_sync.reset();
   gpr_free(ep->peer_string);
   gpr_free(ep);
 }
@@ -337,7 +338,7 @@ static const grpc_endpoint_vtable vtable = {CFStreamRead,
 grpc_endpoint* grpc_cfstream_endpoint_create(
     CFReadStreamRef read_stream, CFWriteStreamRef write_stream,
     const char* peer_string, grpc_resource_quota* resource_quota,
-    CFStreamHandle* stream_sync) {
+    grpc_core::RefCountedPtr<CFStreamHandle> stream_sync) {
   CFStreamEndpoint* ep_impl =
       static_cast<CFStreamEndpoint*>(gpr_malloc(sizeof(CFStreamEndpoint)));
   if (grpc_tcp_trace.enabled()) {
@@ -352,7 +353,6 @@ grpc_endpoint* grpc_cfstream_endpoint_create(
   CFRetain(read_stream);
   CFRetain(write_stream);
   ep_impl->stream_sync = stream_sync;
-  CFSTREAM_HANDLE_REF(ep_impl->stream_sync, "endpoint create");
 
   ep_impl->peer_string = gpr_strdup(peer_string);
   ep_impl->read_cb = nil;
