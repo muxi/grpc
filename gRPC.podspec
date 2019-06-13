@@ -62,6 +62,7 @@ Pod::Spec.new do |s|
     ss.private_header_files = "#{src_dir}/private/*.h", "#{src_dir}/internal/*.h"
 
     ss.dependency 'gRPC-Core', version
+    ss.dependency 'GTMSessionFetcher', '~> 1.2.2'
   end
 
   # CFStream is now default. Leaving this subspec only for compatibility purpose.

@@ -26,6 +26,8 @@
 
 #import "../version.h"
 
+#import "Echo.pbobjc.h"
+
 // The server address is derived from preprocessor macro, which is
 // in turn derived from environment variable of the same name.
 #define NSStringize_helper(x) #x
@@ -107,9 +109,9 @@ static const NSTimeInterval kInvertedTimeout = 2;
   }
 }
 
-- (void)didReceiveRawMessage:(GPBMessage *)message {
+- (void)didReceiveData:(id)data {
   if (self->_messageCallback) {
-    self->_messageCallback(message);
+    self->_messageCallback(data);
   }
 }
 
@@ -150,6 +152,42 @@ static const NSTimeInterval kInvertedTimeout = 2;
                                                                  method:@"StreamingOutputCall"];
   kFullDuplexCallMethod =
       [[GRPCProtoMethod alloc] initWithPackage:kPackage service:kService method:@"FullDuplexCall"];
+}
+
+- (void)testUrlSession {
+  __weak XCTestExpectation *expectation = [self expectationWithDescription:@"RPC unauthorized."];
+
+  EchoRequest *request = [EchoRequest message];
+  request.message = @"abc";
+
+  GRPCRequestOptions *callRequest =
+  [[GRPCRequestOptions alloc] initWithHost:(NSString *)kRemoteSSLHost
+                                      path:@"/$rpc/tech.env.framework.examples.echo.EchoService/Echo"
+                                    safety:GRPCCallSafetyDefault];
+  GRPCCall2 *call = [[GRPCCall2 alloc]
+                     initWithRequestOptions:callRequest
+                     responseHandler:[[ClientTestsBlockCallbacks alloc]
+                                      initWithInitialMetadataCallback:^(NSDictionary *initialMetadata) {
+                                        NSLog(@"Initial metadata: %@", initialMetadata);
+                                      }
+                                      messageCallback:^(id message) {
+                                        NSError *error;
+                                        EchoResponse *response = [EchoResponse parseFromData:message
+                                                                                       error:&error];
+                                        NSLog(@"Message: %@", response);
+                                      }
+                                      closeCallback:^(NSDictionary *trailingMetadata, NSError *error) {
+                                        NSLog(@"Trailing metadata: %@", trailingMetadata);
+                                        NSLog(@"Error: %@", error);
+                                        [expectation fulfill];
+                                      }]
+                     callOptions:nil];
+
+  [call start];
+  [call writeData:[request data]];
+  [call finish];
+
+  [self waitForExpectationsWithTimeout:kTestTimeout handler:nil];
 }
 
 - (void)testMetadata {

@@ -20,8 +20,13 @@
 
 #import <GRPCClient/GRPCCall.h>
 #import <RxLibrary/GRXBufferedPipe.h>
+#import <GTMSessionFetcher/GTMSessionFetcher.h>
+#import <GTMSessionFetcher/GTMSessionFetcherService.h>
 
 #import "GRPCCall+V2API.h"
+
+static NSString *const kGRPCStatus = @"grpc-status";
+static NSString *const kGRPCMessage = @"grpc-message";
 
 @implementation GRPCCall2Internal {
   /** Request for the call. */
@@ -337,6 +342,322 @@
     }
   }
   [copiedCall receiveNextMessages:numberOfMessages];
+}
+
+@end
+
+typedef NS_ENUM(NSUInteger, GRPCWebDataType) {
+  Data = 0,
+  Trailer,
+  Unknown,
+};
+
+NSDictionary* parseTrailers(NSData *trailerData) {
+  NSString *trailerString = [[NSString alloc] initWithData:trailerData encoding:NSUTF8StringEncoding];
+  NSArray *components = [trailerString componentsSeparatedByString:@"\r\n"];
+  NSMutableDictionary *trailers = [[NSMutableDictionary alloc] initWithCapacity:components.count];
+  for (NSString *item in components) {
+    if (item.length == 0) {
+      continue;
+    }
+    NSArray *keyValue = [item componentsSeparatedByCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@":"]];
+    if (keyValue.count != 2) {
+      NSLog(@"Bad format trailer!");
+      continue;
+    }
+    NSString *key = [keyValue[0] stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@" "]];
+    key = key.lowercaseString;
+    NSString *value = [keyValue[1] stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@" "]];
+    trailers[key] = value;
+  }
+  return trailers;
+}
+
+NSError* parseGRPCStatus(NSMutableDictionary *trailers) {
+  NSString *status = [trailers valueForKey:kGRPCStatus];
+  if (status == nil) {
+    return [NSError errorWithDomain:kGRPCErrorDomain
+                               code:GRPCErrorCodeInternal
+                           userInfo:@{NSLocalizedDescriptionKey :
+                                        @"grpc-status not found in trailer"
+                                      }];
+  } else {
+    [trailers removeObjectForKey:kGRPCStatus];
+    NSError *error = nil;
+    if (![status isEqualToString:@"0"]) {
+      GRPCErrorCode statusCode = [status integerValue];
+      if (statusCode == 0) {
+        error = [NSError errorWithDomain:kGRPCErrorDomain
+                                    code:GRPCErrorCodeInternal
+                                userInfo:@{NSLocalizedDescriptionKey :
+                                             @"Malformed grpc-status value"
+                                           }];
+      }
+      NSString *details = trailers[kGRPCMessage];
+      error = [NSError errorWithDomain:kGRPCErrorDomain
+                                  code:statusCode
+                              userInfo:@{NSLocalizedDescriptionKey:details}];
+    }
+    return nil;
+  }
+}
+
+GRPCErrorCode translateStatusCode(NSInteger status) {
+  switch (status) {
+    case 200:
+      return GRPCErrorCodeOk;
+    case 400:
+      return GRPCErrorCodeInvalidArgument;
+    case 401:
+      return GRPCErrorCodeUnauthenticated;
+    case 403:
+      return GRPCErrorCodePermissionDenied;
+    case 404:
+      return GRPCErrorCodeNotFound;
+    case 409:
+      return GRPCErrorCodeAborted;
+    case 412:
+      return GRPCErrorCodeFailedPrecondition;
+    case 429:
+      return GRPCErrorCodeResourceExhausted;
+    case 499:
+      return GRPCErrorCodeCancelled;
+    case 500:
+      return GRPCErrorCodeUnknown;
+    case 501:
+      return GRPCErrorCodeUnimplemented;
+    case 503:
+      return GRPCErrorCodeUnavailable;
+    case 504:
+      return GRPCErrorCodeDeadlineExceeded;
+    default:
+      return GRPCErrorCodeUnknown;
+  }
+}
+
+@interface GRPCWebData : NSObject
+
+- (instancetype)initWithData:(NSData *)data;
+
+@property(readonly) GRPCWebDataType type;
+@property(readonly) NSData *data;
+@property(readonly) NSDictionary *trailers;
+
+@end
+
+@implementation GRPCWebData
+
+- (instancetype)initWithData:(NSData *)data {
+  if ((self = [super init])) {
+    if (data.length < 5) {
+      _type = Unknown;
+      return self;
+    }
+    uint8_t *bytes = (uint8_t *)data.bytes;
+    _type = (bytes[0] & 0x80) ? Trailer : Data;
+    if (_type == Data) {
+      _data = [data subdataWithRange:NSMakeRange(1, data.length - 1)];
+    } else {
+      _trailers = parseTrailers([data subdataWithRange:NSMakeRange(1, data.length - 1)]);
+    }
+  }
+  return self;
+}
+
+@end
+
+@implementation GRPCCall2SessionFetcher {
+  dispatch_queue_t _dispatchQueue;
+  id<GRPCResponseHandler> _responseHandler;
+  GRPCRequestOptions *_requestOptions;
+  GRPCCallOptions *_callOptions;
+
+  GTMSessionFetcher *_fetcher;
+
+  BOOL _didWriteData;
+}
+
+- (instancetype)init {
+  if ((self = [super init])) {
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 110000 || __MAC_OS_X_VERSION_MAX_ALLOWED >= 101300
+    if (@available(iOS 8.0, macOS 10.10, *)) {
+      _dispatchQueue = dispatch_queue_create(
+                                             NULL,
+                                             dispatch_queue_attr_make_with_qos_class(DISPATCH_QUEUE_SERIAL, QOS_CLASS_DEFAULT, 0));
+    } else {
+#else
+    {
+#endif
+      _dispatchQueue = dispatch_queue_create(NULL, DISPATCH_QUEUE_SERIAL);
+    }
+      _didWriteData = NO;
+  }
+  return self;
+}
+
+- (dispatch_queue_t)requestDispatchQueue {
+  return _dispatchQueue;
+}
+
+- (void)setResponseHandler:(id<GRPCResponseHandler>)responseHandler {
+  @synchronized(self) {
+    _responseHandler = responseHandler;
+  }
+}
+
+- (void)startWithRequestOptions:(GRPCRequestOptions *)requestOptions callOptions:(GRPCCallOptions *)callOptions {
+  NSAssert(_responseHandler != nil, @"");
+  if (_responseHandler == nil) {
+    return;
+  }
+  GTMSessionFetcherService *service = [[GTMSessionFetcherService alloc] init];
+/*  NSURL *url = [NSURL URLWithString:requestOptions.host];
+  // URL parsing might be unsuccessful because the host does not contain scheme
+  if (url == nil || url.scheme == nil) {
+    url = [NSURL URLWithString:[@"https://" stringByAppendingString:requestOptions.host]];
+    NSAssert(url != nil && url.scheme != nil, @"Malformed host");
+    if (url == nil || url.scheme == nil) {
+      [self issueClosedWithTrailingMetadata:nil error:[NSError errorWithDomain:kGRPCErrorDomain
+                                                                          code:GRPCErrorCodeInvalidArgument
+                                                                      userInfo:@{NSLocalizedDescriptionKey :
+                                                                                   @"Malformed host."
+                                                                                 }]];
+      return;
+    }
+  }
+  url = [NSURL URLWithString:requestOptions.path relativeToURL:url];*/
+  NSString *urlString = [[requestOptions.host stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"/"]] stringByAppendingString:requestOptions.path];
+  urlString = [@"http://" stringByAppendingString:urlString];
+  _fetcher = [service fetcherWithURLString:urlString];
+  _fetcher.retryEnabled = YES;
+  _fetcher.callbackQueue = _dispatchQueue;
+  [_fetcher setRequestValue:@"application/x-protobuf" forHTTPHeaderField:@"Content-Type"];
+  [_fetcher setRequestValue:@"gRPC/ObjC NSURLSession" forHTTPHeaderField:@"User-Agent"];
+}
+
+- (void)writeData:(NSData *)data {
+  NSAssert(!_didWriteData, @"The GTMSessionFetcher transport does not support streaming and thus can only accept one writeData: call");
+  if (_didWriteData) {
+    return;
+  }
+  _fetcher.bodyData = [data copy];
+}
+
+- (void)finish {
+  [_fetcher beginFetchWithCompletionHandler:^(NSData *data, NSError *error) {
+    if (error) {
+      NSURLResponse *response = self->_fetcher.response;
+      if ([response isKindOfClass:[NSHTTPURLResponse class]]) {
+        NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
+        GRPCErrorCode status = translateStatusCode(httpResponse.statusCode);
+        NSError *statusError = [NSError errorWithDomain:kGRPCErrorDomain
+                                                   code:status
+                                               userInfo:@{NSLocalizedDescriptionKey :
+                                                            @"Malformated messages."
+                                                          }];
+        [self issueClosedWithTrailingMetadata:nil error:statusError];
+      } else {
+        [self issueClosedWithTrailingMetadata:nil error:error];
+      }
+      return;
+    }
+    NSDictionary *headers = self->_fetcher.responseHeaders;
+/*    // trailer-only case
+    if (headers[kGRPCStatus] != nil) {
+      NSError *error;
+      NSMutableDictionary *trailers = [[NSMutableDictionary alloc] initWithDictionary:headers];
+      error = parseGRPCStatus(trailers);
+      [self issueClosedWithTrailingMetadata:trailers error:error];
+    } else {
+      [self issueInitialMetadata:headers];
+
+      while (data.length) {
+        GRPCWebData *webData = [[GRPCWebData alloc] initWithData:data];
+        switch(webData.type) {
+          case Data:
+            [self issueMessage:webData.data];
+            break;
+          case Trailer: {
+            NSMutableDictionary *trailers = [[NSMutableDictionary alloc] initWithDictionary:webData.trailers];
+            NSError *error = parseGRPCStatus(trailers);
+            [self issueClosedWithTrailingMetadata:trailers error:error];
+            return;
+          }
+          default:
+            [self issueClosedWithTrailingMetadata:nil error:[NSError errorWithDomain:kGRPCErrorDomain
+                                                                                code:GRPCErrorCodeInternal
+                                                                            userInfo:@{NSLocalizedDescriptionKey :
+                                                                                         @"Malformated messages."
+                                                                                       }]];
+            return;
+        }
+      }
+    }*/
+    [self issueInitialMetadata:headers];
+    if (data != nil && data.length != 0) {
+      [self issueMessage:data];
+    }
+    [self issueClosedWithTrailingMetadata:nil error:nil];
+  }];
+}
+
+- (void)cancel {
+  [_fetcher stopFetching];
+  [self issueClosedWithTrailingMetadata:nil error:[NSError
+                                                   errorWithDomain:kGRPCErrorDomain
+                                                   code:GRPCErrorCodeCancelled
+                                                   userInfo:@{NSLocalizedDescriptionKey : @"Canceled by app"}]];
+}
+
+- (void)receiveNextMessages:(NSUInteger)numberOfMessages {
+  return;
+}
+
+- (void)issueInitialMetadata:(NSDictionary *)initialMetadata {
+  @synchronized(self) {
+    if (initialMetadata != nil &&
+        [_responseHandler respondsToSelector:@selector(didReceiveInitialMetadata:)]) {
+      id<GRPCResponseHandler> copiedHandler = _responseHandler;
+      dispatch_async(_responseHandler.dispatchQueue, ^{
+        [copiedHandler didReceiveInitialMetadata:initialMetadata];
+      });
+    }
+  }
+}
+
+- (void)issueMessage:(id)message {
+  @synchronized(self) {
+    if (message != nil) {
+      if ([_responseHandler respondsToSelector:@selector(didReceiveData:)]) {
+        id<GRPCResponseHandler> copiedHandler = _responseHandler;
+        dispatch_async(_responseHandler.dispatchQueue, ^{
+          [copiedHandler didReceiveData:message];
+        });
+      } else if ([_responseHandler respondsToSelector:@selector(didReceiveRawMessage:)]) {
+        id<GRPCResponseHandler> copiedHandler = _responseHandler;
+        dispatch_async(_responseHandler.dispatchQueue, ^{
+          [copiedHandler didReceiveRawMessage:message];
+        });
+      }
+    }
+  }
+}
+
+- (void)issueClosedWithTrailingMetadata:(NSDictionary *)trailingMetadata error:(NSError *)error {
+  @synchronized(self) {
+    if ([_responseHandler respondsToSelector:@selector(didCloseWithTrailingMetadata:error:)]) {
+      id<GRPCResponseHandler> copiedHandler = _responseHandler;
+      // Clean up _handler so that no more responses are reported to the handler.
+      _responseHandler = nil;
+      _fetcher = nil;
+      dispatch_async(copiedHandler.dispatchQueue, ^{
+        [copiedHandler didCloseWithTrailingMetadata:trailingMetadata error:error];
+      });
+    } else {
+      _responseHandler = nil;
+      _fetcher = nil;
+    }
+  }
 }
 
 @end
