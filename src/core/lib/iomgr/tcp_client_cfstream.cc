@@ -133,7 +133,6 @@ static void OnOpen(void* arg, grpc_error* error) {
         *endpoint = grpc_cfstream_endpoint_create(
             connect->read_stream, connect->write_stream, connect->addr_name,
             connect->resource_quota, connect->stream_handle);
-        connect->stream_handle.reset();
       }
     } else {
       GRPC_ERROR_REF(error);
