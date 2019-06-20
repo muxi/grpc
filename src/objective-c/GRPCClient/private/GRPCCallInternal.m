@@ -28,6 +28,14 @@
 static NSString *const kGRPCStatus = @"grpc-status";
 static NSString *const kGRPCMessage = @"grpc-message";
 
+@implementation GRPCCall2CoreFactory
+
+- (id<GRPCCall2Implementation>)createInternalCall {
+  return [[GRPCCall2Internal alloc] init];
+}
+
+@end
+
 @implementation GRPCCall2Internal {
   /** Request for the call. */
   GRPCRequestOptions *_requestOptions;

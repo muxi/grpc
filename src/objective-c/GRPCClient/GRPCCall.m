@@ -141,7 +141,12 @@ const char *kCFStreamVarName = "grpc_cfstream";
     _responseHandler = responseHandler;
 
     // Initialize the interceptor chain
-    GRPCCall2SessionFetcher *internalCall = [[GRPCCall2SessionFetcher alloc] init];
+    id<GRPCCall2ImplementationFactory> factory = _actualCallOptions.internalCallImplementation;
+    if (factory == nil) {
+      // use the default implementation: gRPC-Core
+      factory = [[GRPCCall2CoreFactory alloc] init];
+    }
+    id<GRPCCall2Implementation> *internalCall = [factory createCallImplementation];
     id<GRPCInterceptorInterface> nextInterceptor = internalCall;
     GRPCInterceptorManager *nextManager = nil;
     NSArray *interceptorFactories = _actualCallOptions.interceptorFactories;

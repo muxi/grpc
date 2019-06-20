@@ -17,10 +17,21 @@
  */
 
 #import <GRPCClient/GRPCInterceptor.h>
+#import <GRPCClient/GRPCCall2Implementation.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface GRPCCall2Internal : NSObject<GRPCInterceptorInterface>
+@protocol GRPCCall2Implementation <GRPCInterceptorInterface>
+
+- (void)setResponseHandler:(id<GRPCResponseHandler>)responseHandler;
+
+@end
+
+@interface GRPCCall2CoreFactory : NSObject<GRPCCall2ImplementationFactory>
+
+@end
+
+@interface GRPCCall2Internal : NSObject<GRPCCall2Implementation>
 
 - (instancetype)init;
 
@@ -39,7 +50,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @end
 
-@interface GRPCCall2SessionFetcher : NSObject<GRPCInterceptorInterface>
+@interface GRPCCall2SessionFetcher : NSObject<GRPCCall2Implementation>
 
 - (instancetype)init;
 
