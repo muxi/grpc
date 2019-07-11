@@ -17,6 +17,7 @@
  */
 
 #import <GRPCClient/GRPCInterceptor.h>
+#import <GRPCClient/GRPCTransport.h>
 
 @interface GRPCTransport (Private)
 

@@ -21,7 +21,7 @@
  * the API in GRPCCall.h. This API exists solely for the purpose of backwards compatibility.
  */
 
-#import <GRPCClient/GRPCCallOptions.h>
+#import "GRPCCallOptions.h"
 #import <RxLibrary/GRXWriter.h>
 
 #pragma clang diagnostic push

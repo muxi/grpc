@@ -20,6 +20,24 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+#pragma mark Transport ID
+
+typedef char *GRPCTransportId;
+
+extern const struct GRPCTransportImplList {
+  const GRPCTransportId core;
+  const GRPCTransportId core_insecure;
+} GRPCTransportImplList;
+
+BOOL TransportIdIsEqual(GRPCTransportId lhs, GRPCTransportId rhs);
+
+#pragma mark Transport and factory
+
+@protocol GRPCInterceptorInterface;
+@protocol GRPCResponseHandler;
+@class GRPCRequestOptions;
+@class GRPCCallOptions;
+
 @protocol GRPCTransport <GRPCInterceptorInterface>
 
 @end
@@ -36,17 +54,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 + (instancetype)sharedInstance;
 
-- (void)registerTransportWithId:(GRPCTransportId)id factory:(id<GRPCTransportFactory>)factory
+- (void)registerTransportWithId:(GRPCTransportId)id factory:(id<GRPCTransportFactory>)factory;
 
 @end
-
-typedef char *GRPCTransportId;
-
-extern const struct GRPCTransportImplList {
-  const GRPCTransportId core;
-  const GRPCTransportId core_insecure;
-} GRPCTransportImplList;
-
-BOOL TransportIdIsEqual(GRPCTransportId lhs, GRPCTransportId rhs);
 
 NS_ASSUME_NONNULL_END
