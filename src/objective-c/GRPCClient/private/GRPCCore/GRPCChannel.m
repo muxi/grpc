@@ -20,7 +20,7 @@
 
 #include <grpc/support/log.h>
 
-#import "../internal/GRPCCallOptions+Internal.h"
+#import "../../internal/GRPCCallOptions+Internal.h"
 #import "ChannelArgsUtil.h"
 #import "GRPCChannelFactory.h"
 #import "GRPCChannelPool.h"
@@ -178,7 +178,8 @@
   grpc_channel *_unmanagedChannel;
 }
 
-- (instancetype)initWithChannelConfiguration:(GRPCChannelConfiguration *)channelConfiguration {
+  - (instancetype)initWithChannelConfiguration:(GRPCChannelConfiguration *)channelConfiguration
+                                 channelFactory:(id<GRPCChannelFactory>)channelFactory{
   NSAssert(channelConfiguration != nil, @"channelConfiguration must not be empty.");
   if (channelConfiguration == nil) {
     return nil;
@@ -198,7 +199,12 @@
     } else {
       channelArgs = channelConfiguration.channelArgs;
     }
-    id<GRPCChannelFactory> factory = channelConfiguration.channelFactory;
+
+    id<GRPCChannelFactory> factory = channelFactory;
+    // For backwards compatibility with users that do not use callOptions.transport
+    if (factory == nil || channelConfiguration.transport == nil) {
+      factory = channelConfiguration.channelFactory;
+    }
     _unmanagedChannel = [factory createChannelWithHost:host channelArgs:channelArgs];
     NSAssert(_unmanagedChannel != NULL, @"Failed to create channel");
     if (_unmanagedChannel == NULL) {

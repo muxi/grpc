@@ -20,6 +20,6 @@
 
 @interface GRPCTransport (Private)
 
-- (id<GRPCTransport>)getTransportWithId:(GRPCTransportId)id;
+- (id<GRPCTransportFactory>)getTransportFactoryWithId:(GRPCTransportId)id;
 
 @end

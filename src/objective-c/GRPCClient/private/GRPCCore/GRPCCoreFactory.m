@@ -1,6 +1,10 @@
-#import "GRPCCore.h"
+#import "GRPCCoreFactory.h"
+
+#import <GRPCClient/GRPCTransport.h>
 
 #import "GRPCCallInternal.h"
+#import "GRPCSecureChannelFactory.h"
+#import "GRPCInsecureChannelFactory.h"
 
 const GRPCTransportId gGRPCCoreId = "io.grpc.transport.core";
 const GRPCTransportId gGRPCCoreInsecureId = "io.grpc.transport.core.insecure";
@@ -14,14 +18,31 @@ static dispatch_once_t gInitGRPCCoreFactory;
 + (instancetype)sharedInstance {
   dispatch_once(&gInitGRPCCoreFactory, ^{
     gGRPCCoreFactory = [[GRPCCoreFactory alloc] init];
-    gGRPCCoreInsecureFactory = [[GRPCCoreInsecureFactory alloc] init];
   });
-  return gCoreFactory;
+  return gGRPCCoreFactory;
 }
 
-- (id<GRPCTransport>)createTransportWithResponseHandler:(id<GRPCResponseHandler>)responseHandler {
-  return [[GRPCCall2Internal alloc] initWithChannelHelper:[GRPCSecureChannelHelper sharedInstance]
-                                          responseHandler:responseHandler];
++ (void)load {
+  [[GRPCTransportRegistry sharedInstance] registerTransportWithId:gGRPCCoreId
+                                                          factory:[self sharedInstance]];
+}
+
+- (id<GRPCTransport>)createTransportWithRequestOptions:(GRPCRequestOptions *)requestOptions
+                                       responseHandler:(id<GRPCResponseHandler>)responseHandler
+                                           callOptions:(GRPCCallOptions *)callOptions {
+  NSError *error;
+  GRPCChannelFactory *channelFactory = [GRPCSecureChannelFactory factoryWithPEMRootCertificates:callOptions.PEMRootCertificates
+                                                                                     privateKey:callOptions.PEMPrivateKey
+                                                                                      certChain:callOptions.PEMCertificateChain error:&error];
+  NSAssert(error == nil);
+  if (error) {
+    NSLog(@"Failed to create channel factory: %@", error);
+    return nil;
+  }
+  return [[GRPCCall2Internal alloc] initWithRequestOptions:requestOptions
+                                           responseHandler:(id<GRPCResponseHandler>)responseHandler
+                                               callOptions:callOptions
+                                            channelFactory:];
 }
 
 @end
@@ -30,15 +51,23 @@ static dispatch_once_t gInitGRPCCoreFactory;
 
 + (instancetype)sharedInstance {
   dispatch_once(&gInitGRPCCoreFactory, ^{
-    gGRPCCoreFactory = [[GRPCCoreFactory alloc] init];
     gGRPCCoreInsecureFactory = [[GRPCCoreInsecureFactory alloc] init];
   });
-  return gCoreFactory;
+  return gGRPCCoreInsecureFactory;
 }
 
-- (id<GRPCTransport>)createTransportWithResponseHandler:(id<GRPCResponseHandler>)responseHandler {
-  return [[GRPCCall2Internal alloc] initWithChannelHelper:[GRPCInsecureChannelHelper sharedInstance]
-                                          responseHandler:responseHandler];
++ (void)load {
+  [[GRPCTransportRegistry sharedInstance] registerTransportWithId:gGRPCCoreInsecureId
+                                                          factory:[self sharedInstance]];
+}
+
+- (id<GRPCTransport>)createTransportWithRequestOptions:(GRPCRequestOptions *)requestOptions
+                                       responseHandler:(id<GRPCResponseHandler>)responseHandler
+                                           callOptions:(GRPCCallOptions *)callOptions {
+  return [[GRPCCall2Internal alloc] initWithRequestOptions:requestOptions
+                                           responseHandler:responseHandler
+                                               callOptions:callOptions
+                                            channelFactory:[GRPCInsecureChannelFactory sharedInstance]];
 }
 
 @end

@@ -169,7 +169,7 @@ NS_ASSUME_NONNULL_BEGIN
  * invoke shutDown method of its corresponding manager so that references to other interceptors can
  * be released.
  */
-@interface GRPCInterceptorManager : NSObject
+@interface GRPCInterceptorManager : NSObject <GRPCInterceptorInterface, GRPCResponseHandler>
 
 - (instancetype)init NS_UNAVAILABLE;
 

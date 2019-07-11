@@ -132,6 +132,9 @@ static NSString *const kBearerPrefix = @"Bearer ";
 
   // Indicate pending read message request from user.
   NSUInteger _pendingReceiveNextMessages;
+
+  // Factory to generate channel
+  id<GRPCChannelFactory> _channelFactory;
 }
 
 @synthesize state = _state;
@@ -182,19 +185,8 @@ static NSString *const kBearerPrefix = @"Bearer ";
                        path:path
                  callSafety:GRPCCallSafetyDefault
              requestsWriter:requestWriter
-                callOptions:nil];
-}
-
-- (instancetype)initWithHost:(NSString *)host
-                        path:(NSString *)path
-                  callSafety:(GRPCCallSafety)safety
-              requestsWriter:(GRXWriter *)requestsWriter
-                 callOptions:(GRPCCallOptions *)callOptions {
-  return [self initWithHost:host
-                       path:path
-                 callSafety:safety
-             requestsWriter:requestsWriter
-                callOptions:callOptions
+                callOptions:nil
+             channelFactory:nil
                   writeDone:nil];
 }
 
@@ -203,6 +195,7 @@ static NSString *const kBearerPrefix = @"Bearer ";
                   callSafety:(GRPCCallSafety)safety
               requestsWriter:(GRXWriter *)requestsWriter
                  callOptions:(GRPCCallOptions *)callOptions
+              channelFactory:(id<GRPCChannelFactory>)channelFactory
                    writeDone:(void (^)(void))writeDone {
   // Purposely using pointer rather than length (host.length == 0) for backwards compatibility.
   NSAssert(host != nil && path != nil, @"Neither host nor path can be nil.");
@@ -224,6 +217,7 @@ static NSString *const kBearerPrefix = @"Bearer ";
     _path = [path copy];
     _callSafety = safety;
     _callOptions = [callOptions copy];
+    _channelFactory = channelFactory;
 
     // Serial queue to invoke the non-reentrant methods of the grpc_call object.
     _callQueue = dispatch_queue_create("io.grpc.call", DISPATCH_QUEUE_SERIAL);
@@ -575,7 +569,7 @@ static NSString *const kBearerPrefix = @"Bearer ";
         [[GRXConcurrentWriteable alloc] initWithWriteable:writeable dispatchQueue:_responseQueue];
 
     GRPCPooledChannel *channel =
-        [[GRPCChannelPool sharedInstance] channelWithHost:_host callOptions:_callOptions];
+    [[GRPCChannelPool sharedInstance] channelWithHost:_host callOptions:_callOptions channelFactory:_channelFactory];
     _wrappedCall = [channel wrappedCallWithPath:_path
                                 completionQueue:[GRPCCompletionQueue completionQueue]
                                     callOptions:_callOptions];

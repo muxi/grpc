@@ -49,9 +49,26 @@
   BOOL _finished;
   /** The number of pending messages receiving requests. */
   NSUInteger _pendingReceiveNextMessages;
+  /** The factory to be used for creating channel. */
+  GRPCChannelFactory *_channelFactory;
 }
 
-- (instancetype)init {
+- (instancetype)initWithRequestOptions:requestOptions
+                       responseHandler:(id<GRPCResponseHandler>)responseHandler
+                           callOptions:callOptions
+                        channelFactory:(GRPCChannelFactory *)channelFactory {
+  NSAssert(requestOptions.host.length != 0 && requestOptions.path.length != 0,
+           @"Neither host nor path can be nil.");
+  NSAssert(requestOptions.safety <= GRPCCallSafetyCacheableRequest, @"Invalid call safety value.");
+  if (requestOptions.host.length == 0 || requestOptions.path.length == 0) {
+    NSLog(@"Invalid host and path.");
+    return nil;
+  }
+  if (requestOptions.safety > GRPCCallSafetyCacheableRequest) {
+    NSLog(@"Invalid call safety.");
+    return nil;
+  }
+
   if ((self = [super init])) {
   // Set queue QoS only when iOS version is 8.0 or above and Xcode version is 9.0 or above
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 110000 || __MAC_OS_X_VERSION_MAX_ALLOWED >= 101300
@@ -66,57 +83,16 @@
       _dispatchQueue = dispatch_queue_create(NULL, DISPATCH_QUEUE_SERIAL);
     }
     _pipe = [GRXBufferedPipe pipe];
+      _requestOptions = [requestOptions copy];
+      _handler = responseHandler;
+      _callOptions = [callOptions copy];
+      _channelFactory = channelFactory;
   }
   return self;
 }
 
-- (void)setResponseHandler:(id<GRPCResponseHandler>)responseHandler {
-  @synchronized(self) {
-    NSAssert(!_started, @"Call already started.");
-    if (_started) {
-      return;
-    }
-    _handler = responseHandler;
-    _initialMetadataPublished = NO;
-    _started = NO;
-    _canceled = NO;
-    _finished = NO;
-  }
-}
-
-- (dispatch_queue_t)requestDispatchQueue {
+- (dispatch_queue_t)dispatchQueue {
   return _dispatchQueue;
-}
-
-- (void)startWithRequestOptions:(GRPCRequestOptions *)requestOptions
-                    callOptions:(GRPCCallOptions *)callOptions {
-  NSAssert(requestOptions.host.length != 0 && requestOptions.path.length != 0,
-           @"Neither host nor path can be nil.");
-  NSAssert(requestOptions.safety <= GRPCCallSafetyCacheableRequest, @"Invalid call safety value.");
-  if (requestOptions.host.length == 0 || requestOptions.path.length == 0) {
-    NSLog(@"Invalid host and path.");
-    return;
-  }
-  if (requestOptions.safety > GRPCCallSafetyCacheableRequest) {
-    NSLog(@"Invalid call safety.");
-    return;
-  }
-
-  @synchronized(self) {
-    NSAssert(_handler != nil, @"Response handler required.");
-    if (_handler == nil) {
-      NSLog(@"Invalid response handler.");
-      return;
-    }
-    _requestOptions = requestOptions;
-    if (callOptions == nil) {
-      _callOptions = [[GRPCCallOptions alloc] init];
-    } else {
-      _callOptions = [callOptions copy];
-    }
-  }
-
-  [self start];
 }
 
 - (void)start {
@@ -138,6 +114,7 @@
                                 callSafety:_requestOptions.safety
                             requestsWriter:_pipe
                                callOptions:_callOptions
+                            channelFactory:_channelFactory
                                  writeDone:^{
                                    @synchronized(self) {
                                      if (self->_handler) {

@@ -25,11 +25,15 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface GRPCCall2Internal : NSObject<GRPCTransport>
 
-- (instancetype)initWithChannelHelper:(id<GRPCChannelHelper>)channelHelper
-                       responseHandler:responseHandler;
+- (instancetype)init NS_UNAVAILABLE;
++ (instancetype)new NS_UNAVAILABLE;
 
-- (void)startWithRequestOptions:(GRPCRequestOptions *)requestOptions
-                    callOptions:(nullable GRPCCallOptions *)callOptions;
+- (instancetype)initWithRequestOptions:(GRPCRequestOptions *)requestOptions
+                       responseHandler:(id<GRPCResponseHandler>)responseHandler
+                           callOptions:(GRPCCallOptinos *)callOptions
+                        channelFactory:(GRPCChannelFactory *)channelFactory];
+
+- (void)start;
 
 - (void)writeData:(id)data;
 

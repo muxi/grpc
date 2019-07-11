@@ -22,13 +22,8 @@
                         path:(NSString *)path
                   callSafety:(GRPCCallSafety)safety
               requestsWriter:(GRXWriter *)requestsWriter
-                 callOptions:(GRPCCallOptions *)callOptions;
-
-- (instancetype)initWithHost:(NSString *)host
-                        path:(NSString *)path
-                  callSafety:(GRPCCallSafety)safety
-              requestsWriter:(GRXWriter *)requestsWriter
                  callOptions:(GRPCCallOptions *)callOptions
+              channelFactory:(id<GRPCChannelFactory>)channelFactory
                    writeDone:(void (^)(void))writeDone;
 
 - (void)receiveNextMessages:(NSUInteger)numberOfMessages;

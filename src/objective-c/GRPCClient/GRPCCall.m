@@ -116,8 +116,14 @@ NSString *const kGRPCTrailersKey = @"io.grpc.TrailersKey";
     nextInterceptor = [interceptorFactories[0] createInterceptorWithManager:nextManager];
     [nextManager setInterceptorReference:nextInterceptor];
   } else {
-    nextInteceptor = [callOptions_actuaCallOptions.transport createTransportWithResponseHandler:responseHandler
-                                                                                    callOptions:callOptions];
+    nextInterceptor = [[[GRPCTransportRegistry sharedInstance] getTransportFactoryWithId:callOptions.transport] createTransportWithRequestOptions:_requestOptions
+                                                                                                                                   responseHandler:_responseHandler
+                                                                                                                                       callOptions:_actualCallOptions];
+    NSAssert(_nextInterceptor != nil);
+    if (_nextInterceptor == nil) {
+      NSLog(@"Failed to create transport");
+      return;
+    }
   }
   _firstInterceptor = nextInterceptor;
 
