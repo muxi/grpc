@@ -38,6 +38,7 @@
 #include <AvailabilityMacros.h>
 
 #include "GRPCCallOptions.h"
+#import "GRPCDispatchable.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -152,15 +153,7 @@ extern NSString *const kGRPCHeadersKey;
 extern NSString *const kGRPCTrailersKey;
 
 /** An object can implement this protocol to receive responses from server from a call. */
-@protocol GRPCResponseHandler<NSObject>
-
-@required
-
-/**
- * All the responses must be issued to a user-provided dispatch queue. This property specifies the
- * dispatch queue to be used for issuing the notifications.
- */
-@property(atomic, readonly) dispatch_queue_t dispatchQueue;
+@protocol GRPCResponseHandler<NSObject, GRPCDispatchable>
 
 @optional
 
