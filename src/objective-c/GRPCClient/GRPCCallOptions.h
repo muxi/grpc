@@ -18,6 +18,8 @@
 
 #import <Foundation/Foundation.h>
 
+#import "GRPCTransport.h"
+
 NS_ASSUME_NONNULL_BEGIN
 
 /**
@@ -192,9 +194,20 @@ typedef NS_ENUM(NSUInteger, GRPCTransportType) {
 @property(copy, readonly, nullable) NSString *PEMCertificateChain;
 
 /**
+ * Deprecated: this option is deprecated. Please use the property \a transport
+ * instead.
+ *
  * Select the transport type to be used for this call.
  */
 @property(readonly) GRPCTransportType transportType;
+
+/**
+ * The transport to be used for this call. Users may choose a native transport
+ * identifier defined in \a GRPCTransport or provided by a non-native ttransport
+ * implementation. If the option is left to be NULL, gRPC will use its default
+ * transport.
+ */
+@property(readonly) GRPCTransportId transport;
 
 /**
  * Override the hostname during the TLS hostname validation process.
@@ -357,9 +370,20 @@ typedef NS_ENUM(NSUInteger, GRPCTransportType) {
 @property(copy, readwrite, nullable) NSString *PEMCertificateChain;
 
 /**
+ * Deprecated: this option is deprecated. Please use the property \a transport
+ * instead.
+ *
  * Select the transport type to be used for this call.
  */
 @property(readwrite) GRPCTransportType transportType;
+
+/**
+ * The transport to be used for this call. Users may choose a native transport
+ * identifier defined in \a GRPCTransport or provided by a non-native ttransport
+ * implementation. If the option is left to be NULL, gRPC will use its default
+ * transport.
+ */
+@property(readwrite) GRPCTransportId transport;
 
 /**
  * Override the hostname during the TLS hostname validation process.
