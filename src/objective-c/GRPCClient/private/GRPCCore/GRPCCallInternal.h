@@ -16,22 +16,20 @@
  *
  */
 
-#import <GRPCClient/GRPCInterceptor.h>
 #import <GRPCClient/GRPCTransport.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
+@protocol GRPCResponseHandler;
+@class GRPCCallOptions;
 @protocol GRPCChannelFactory;
 
-@interface GRPCCall2Internal : NSObject<GRPCTransport>
-
-- (instancetype)init NS_UNAVAILABLE;
-+ (instancetype)new NS_UNAVAILABLE;
+@interface GRPCCall2Internal : GRPCTransport
 
 - (instancetype)initWithRequestOptions:(GRPCRequestOptions *)requestOptions
-                       responseHandler:(id<GRPCResponseHandler>)responseHandler
-                           callOptions:(GRPCCallOptinos *)callOptions
-                        channelFactory:(GRPCChannelFactory *)channelFactory];
+                           callOptions:(GRPCCallOptions *)callOptions
+                        channelFactory:(id<GRPCChannelFactory>)channelFactory
+                    interceptorManager:(GRPCInterceptorManager*)interceptorManager;
 
 - (void)start;
 

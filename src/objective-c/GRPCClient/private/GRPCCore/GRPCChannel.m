@@ -202,7 +202,7 @@
 
     id<GRPCChannelFactory> factory = channelFactory;
     // For backwards compatibility with users that do not use callOptions.transport
-    if (factory == nil || channelConfiguration.transport == nil) {
+    if (factory == nil || channelConfiguration.host.transport == nil) {
       factory = channelConfiguration.channelFactory;
     }
     _unmanagedChannel = [factory createChannelWithHost:host channelArgs:channelArgs];

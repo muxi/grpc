@@ -18,9 +18,10 @@
 
 #import <Foundation/Foundation.h>
 
-#import "GRPCTransport.h"
-
 NS_ASSUME_NONNULL_BEGIN
+
+typedef char *GRPCTransportId;
+@protocol GRPCInterceptorFactory;
 
 /**
  * Safety remark of a gRPC method as defined in RFC 2616 Section 9.1
@@ -106,7 +107,7 @@ typedef NS_ENUM(NSUInteger, GRPCTransportType) {
  * this array. This parameter should not be modified by any interceptor and will
  * not take effect if done so.
  */
-@property(copy, readonly) NSArray *interceptorFactories;
+@property(copy, readonly) NSArray<id<GRPCInterceptorFactory>> *interceptorFactories;
 
 // OAuth2 parameters. Users of gRPC may specify one of the following two parameters.
 
@@ -203,7 +204,7 @@ typedef NS_ENUM(NSUInteger, GRPCTransportType) {
 
 /**
  * The transport to be used for this call. Users may choose a native transport
- * identifier defined in \a GRPCTransport or provided by a non-native ttransport
+ * identifier defined in \a GRPCTransport or provided by a non-native transport
  * implementation. If the option is left to be NULL, gRPC will use its default
  * transport.
  */
@@ -280,7 +281,7 @@ typedef NS_ENUM(NSUInteger, GRPCTransportType) {
  * this array. This parameter should not be modified by any interceptor and will
  * not take effect if done so.
  */
-@property(copy, readwrite) NSArray *interceptorFactories;
+@property(copy, readwrite) NSArray<id<GRPCInterceptorFactory>> *interceptorFactories;
 
 // OAuth2 parameters. Users of gRPC may specify one of the following two parameters.
 

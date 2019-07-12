@@ -1,27 +1,36 @@
 #import "GRPCTransport.h"
 
-#import "private/GRPCCore/GRPCCore.h"
-
-const GRPCTransportId defaultTransportId = "io.grpc.transport.core";
+static const GRPCTransportId gGRPCCoreId = "io.grpc.transport.core";
+static const GRPCTransportId gGRPCCoreInsecureId = "io.grpc.transport.core.insecure";
 
 const struct GRPCTransportImplList GRPCTransportImplList = {
   .core = gGRPCCoreId,
-  .core_insecure = "io.grpc.transport.core_insecure"};
+  .core_insecure = gGRPCCoreInsecureId};
 
-@interface GRPCTransport ()
-@end
+static const GRPCTransportId gDefaultTransportId = gGRPCCoreId;
 
 static GRPCTransportRegistry *gTransportRegistry = nil;
 static dispatch_once_t initTransportRegistry;
 
+BOOL TransportIdIsEqual(GRPCTransportId lhs, GRPCTransportId rhs) {
+  // Directly comparing pointers works because we require users to use the id provided by each
+  // implementation, not coming up with their own string.
+  return lhs == rhs;
+}
+
+NSUInteger TransportIdHash(GRPCTransportId transportId) {
+  return [NSString stringWithCString:transportId encoding:NSUTF8StringEncoding].hash;
+}
+
 @implementation GRPCTransportRegistry {
-  NSMutableDictionary<NSString, Class> *_registry;
+  NSMutableDictionary<NSString *, id<GRPCTransportFactory>> *_registry;
+  id<GRPCTransportFactory> _defaultFactory;
 }
 
 + (instancetype)sharedInstance {
-  dispatch_once(&inittransportRegistry, ^{
+  dispatch_once(&initTransportRegistry, ^{
     gTransportRegistry = [[GRPCTransportRegistry alloc] init];
-    NSAssert(gTransportRegistry != nil);
+    NSAssert(gTransportRegistry != nil, @"Unable to initialize transport registry.");
     if (gTransportRegistry == nil) {
       NSLog(@"Unable to initialize transport registry.");
       [NSException raise:NSGenericException format:@"Unable to initialize transport registry."];
@@ -31,32 +40,50 @@ static dispatch_once_t initTransportRegistry;
 }
 
 - (void)registerTransportWithId:(GRPCTransportId)transportId factory:(id<GRPCTransportFactory>)factory {
-  NSAssert(_registry[transportId] == nil);
-  if (_registry[transportId] != nil) {
-    NSLog(@"The transport %@ has already been registered.", transportId);
+  NSString *nsTransportId = [NSString stringWithCString:transportId
+                                                       encoding:NSUTF8StringEncoding];
+  NSAssert(_registry[nsTransportId] == nil, @"The transport %@ has already been registered.", nsTransportId);
+  if (_registry[nsTransportId] != nil) {
+    NSLog(@"The transport %@ has already been registered.", nsTransportId);
     return;
   }
-  _registry[id] = factory;
-  if (0 == strcmp(transportId, ))
+  _registry[nsTransportId] = factory;
+
+  // if the default transport is registered, mark it.
+  if (0 == strcmp(transportId, gDefaultTransportId)) {
+    _defaultFactory = factory;
+  }
 }
 
 - (id<GRPCTransportFactory>)getTransportFactoryWithId:(GRPCTransportId)transportId {
   if (transportId == NULL) {
-    transportId = defaultTransportId;
+    if (_defaultFactory == nil) {
+      [NSException raise:NSInvalidArgumentException format:@"Unable to get default transport factory"];
+      return nil;
+    }
+    return _defaultFactory;
   }
-  id<GRPCTransportFactory> transportFactory = _registry[id];
+  NSString *nsTransportId = [NSString stringWithCString:transportId
+                                               encoding:NSUTF8StringEncoding];
+  id<GRPCTransportFactory> transportFactory = _registry[nsTransportId];
   if (transportFactory == nil) {
     // User named a transport id that was not registered with the registry.
-    [NSException raise:NSInvalidArgumentException @"Unable to get transport factory with id %s", transportId];
+    [NSException raise:NSInvalidArgumentException format:@"Unable to get transport factory with id %s", transportId];
     return nil;
   }
   return transportFactory;
 }
 
-BOOL TransportIdIsEqual(GRPCTransportId lhs, GRPCTransportId rhs) {
-  // Directly comparing pointers works because we require users to use the id provided by each
-  // implementation, not coming up with their own string.
-  return lhs == rhs;
-}
+@end
+
+@implementation GRPCTransport
+
+- (void)didReceiveInitialMetadata:(NSDictionary *)initialMetadata {}
+
+- (void)didReceiveData:(id)data {}
+
+- (void)didCloseWithTrailingMetadata:(NSDictionary *)trailingMetadata error:(NSError *)error {}
+
+- (void)didWriteData {}
 
 @end

@@ -22,8 +22,6 @@ NS_ASSUME_NONNULL_BEGIN
 
 #pragma mark Transport ID
 
-typedef char *GRPCTransportId;
-
 extern const struct GRPCTransportImplList {
   const GRPCTransportId core;
   const GRPCTransportId core_insecure;
@@ -31,22 +29,22 @@ extern const struct GRPCTransportImplList {
 
 BOOL TransportIdIsEqual(GRPCTransportId lhs, GRPCTransportId rhs);
 
+NSUInteger TransportIdHash(GRPCTransportId);
+
 #pragma mark Transport and factory
 
 @protocol GRPCInterceptorInterface;
 @protocol GRPCResponseHandler;
+@class GRPCInterceptorManager;
 @class GRPCRequestOptions;
 @class GRPCCallOptions;
-
-@protocol GRPCTransport <GRPCInterceptorInterface>
-
-@end
+@class GRPCTransport;
 
 @protocol GRPCTransportFactory
 
-- (id<GRPCTransport>)createTransportWithRequestOptions:(GRPCRequestOptions *)requestOptions
-                                       responseHandler:(id<GRPCResponseHandler>)responseHandler
-                                           callOptions:(GRPCCallOptions *)callOptions;
+- (GRPCTransport *)createTransportWithManager:(GRPCInterceptorManager *)interceptorManager
+                                 requestOptions:(GRPCRequestOptions *)requestOptions
+                                    callOptions:(GRPCCallOptions *)callOptions;
 
 @end
 
@@ -55,6 +53,10 @@ BOOL TransportIdIsEqual(GRPCTransportId lhs, GRPCTransportId rhs);
 + (instancetype)sharedInstance;
 
 - (void)registerTransportWithId:(GRPCTransportId)id factory:(id<GRPCTransportFactory>)factory;
+
+@end
+
+@interface GRPCTransport : GRPCInterceptor
 
 @end
 

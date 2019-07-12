@@ -6,11 +6,8 @@
 #import "GRPCSecureChannelFactory.h"
 #import "GRPCInsecureChannelFactory.h"
 
-const GRPCTransportId gGRPCCoreId = "io.grpc.transport.core";
-const GRPCTransportId gGRPCCoreInsecureId = "io.grpc.transport.core.insecure";
-
-static GRPCCall2CoreFactory *gGRPCCoreFactory = nil;
-static GRPCCall2CoreInsecureFactory *gGRPCCoreInsecureFactory = nil;
+static GRPCCoreFactory *gGRPCCoreFactory = nil;
+static GRPCCoreInsecureFactory *gGRPCCoreInsecureFactory = nil;
 static dispatch_once_t gInitGRPCCoreFactory;
 
 @implementation GRPCCoreFactory
@@ -23,13 +20,13 @@ static dispatch_once_t gInitGRPCCoreFactory;
 }
 
 + (void)load {
-  [[GRPCTransportRegistry sharedInstance] registerTransportWithId:gGRPCCoreId
+  [[GRPCTransportRegistry sharedInstance] registerTransportWithId:gGRPC
                                                           factory:[self sharedInstance]];
 }
 
-- (id<GRPCTransport>)createTransportWithRequestOptions:(GRPCRequestOptions *)requestOptions
-                                       responseHandler:(id<GRPCResponseHandler>)responseHandler
-                                           callOptions:(GRPCCallOptions *)callOptions {
+- (GRPCTransport *)createTransportWithManager:(GRPCInterceptorManager *)interceptorManager
+                               requestOptions:(GRPCRequestOptions *)requestOptions
+                                  callOptions:(GRPCCallOptions *)callOptions {
   NSError *error;
   GRPCChannelFactory *channelFactory = [GRPCSecureChannelFactory factoryWithPEMRootCertificates:callOptions.PEMRootCertificates
                                                                                      privateKey:callOptions.PEMPrivateKey
@@ -40,9 +37,9 @@ static dispatch_once_t gInitGRPCCoreFactory;
     return nil;
   }
   return [[GRPCCall2Internal alloc] initWithRequestOptions:requestOptions
-                                           responseHandler:(id<GRPCResponseHandler>)responseHandler
                                                callOptions:callOptions
-                                            channelFactory:];
+                                            channelFactory:channelFactory
+                                        interceptorManager:interceptorManager];
 }
 
 @end
@@ -61,13 +58,13 @@ static dispatch_once_t gInitGRPCCoreFactory;
                                                           factory:[self sharedInstance]];
 }
 
-- (id<GRPCTransport>)createTransportWithRequestOptions:(GRPCRequestOptions *)requestOptions
-                                       responseHandler:(id<GRPCResponseHandler>)responseHandler
-                                           callOptions:(GRPCCallOptions *)callOptions {
+- (GRPCTransport *)createTransportWithManager:(GRPCInterceptorManager *)interceptorManager
+                               requestOptions:(GRPCRequestOptions *)requestOptions
+                                  callOptions:(GRPCCallOptions *)callOptions {
   return [[GRPCCall2Internal alloc] initWithRequestOptions:requestOptions
-                                           responseHandler:responseHandler
                                                callOptions:callOptions
-                                            channelFactory:[GRPCInsecureChannelFactory sharedInstance]];
+                                            channelFactory:[GRPCInsecureChannelFactory sharedInstance]
+                                        interceptorManager:interceptorManager];
 }
 
 @end

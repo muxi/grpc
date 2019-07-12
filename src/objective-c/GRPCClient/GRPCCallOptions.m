@@ -24,7 +24,7 @@
 static NSString *const kDefaultServerAuthority = nil;
 static const NSTimeInterval kDefaultTimeout = 0;
 static const BOOL kDefaultFlowControlEnabled = NO;
-static NSArray *const kDefaultInterceptorFactories = nil;
+static NSArray<id<GRPCInterceptorFactory>> *const kDefaultInterceptorFactories = nil;
 static NSDictionary *const kDefaultInitialMetadata = nil;
 static NSString *const kDefaultUserAgentPrefix = nil;
 static const NSUInteger kDefaultResponseSizeLimit = 0;
@@ -64,7 +64,7 @@ static BOOL areObjectsEqual(id obj1, id obj2) {
   NSString *_serverAuthority;
   NSTimeInterval _timeout;
   BOOL _flowControlEnabled;
-  NSArray *_interceptorFactories;
+  NSArray<id<GRPCInterceptorFactory>> *_interceptorFactories;
   NSString *_oauth2AccessToken;
   id<GRPCAuthorizationProtocol> _authTokenProvider;
   NSDictionary *_initialMetadata;
@@ -148,7 +148,7 @@ static BOOL areObjectsEqual(id obj1, id obj2) {
 - (instancetype)initWithServerAuthority:(NSString *)serverAuthority
                                 timeout:(NSTimeInterval)timeout
                      flowControlEnabled:(BOOL)flowControlEnabled
-                   interceptorFactories:(NSArray *)interceptorFactories
+                   interceptorFactories:(NSArray<id<GRPCInterceptorFactory>> *)interceptorFactories
                       oauth2AccessToken:(NSString *)oauth2AccessToken
                       authTokenProvider:(id<GRPCAuthorizationProtocol>)authTokenProvider
                         initialMetadata:(NSDictionary *)initialMetadata
@@ -314,7 +314,7 @@ static BOOL areObjectsEqual(id obj1, id obj2) {
   result ^= _PEMCertificateChain.hash;
   result ^= _hostNameOverride.hash;
   result ^= _transportType;
-  result ^= transportIdHash(_transport);
+  result ^= TransportIdHash(_transport);
   result ^= _logContext.hash;
   result ^= _channelPoolDomain.hash;
   result ^= _channelID;
@@ -460,7 +460,7 @@ static BOOL areObjectsEqual(id obj1, id obj2) {
   _flowControlEnabled = flowControlEnabled;
 }
 
-- (void)setInterceptorFactories:(NSArray *)interceptorFactories {
+- (void)setInterceptorFactories:(NSArray<id<GRPCInterceptorFactory>> *)interceptorFactories {
   _interceptorFactories = interceptorFactories;
 }
 

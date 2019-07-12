@@ -16,10 +16,9 @@
  *
  */
 
-#import <GRPCClient/GRPCInterceptor.h>
 #import <GRPCClient/GRPCTransport.h>
 
-@interface GRPCTransport (Private)
+@interface GRPCTransportRegistry (Private)
 
 - (id<GRPCTransportFactory>)getTransportFactoryWithId:(GRPCTransportId)id;
 

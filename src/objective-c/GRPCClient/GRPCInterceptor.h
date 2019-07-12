@@ -180,9 +180,11 @@ NS_ASSUME_NONNULL_BEGIN
 + (instancetype) new NS_UNAVAILABLE;
 
 - (nullable instancetype)initWithFactories:(NSArray<id<GRPCInterceptorFactory>> *)factories
-                           previousManager:(GRPCInterceptorManager*)previousManager
+                       previousInterceptor:(id<GRPCResponseHandler>)previousInterceptor
                             requestOptions:(GRPCRequestOptions *)requestOptions
                                callOptions:(GRPCCallOptions *)callOptions;
+
+- (void)shutDown;
 
 // Methods to forward GRPCInterceptorInterface calls to the next interceptor
 
@@ -231,10 +233,6 @@ NS_ASSUME_NONNULL_BEGIN
  * properly.
  */
 @interface GRPCInterceptor : NSObject<GRPCInterceptorInterface, GRPCResponseHandler>
-
-- (instancetype)init NS_UNAVAILABLE;
-
-+ (instancetype) new NS_UNAVAILABLE;
 
 /**
  * Initialize the interceptor with the next interceptor in the chain, and provide the dispatch queue

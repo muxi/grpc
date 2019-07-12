@@ -30,25 +30,27 @@
   id<GRPCResponseHandler> _previousInterceptor;
   GRPCInterceptor *_thisInterceptor;
   dispatch_queue_t _dispatchQueue;
-  NSArray<id<GRPCInterceptorFactory>> *_nextFactories;
+  NSArray<id<GRPCInterceptorFactory>> *_factories;
 }
 
 - (instancetype)initWithFactories:(NSArray<id<GRPCInterceptorFactory>> *)factories
-                  previousManager:(GRPCInterceptorManager*)previousManager
+              previousInterceptor:(id<GRPCResponseHandler>)previousInterceptor
                    requestOptions:(GRPCRequestOptions *)requestOptions
                       callOptions:(GRPCCallOptions *)callOptions {
   if ((self = [super init])) {
-    _previousInterceptor = previousManager;
-    NSAssert(factories.count > 0, @"Invalid factories");
-    if (factories.count <= 0) {
-      return nil;
-    }
-    _nextFactories = factories.count == 1 ? nil : [factories subarrayWithRange:NSMakeRange(1, factories.count)];
-      // Generate interceptor
+    _previousInterceptor = previousInterceptor;
+    if (factories.count == 0) {
+      _thisInterceptor = [[[GRPCTransportRegistry sharedInstance] getTransportFactoryWithId:callOptions.transport] createTransportWithManager:self
+                                                                                                                               requestOptions:requestOptions
+                                                                                                                                  callOptions:callOptions];
+    } else {
       _thisInterceptor = [factories[0] createInterceptorWithManager:self
                                                      requestOptions:requestOptions
-                                                    responseHandler:previousManager
+                                                    responseHandler:previousInterceptor
                                                         callOptions:callOptions];
+    }
+    _factories = factories;
+      // Generate interceptor
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 110000 || __MAC_OS_X_VERSION_MAX_ALLOWED >= 101300
     if (@available(iOS 8.0, macOS 10.10, *)) {
       _dispatchQueue = dispatch_queue_create(NULL, dispatch_queue_attr_make_with_qos_class(DISPATCH_QUEUE_SERIAL, QOS_CLASS_DEFAULT, 0));
@@ -72,25 +74,25 @@
 
 - (void)startNextInterceptorWithRequest:(GRPCRequestOptions *)requestOptions
                             callOptions:(GRPCCallOptions *)callOptions {
-  NSAssert(_nextInterceptor == nil, @"Starting the next interceptor twice");
+  NSAssert(_nextInterceptor == nil, @"Starting the next interceptor more than once");
+                              NSAssert(_factories.count > 0, @"Interceptor manager of transport cannot start next interceptor");
   if (_nextInterceptor != nil) {
+    NSLog(@"Starting the next interceptor more than once");
     return;
   }
-                              if (_nextFactories == nil) {
-                                _nextInterceptor = [[[GRPCTransportRegistry sharedInstance] getTransportFactoryWithId:callOptions.transport] createTransportWithRequestOptions:requestOptions
-                                                                                                                                                               responseHandler:self
-                                                                                                                                                                   callOptions:callOptions];
-                                NSAssert(_nextInterceptor != nil);
+                              if (_factories.count == 0) {
+                                [NSException raise:NSGenericException format:@"Interceptor manager of transport cannot start next interceptor"];
+                                return;
+                              }
+                              _nextInterceptor = [[GRPCInterceptorManager alloc] initWithFactories:[_factories subarrayWithRange:NSMakeRange(1, _factories.count)]
+                                                                                   previousInterceptor:self
+                                                                                    requestOptions:requestOptions
+                                                                                       callOptions:callOptions];
+                                NSAssert(_nextInterceptor != nil, @"Falied to create transport");
                                 if (_nextInterceptor == nil) {
                                   NSLog(@"Failed to create transport");
                                   return;
                                 }
-                              } else {
-                                _nextInterceptor = [[GRPCInterceptorManager alloc] initWithFactories:_nextFactories
-                                                                                 previousManager:self
-                                                                                  requestOptions:requestOptions
-                                                                                     callOptions:callOptions];
-                              }
 
                               id<GRPCInterceptorInterface> copiedNextInterceptor = _nextInterceptor;
     dispatch_async(copiedNextInterceptor.dispatchQueue, ^{
@@ -142,17 +144,19 @@
 // Methods to forward GRPCResponseHandler callbacks to the previous object
 
 /** Forward initial metadata to the previous interceptor in the chain */
-- (void)forwardPreviousInterceptorWithInitialMetadata:(nullable NSDictionary *)initialMetadata {
+- (void)forwardPreviousInterceptorWithInitialMetadata:(NSDictionary *)initialMetadata {
   NSAssert(_previousInterceptor != nil,
            @"The interceptor has been closed; cannot forward more response to the previous"
            "interceptor");
   if (_previousInterceptor == nil) {
     return;
   }
-  id<GRPCResponseHandler> copiedPreviousInterceptor = _previousInterceptor;
-  dispatch_async(copiedPreviousInterceptor.dispatchQueue, ^{
-    [copiedPreviousInterceptor didReceiveInitialMetadata:initialMetadata];
-  });
+  if ([_previousInterceptor respondsToSelector:@selector(didReceiveInitialMetadata:)]) {
+    id<GRPCResponseHandler> copiedPreviousInterceptor = _previousInterceptor;
+    dispatch_async(copiedPreviousInterceptor.dispatchQueue, ^{
+      [copiedPreviousInterceptor didReceiveInitialMetadata:initialMetadata];
+    });
+  }
 }
 
 /** Forward a received message to the previous interceptor in the chain */
@@ -160,23 +164,39 @@
   NSAssert(_previousInterceptor != nil,
            @"The interceptor has been closed; cannot forward more response to the previous"
            "interceptor");
-  id<GRPCResponseHandler> copiedPreviousInterceptor = _previousInterceptor;
-  dispatch_async(copiedPreviousInterceptor.dispatchQueue, ^{
-    [copiedPreviousInterceptor didReceiveData:data];
-  });
+  if (_previousInterceptor == nil) {
+    return;
+  }
+  // For backwards compatibility with didReceiveRawMessage, if the user provided a response handler
+  // that handles didReceiveRawMesssage, we issue to that method instead
+  if ([_previousInterceptor respondsToSelector:@selector(didReceiveRawMessage:)]) {
+    id<GRPCResponseHandler> copiedPreviousInterceptor = _previousInterceptor;
+    dispatch_async(copiedPreviousInterceptor.dispatchQueue, ^{
+      [copiedPreviousInterceptor didReceiveRawMessage:data];
+    });
+  } else if ([_previousInterceptor respondsToSelector:@selector(didReceiveData:)]) {
+    id<GRPCResponseHandler> copiedPreviousInterceptor = _previousInterceptor;
+    dispatch_async(copiedPreviousInterceptor.dispatchQueue, ^{
+      [copiedPreviousInterceptor didReceiveData:data];
+    });
+  }
 }
 
 /** Forward call close and trailing metadata to the previous interceptor in the chain */
-- (void)forwardPreviousInterceptorCloseWithTrailingMetadata:
-            (nullable NSDictionary *)trailingMetadata
-                                                      error:(nullable NSError *)error {
-                                                        NSAssert(_previousInterceptor != nil,
-                                                                 @"The interceptor has been closed; cannot forward more response to the previous"
-                                                                 "interceptor");
-                                                        id<GRPCResponseHandler> copiedPreviousInterceptor = _previousInterceptor;
-                                                        dispatch_async(copiedPreviousInterceptor.dispatchQueue, ^{
-                                                          [copiedPreviousInterceptor didCloseWithTrailingMetadata:trailingMetadata error:error];
-                                                        });
+  - (void)forwardPreviousInterceptorCloseWithTrailingMetadata:(NSDictionary *)trailingMetadata
+error:(nullable NSError *)error {
+  NSAssert(_previousInterceptor != nil,
+           @"The interceptor has been closed; cannot forward more response to the previous"
+           "interceptor");
+  if (_previousInterceptor == nil) {
+    return;
+  }
+  if ([_previousInterceptor respondsToSelector:@selector(didCloseWithTrailingMetadata:error:)]) {
+    id<GRPCResponseHandler> copiedPreviousInterceptor = _previousInterceptor;
+    dispatch_async(copiedPreviousInterceptor.dispatchQueue, ^{
+      [copiedPreviousInterceptor didCloseWithTrailingMetadata:trailingMetadata error:error];
+    });
+  }
 }
 
 /** Forward write completion to the previous interceptor in the chain */
@@ -184,10 +204,15 @@
   NSAssert(_previousInterceptor != nil,
            @"The interceptor has been closed; cannot forward more response to the previous"
            "interceptor");
-  id<GRPCResponseHandler> copiedPreviousInterceptor = _previousInterceptor;
-  dispatch_async(copiedPreviousInterceptor.dispatchQueue, ^{
-    [copiedPreviousInterceptor didWriteData];
-  });
+  if (_previousInterceptor == nil) {
+    return;
+  }
+  if ([_previousInterceptor respondsToSelector:@selector(didWriteData)]) {
+    id<GRPCResponseHandler> copiedPreviousInterceptor = _previousInterceptor;
+    dispatch_async(copiedPreviousInterceptor.dispatchQueue, ^{
+      [copiedPreviousInterceptor didWriteData];
+    });
+  }
 }
 
   - (dispatch_queue_t)dispatchQueue {

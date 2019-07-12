@@ -27,4 +27,8 @@ extern const GRPCTransportId gGRPCCoreInsecureId;
 
 @end
 
+@interface GRPCCoreInsecureFactory : NSObject<GRPCTransportFactory>
+
+@end
+
 NS_ASSUME_NONNULL_END

@@ -19,8 +19,7 @@
 #import "GRPCCall.h"
 #import "GRPCCallOptions.h"
 #import "GRPCInterceptor.h"
-#import "private/GRPCCallCore.h"
-#import "private/GRPCCallImplementation.h"
+#import "private/GRPCCore/GRPCCoreFactory.h"
 
 #include <grpc/support/time.h>
 
@@ -109,36 +108,20 @@ NSString *const kGRPCTrailersKey = @"io.grpc.TrailersKey";
 
 - (void)start {
   // Initialize the interceptor chain
-  id<GRPCInterceptorInterface> nextInterceptor = nil;
-  if (interceptorFactories.count > 0) {
-    GRPCInterceptorManager *nextManager = [[GRPCInterceptorManager alloc] initWithNextFactories:interceptorFactories.count == 1 ? nil : [interceptorFactories subarrayWithRange:NSMakeRange(1, interceptorFactories.count)]
-                                                                            previousInterceptor:responseHandler];
-    nextInterceptor = [interceptorFactories[0] createInterceptorWithManager:nextManager];
-    [nextManager setInterceptorReference:nextInterceptor];
-  } else {
-    nextInterceptor = [[[GRPCTransportRegistry sharedInstance] getTransportFactoryWithId:callOptions.transport] createTransportWithRequestOptions:_requestOptions
-                                                                                                                                   responseHandler:_responseHandler
-                                                                                                                                       callOptions:_actualCallOptions];
-    NSAssert(_nextInterceptor != nil);
-    if (_nextInterceptor == nil) {
-      NSLog(@"Failed to create transport");
-      return;
-    }
-  }
-  _firstInterceptor = nextInterceptor;
-
+  NSArray<id<GRPCInterceptorFactory>> *interceptorFactories = _actualCallOptions.interceptorFactories;
+  GRPCInterceptorManager *nextManager = [[GRPCInterceptorManager alloc] initWithFactories:interceptorFactories
+                                                                      previousInterceptor:_responseHandler
+                                                                           requestOptions:_requestOptions
+                                                                              callOptions:_actualCallOptions];
+  _firstInterceptor = nextManager;
   
   id<GRPCInterceptorInterface> copiedFirstInterceptor;
   @synchronized(self) {
     copiedFirstInterceptor = _firstInterceptor;
   }
-  GRPCRequestOptions *requestOptions = [_requestOptions copy];
-  GRPCCallOptions *callOptions = [_actualCallOptions copy];
-  if ([copiedFirstInterceptor respondsToSelector:@selector(startWithRequestOptions:callOptions:)]) {
-    dispatch_async(copiedFirstInterceptor.requestDispatchQueue, ^{
-      [copiedFirstInterceptor startWithRequestOptions:requestOptions callOptions:callOptions];
-    });
-  }
+  dispatch_async(copiedFirstInterceptor.dispatchQueue, ^{
+    [copiedFirstInterceptor start];
+  });
 }
 
 - (void)cancel {
@@ -146,11 +129,9 @@ NSString *const kGRPCTrailersKey = @"io.grpc.TrailersKey";
   @synchronized(self) {
     copiedFirstInterceptor = _firstInterceptor;
   }
-  if ([copiedFirstInterceptor respondsToSelector:@selector(cancel)]) {
-    dispatch_async(copiedFirstInterceptor.requestDispatchQueue, ^{
-      [copiedFirstInterceptor cancel];
-    });
-  }
+  dispatch_async(copiedFirstInterceptor.dispatchQueue, ^{
+    [copiedFirstInterceptor cancel];
+  });
 }
 
 - (void)writeData:(id)data {
@@ -158,11 +139,9 @@ NSString *const kGRPCTrailersKey = @"io.grpc.TrailersKey";
   @synchronized(self) {
     copiedFirstInterceptor = _firstInterceptor;
   }
-  if ([copiedFirstInterceptor respondsToSelector:@selector(writeData:)]) {
-    dispatch_async(copiedFirstInterceptor.requestDispatchQueue, ^{
-      [copiedFirstInterceptor writeData:data];
-    });
-  }
+  dispatch_async(copiedFirstInterceptor.dispatchQueue, ^{
+    [copiedFirstInterceptor writeData:data];
+  });
 }
 
 - (void)finish {
@@ -170,11 +149,9 @@ NSString *const kGRPCTrailersKey = @"io.grpc.TrailersKey";
   @synchronized(self) {
     copiedFirstInterceptor = _firstInterceptor;
   }
-  if ([copiedFirstInterceptor respondsToSelector:@selector(finish)]) {
-    dispatch_async(copiedFirstInterceptor.requestDispatchQueue, ^{
-      [copiedFirstInterceptor finish];
-    });
-  }
+  dispatch_async(copiedFirstInterceptor.dispatchQueue, ^{
+    [copiedFirstInterceptor finish];
+  });
 }
 
 - (void)receiveNextMessages:(NSUInteger)numberOfMessages {
@@ -182,11 +159,9 @@ NSString *const kGRPCTrailersKey = @"io.grpc.TrailersKey";
   @synchronized(self) {
     copiedFirstInterceptor = _firstInterceptor;
   }
-  if ([copiedFirstInterceptor respondsToSelector:@selector(receiveNextMessages:)]) {
-    dispatch_async(copiedFirstInterceptor.requestDispatchQueue, ^{
-      [copiedFirstInterceptor receiveNextMessages:numberOfMessages];
-    });
-  }
+  dispatch_async(copiedFirstInterceptor.dispatchQueue, ^{
+    [copiedFirstInterceptor receiveNextMessages:numberOfMessages];
+  });
 }
 
 @end

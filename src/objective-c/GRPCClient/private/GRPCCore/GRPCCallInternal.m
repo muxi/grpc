@@ -28,8 +28,8 @@
   GRPCRequestOptions *_requestOptions;
   /** Options for the call. */
   GRPCCallOptions *_callOptions;
-  /** The handler of responses. */
-  id<GRPCResponseHandler> _handler;
+  /** The interceptor manager to process responses of responses. */
+  GRPCInterceptorManager *_interceptorManager;
 
   /**
    * Make use of legacy GRPCCall to make calls. Nullified when call is finished.
@@ -50,13 +50,13 @@
   /** The number of pending messages receiving requests. */
   NSUInteger _pendingReceiveNextMessages;
   /** The factory to be used for creating channel. */
-  GRPCChannelFactory *_channelFactory;
+  id<GRPCChannelFactory> _channelFactory;
 }
 
-- (instancetype)initWithRequestOptions:requestOptions
-                       responseHandler:(id<GRPCResponseHandler>)responseHandler
-                           callOptions:callOptions
-                        channelFactory:(GRPCChannelFactory *)channelFactory {
+  - (instancetype)initWithRequestOptions:(GRPCRequestOptions *)requestOptions
+                             callOptions:(GRPCCallOptions *)callOptions
+                          channelFactory:(id<GRPCChannelFactory>)channelFactory
+                      interceptorManager:(GRPCInterceptorManager *)interceptorManager {
   NSAssert(requestOptions.host.length != 0 && requestOptions.path.length != 0,
            @"Neither host nor path can be nil.");
   NSAssert(requestOptions.safety <= GRPCCallSafetyCacheableRequest, @"Invalid call safety value.");
@@ -84,9 +84,9 @@
     }
     _pipe = [GRXBufferedPipe pipe];
       _requestOptions = [requestOptions copy];
-      _handler = responseHandler;
       _callOptions = [callOptions copy];
       _channelFactory = channelFactory;
+      _interceptorManager = interceptorManager;
   }
   return self;
 }
@@ -117,7 +117,7 @@
                             channelFactory:_channelFactory
                                  writeDone:^{
                                    @synchronized(self) {
-                                     if (self->_handler) {
+                                     if (self->_interceptorManager) {
                                        [self issueDidWriteData];
                                      }
                                    }
@@ -135,7 +135,7 @@
 
   void (^valueHandler)(id value) = ^(id value) {
     @synchronized(self) {
-      if (self->_handler) {
+      if (self->_interceptorManager) {
         if (!self->_initialMetadataPublished) {
           self->_initialMetadataPublished = YES;
           [self issueInitialMetadata:self->_call.responseHeaders];
@@ -148,7 +148,7 @@
   };
   void (^completionHandler)(NSError *errorOrNil) = ^(NSError *errorOrNil) {
     @synchronized(self) {
-      if (self->_handler) {
+      if (self->_interceptorManager) {
         if (!self->_initialMetadataPublished) {
           self->_initialMetadataPublished = YES;
           [self issueInitialMetadata:self->_call.responseHeaders];
@@ -184,20 +184,15 @@
     _call = nil;
     _pipe = nil;
 
-    if ([_handler respondsToSelector:@selector(didCloseWithTrailingMetadata:error:)]) {
-      id<GRPCResponseHandler> copiedHandler = _handler;
-      _handler = nil;
-      dispatch_async(copiedHandler.dispatchQueue, ^{
-        [copiedHandler didCloseWithTrailingMetadata:nil
-                                              error:[NSError errorWithDomain:kGRPCErrorDomain
-                                                                        code:GRPCErrorCodeCancelled
-                                                                    userInfo:@{
-                                                                      NSLocalizedDescriptionKey :
-                                                                          @"Canceled by app"
-                                                                    }]];
-      });
-    } else {
-      _handler = nil;
+    if (_interceptorManager != nil) {
+      [_interceptorManager forwardPreviousInterceptorCloseWithTrailingMetadata:nil
+                                                                         error:[NSError errorWithDomain:kGRPCErrorDomain
+                                                                                                   code:GRPCErrorCodeCancelled
+                                                                                               userInfo:@{
+                                                                                                          NSLocalizedDescriptionKey :
+                                                                                                            @"Canceled by app"
+                                                                                                          }]];
+      [_interceptorManager shutdown];
     }
   }
   [copiedCall cancel];
@@ -248,59 +243,24 @@
 }
 
 - (void)issueInitialMetadata:(NSDictionary *)initialMetadata {
-  @synchronized(self) {
-    if (initialMetadata != nil &&
-        [_handler respondsToSelector:@selector(didReceiveInitialMetadata:)]) {
-      id<GRPCResponseHandler> copiedHandler = _handler;
-      dispatch_async(_handler.dispatchQueue, ^{
-        [copiedHandler didReceiveInitialMetadata:initialMetadata];
-      });
-    }
+  if (initialMetadata != nil) {
+    [_interceptorManager forwardPreviousInterceptorWithInitialMetadata:initialMetadata];
   }
 }
 
 - (void)issueMessage:(id)message {
-  @synchronized(self) {
-    if (message != nil) {
-      if ([_handler respondsToSelector:@selector(didReceiveData:)]) {
-        id<GRPCResponseHandler> copiedHandler = _handler;
-        dispatch_async(_handler.dispatchQueue, ^{
-          [copiedHandler didReceiveData:message];
-        });
-      } else if ([_handler respondsToSelector:@selector(didReceiveRawMessage:)]) {
-        id<GRPCResponseHandler> copiedHandler = _handler;
-        dispatch_async(_handler.dispatchQueue, ^{
-          [copiedHandler didReceiveRawMessage:message];
-        });
-      }
-    }
+  if (message != nil) {
+    [_interceptorManager forwardPreviousInterceptorWithData:message];
   }
 }
 
 - (void)issueClosedWithTrailingMetadata:(NSDictionary *)trailingMetadata error:(NSError *)error {
-  @synchronized(self) {
-    if ([_handler respondsToSelector:@selector(didCloseWithTrailingMetadata:error:)]) {
-      id<GRPCResponseHandler> copiedHandler = _handler;
-      // Clean up _handler so that no more responses are reported to the handler.
-      _handler = nil;
-      dispatch_async(copiedHandler.dispatchQueue, ^{
-        [copiedHandler didCloseWithTrailingMetadata:trailingMetadata error:error];
-      });
-    } else {
-      _handler = nil;
-    }
-  }
+  [_interceptorManager forwardPreviousInterceptorCloseWithTrailingMetadata:trailingMetadata
+                                                                     error:error];
 }
 
 - (void)issueDidWriteData {
-  @synchronized(self) {
-    if (_callOptions.flowControlEnabled && [_handler respondsToSelector:@selector(didWriteData)]) {
-      id<GRPCResponseHandler> copiedHandler = _handler;
-      dispatch_async(copiedHandler.dispatchQueue, ^{
-        [copiedHandler didWriteData];
-      });
-    }
-  }
+  [_interceptorManager forwardPreviousInterceptorDidWriteData];
 }
 
 - (void)receiveNextMessages:(NSUInteger)numberOfMessages {
