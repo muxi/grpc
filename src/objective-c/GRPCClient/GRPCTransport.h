@@ -23,7 +23,7 @@ NS_ASSUME_NONNULL_BEGIN
 #pragma mark Transport ID
 
 extern const struct GRPCTransportImplList {
-  const GRPCTransportId core;
+  const GRPCTransportId core_secure;
   const GRPCTransportId core_insecure;
 } GRPCTransportImplList;
 
@@ -40,7 +40,7 @@ NSUInteger TransportIdHash(GRPCTransportId);
 @class GRPCCallOptions;
 @class GRPCTransport;
 
-@protocol GRPCTransportFactory
+@protocol GRPCTransportFactory <NSObject>
 
 - (GRPCTransport *)createTransportWithManager:(GRPCInterceptorManager *)interceptorManager
                                  requestOptions:(GRPCRequestOptions *)requestOptions

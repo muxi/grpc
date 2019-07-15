@@ -26,6 +26,75 @@
 NSString *const kGRPCHeadersKey = @"io.grpc.HeadersKey";
 NSString *const kGRPCTrailersKey = @"io.grpc.TrailersKey";
 
+/**
+ * The response dispatcher creates its own serial dispatch queue and target the queue to the
+ * dispatch queue of a user provided response handler. It removes the requirement of having to use
+ * serial dispatch queue in the user provided response handler.
+ */
+@interface GRPCResponseDispatcher : NSObject <GRPCResponseHandler>
+
+- (nullable instancetype)initWithResponseHandler:(id<GRPCResponseHandler>)responseHandler;
+
+@end
+
+@implementation GRPCResponseDispatcher {
+  id<GRPCResponseHandler> _responseHandler;
+  dispatch_queue_t _dispatchQueue;
+}
+
+- (instancetype)initWithResponseHandler:(id<GRPCResponseHandler>)responseHandler {
+  if ((self = [super init])) {
+    _responseHandler = responseHandler;
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 110000 || __MAC_OS_X_VERSION_MAX_ALLOWED >= 101300
+    if (@available(iOS 8.0, macOS 10.10, *)) {
+      _dispatchQueue = dispatch_queue_create(NULL, dispatch_queue_attr_make_with_qos_class(DISPATCH_QUEUE_SERIAL, QOS_CLASS_DEFAULT, 0));
+    } else {
+#else
+    {
+#endif
+      _dispatchQueue = dispatch_queue_create(NULL, DISPATCH_QUEUE_SERIAL);
+    }
+    dispatch_set_target_queue(_dispatchQueue, _responseHandler.dispatchQueue);
+  }
+
+  return self;
+}
+
+  - (dispatch_queue_t)dispatchQueue {
+    return _dispatchQueue;
+  }
+
+  - (void)didReceiveInitialMetadata:(nullable NSDictionary *)initialMetadata {
+    if ([_responseHandler respondsToSelector:@selector(didReceiveInitialMetadata:)]) {
+      [_responseHandler didReceiveInitialMetadata:initialMetadata];
+    }
+  }
+
+  - (void)didReceiveData:(id)data {
+    // For backwards compatibility with didReceiveRawMessage, if the user provided a response handler
+    // that handles didReceiveRawMesssage, we issue to that method instead
+    if ([_responseHandler respondsToSelector:@selector(didReceiveRawMessage:)]) {
+      [_responseHandler didReceiveRawMessage:data];
+    } else if ([_responseHandler respondsToSelector:@selector(didReceiveData:)]) {
+      [_responseHandler didReceiveData:data];
+    }
+  }
+
+  - (void)didCloseWithTrailingMetadata:(nullable NSDictionary *)trailingMetadata
+error:(nullable NSError *)error {
+  if ([_responseHandler respondsToSelector:@selector(didCloseWithTrailingMetadata:error:)]) {
+    [_responseHandler didCloseWithTrailingMetadata:trailingMetadata error:error];
+  }
+}
+
+  - (void)didWriteData {
+    if ([_responseHandler respondsToSelector:@selector(didWriteData)]) {
+      [_responseHandler didWriteData];
+    }
+  }
+
+@end
+
 @implementation GRPCRequestOptions
 
 - (instancetype)initWithHost:(NSString *)host path:(NSString *)path safety:(GRPCCallSafety)safety {
@@ -109,8 +178,9 @@ NSString *const kGRPCTrailersKey = @"io.grpc.TrailersKey";
 - (void)start {
   // Initialize the interceptor chain
   NSArray<id<GRPCInterceptorFactory>> *interceptorFactories = _actualCallOptions.interceptorFactories;
+  GRPCResponseDispatcher *dispatcher = [[GRPCResponseDispatcher alloc] initWithResponseHandler:_responseHandler];
   GRPCInterceptorManager *nextManager = [[GRPCInterceptorManager alloc] initWithFactories:interceptorFactories
-                                                                      previousInterceptor:_responseHandler
+                                                                      previousInterceptor:dispatcher
                                                                            requestOptions:_requestOptions
                                                                               callOptions:_actualCallOptions];
   _firstInterceptor = nextManager;

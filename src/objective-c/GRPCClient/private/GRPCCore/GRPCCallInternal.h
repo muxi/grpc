@@ -28,7 +28,6 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (instancetype)initWithRequestOptions:(GRPCRequestOptions *)requestOptions
                            callOptions:(GRPCCallOptions *)callOptions
-                        channelFactory:(id<GRPCChannelFactory>)channelFactory
                     interceptorManager:(GRPCInterceptorManager*)interceptorManager;
 
 - (void)start;

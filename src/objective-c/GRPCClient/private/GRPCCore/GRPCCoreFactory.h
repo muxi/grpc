@@ -20,14 +20,20 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-extern const GRPCTransportId gGRPCCoreId;
-extern const GRPCTransportId gGRPCCoreInsecureId;
+@protocol GRPCChannelFactory;
+@protocol GRPCCallOptions;
 
-@interface GRPCCoreFactory : NSObject<GRPCTransportFactory>
+@protocol GRPCCoreTransportFactory <GRPCTransportFactory>
+
+- (nullable id<GRPCChannelFactory>)createCoreChannelFactoryWithCallOptions:(GRPCCallOptions *)callOptions;
 
 @end
 
-@interface GRPCCoreInsecureFactory : NSObject<GRPCTransportFactory>
+@interface GRPCCoreSecureFactory : NSObject<GRPCCoreTransportFactory>
+
+@end
+
+@interface GRPCCoreInsecureFactory : NSObject<GRPCCoreTransportFactory>
 
 @end
 

@@ -19,6 +19,7 @@
 #import "GRPCCallInternal.h"
 
 #import <GRPCClient/GRPCCall.h>
+#import <GRPCClient/GRPCInterceptor.h>
 #import <RxLibrary/GRXBufferedPipe.h>
 
 #import "GRPCCall+V2API.h"
@@ -49,13 +50,10 @@
   BOOL _finished;
   /** The number of pending messages receiving requests. */
   NSUInteger _pendingReceiveNextMessages;
-  /** The factory to be used for creating channel. */
-  id<GRPCChannelFactory> _channelFactory;
 }
 
   - (instancetype)initWithRequestOptions:(GRPCRequestOptions *)requestOptions
                              callOptions:(GRPCCallOptions *)callOptions
-                          channelFactory:(id<GRPCChannelFactory>)channelFactory
                       interceptorManager:(GRPCInterceptorManager *)interceptorManager {
   NSAssert(requestOptions.host.length != 0 && requestOptions.path.length != 0,
            @"Neither host nor path can be nil.");
@@ -85,7 +83,6 @@
     _pipe = [GRXBufferedPipe pipe];
       _requestOptions = [requestOptions copy];
       _callOptions = [callOptions copy];
-      _channelFactory = channelFactory;
       _interceptorManager = interceptorManager;
   }
   return self;
@@ -114,7 +111,6 @@
                                 callSafety:_requestOptions.safety
                             requestsWriter:_pipe
                                callOptions:_callOptions
-                            channelFactory:_channelFactory
                                  writeDone:^{
                                    @synchronized(self) {
                                      if (self->_interceptorManager) {
@@ -192,7 +188,7 @@
                                                                                                           NSLocalizedDescriptionKey :
                                                                                                             @"Canceled by app"
                                                                                                           }]];
-      [_interceptorManager shutdown];
+      [_interceptorManager shutDown];
     }
   }
   [copiedCall cancel];

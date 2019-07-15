@@ -18,8 +18,6 @@
 
 #import <GRPCClient/GRPCCallOptions.h>
 
-#import "GRPCChannelFactory.h"
-
 NS_ASSUME_NONNULL_BEGIN
 
 @protocol GRPCChannel;
@@ -45,8 +43,7 @@ NS_ASSUME_NONNULL_BEGIN
  * Initialize with an actual channel object \a channel and a reference to the channel pool.
  */
 - (nullable instancetype)initWithChannelConfiguration:
-    (GRPCChannelConfiguration *)channelConfiguration
-                                       channelFactory:(id<GRPCChannelFactory>)channelFactory;
+(GRPCChannelConfiguration *)channelConfiguration;
 
 /**
  * Create a GRPCWrappedCall object (grpc_call) from this channel. If channel is disconnected, get a
@@ -90,8 +87,7 @@ NS_ASSUME_NONNULL_BEGIN
  * Return a channel with a particular configuration. The channel may be a cached channel.
  */
 - (nullable GRPCPooledChannel *)channelWithHost:(NSString *)host
-                                    callOptions:(GRPCCallOptions *)callOptions
-                                 channelFactory:(id<GRPCChannelFactory>)_channelFactory;
+                                    callOptions:(GRPCCallOptions *)callOptions;
 
 /**
  * Disconnect all channels in this pool.

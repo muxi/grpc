@@ -53,13 +53,6 @@ static NSString *const kBearerPrefix = @"Bearer ";
 
 - (void)receiveNextMessages:(NSUInteger)numberOfMessages;
 
-- (instancetype)initWithHost:(NSString *)host
-                        path:(NSString *)path
-                  callSafety:(GRPCCallSafety)safety
-              requestsWriter:(GRXWriter *)requestsWriter
-                 callOptions:(GRPCCallOptions *)callOptions
-                   writeDone:(void (^)(void))writeDone;
-
 @end
 
 // The following methods of a C gRPC call object aren't reentrant, and thus
@@ -132,9 +125,6 @@ static NSString *const kBearerPrefix = @"Bearer ";
 
   // Indicate pending read message request from user.
   NSUInteger _pendingReceiveNextMessages;
-
-  // Factory to generate channel
-  id<GRPCChannelFactory> _channelFactory;
 }
 
 @synthesize state = _state;
@@ -217,7 +207,6 @@ static NSString *const kBearerPrefix = @"Bearer ";
     _path = [path copy];
     _callSafety = safety;
     _callOptions = [callOptions copy];
-    _channelFactory = channelFactory;
 
     // Serial queue to invoke the non-reentrant methods of the grpc_call object.
     _callQueue = dispatch_queue_create("io.grpc.call", DISPATCH_QUEUE_SERIAL);
@@ -569,7 +558,7 @@ static NSString *const kBearerPrefix = @"Bearer ";
         [[GRXConcurrentWriteable alloc] initWithWriteable:writeable dispatchQueue:_responseQueue];
 
     GRPCPooledChannel *channel =
-    [[GRPCChannelPool sharedInstance] channelWithHost:_host callOptions:_callOptions channelFactory:_channelFactory];
+    [[GRPCChannelPool sharedInstance] channelWithHost:_host callOptions:_callOptions];
     _wrappedCall = [channel wrappedCallWithPath:_path
                                 completionQueue:[GRPCCompletionQueue completionQueue]
                                     callOptions:_callOptions];

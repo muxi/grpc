@@ -6,40 +6,42 @@
 #import "GRPCSecureChannelFactory.h"
 #import "GRPCInsecureChannelFactory.h"
 
-static GRPCCoreFactory *gGRPCCoreFactory = nil;
+static GRPCCoreSecureFactory *gGRPCCoreSecureFactory = nil;
 static GRPCCoreInsecureFactory *gGRPCCoreInsecureFactory = nil;
 static dispatch_once_t gInitGRPCCoreFactory;
 
-@implementation GRPCCoreFactory
+@implementation GRPCCoreSecureFactory
 
 + (instancetype)sharedInstance {
   dispatch_once(&gInitGRPCCoreFactory, ^{
-    gGRPCCoreFactory = [[GRPCCoreFactory alloc] init];
+    gGRPCCoreSecureFactory = [[GRPCCoreSecureFactory alloc] init];
   });
-  return gGRPCCoreFactory;
+  return gGRPCCoreSecureFactory;
 }
 
 + (void)load {
-  [[GRPCTransportRegistry sharedInstance] registerTransportWithId:gGRPC
+  [[GRPCTransportRegistry sharedInstance] registerTransportWithId:GRPCTransportImplList.core_secure
                                                           factory:[self sharedInstance]];
 }
 
 - (GRPCTransport *)createTransportWithManager:(GRPCInterceptorManager *)interceptorManager
                                requestOptions:(GRPCRequestOptions *)requestOptions
                                   callOptions:(GRPCCallOptions *)callOptions {
-  NSError *error;
-  GRPCChannelFactory *channelFactory = [GRPCSecureChannelFactory factoryWithPEMRootCertificates:callOptions.PEMRootCertificates
-                                                                                     privateKey:callOptions.PEMPrivateKey
-                                                                                      certChain:callOptions.PEMCertificateChain error:&error];
-  NSAssert(error == nil);
-  if (error) {
-    NSLog(@"Failed to create channel factory: %@", error);
-    return nil;
-  }
   return [[GRPCCall2Internal alloc] initWithRequestOptions:requestOptions
                                                callOptions:callOptions
-                                            channelFactory:channelFactory
                                         interceptorManager:interceptorManager];
+}
+
+- (id<GRPCChannelFactory>)createCoreChannelFactoryWithCallOptions:(GRPCCallOptions *)callOptions {
+  NSError *error;
+  id<GRPCChannelFactory> factory = [GRPCSecureChannelFactory factoryWithPEMRootCertificates:callOptions.PEMRootCertificates
+                                                                                 privateKey:callOptions.PEMPrivateKey
+                                                                                  certChain:callOptions.PEMCertificateChain error:&error];
+  if (error != nil) {
+    NSLog(@"Unable to create secure channel factory");
+    return nil;
+  }
+  return factory;
 }
 
 @end
@@ -54,7 +56,7 @@ static dispatch_once_t gInitGRPCCoreFactory;
 }
 
 + (void)load {
-  [[GRPCTransportRegistry sharedInstance] registerTransportWithId:gGRPCCoreInsecureId
+  [[GRPCTransportRegistry sharedInstance] registerTransportWithId:GRPCTransportImplList.core_insecure
                                                           factory:[self sharedInstance]];
 }
 
@@ -63,20 +65,11 @@ static dispatch_once_t gInitGRPCCoreFactory;
                                   callOptions:(GRPCCallOptions *)callOptions {
   return [[GRPCCall2Internal alloc] initWithRequestOptions:requestOptions
                                                callOptions:callOptions
-                                            channelFactory:[GRPCInsecureChannelFactory sharedInstance]
                                         interceptorManager:interceptorManager];
 }
 
-@end
-
-@interface gGRPCCoreInsecureFactory : NSObject<GRPCTransportFactory>
-
-+ (instancetype)sharedInstance;
-
-@end
-
-@implementation GRPCCoreFactory
-
-@end
+- (id<GRPCChannelFactory>)createCoreChannelFactoryWithCallOptions:(GRPCCallOptions *)callOptions {
+  return [GRPCInsecureChannelFactory sharedInstance];
+}
 
 @end

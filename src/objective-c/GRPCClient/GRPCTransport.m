@@ -1,13 +1,13 @@
 #import "GRPCTransport.h"
 
-static const GRPCTransportId gGRPCCoreId = "io.grpc.transport.core";
+static const GRPCTransportId gGRPCCoreSecureId = "io.grpc.transport.core.secure";
 static const GRPCTransportId gGRPCCoreInsecureId = "io.grpc.transport.core.insecure";
 
 const struct GRPCTransportImplList GRPCTransportImplList = {
-  .core = gGRPCCoreId,
+  .core_secure = gGRPCCoreSecureId,
   .core_insecure = gGRPCCoreInsecureId};
 
-static const GRPCTransportId gDefaultTransportId = gGRPCCoreId;
+static const GRPCTransportId gDefaultTransportId = gGRPCCoreSecureId;
 
 static GRPCTransportRegistry *gTransportRegistry = nil;
 static dispatch_once_t initTransportRegistry;

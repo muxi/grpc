@@ -145,74 +145,47 @@
 
 /** Forward initial metadata to the previous interceptor in the chain */
 - (void)forwardPreviousInterceptorWithInitialMetadata:(NSDictionary *)initialMetadata {
-  NSAssert(_previousInterceptor != nil,
-           @"The interceptor has been closed; cannot forward more response to the previous"
-           "interceptor");
   if (_previousInterceptor == nil) {
     return;
   }
-  if ([_previousInterceptor respondsToSelector:@selector(didReceiveInitialMetadata:)]) {
-    id<GRPCResponseHandler> copiedPreviousInterceptor = _previousInterceptor;
-    dispatch_async(copiedPreviousInterceptor.dispatchQueue, ^{
-      [copiedPreviousInterceptor didReceiveInitialMetadata:initialMetadata];
-    });
-  }
+  id<GRPCResponseHandler> copiedPreviousInterceptor = _previousInterceptor;
+  dispatch_async(copiedPreviousInterceptor.dispatchQueue, ^{
+    [copiedPreviousInterceptor didReceiveInitialMetadata:initialMetadata];
+  });
 }
 
 /** Forward a received message to the previous interceptor in the chain */
 - (void)forwardPreviousInterceptorWithData:(id)data {
-  NSAssert(_previousInterceptor != nil,
-           @"The interceptor has been closed; cannot forward more response to the previous"
-           "interceptor");
   if (_previousInterceptor == nil) {
     return;
   }
-  // For backwards compatibility with didReceiveRawMessage, if the user provided a response handler
-  // that handles didReceiveRawMesssage, we issue to that method instead
-  if ([_previousInterceptor respondsToSelector:@selector(didReceiveRawMessage:)]) {
-    id<GRPCResponseHandler> copiedPreviousInterceptor = _previousInterceptor;
-    dispatch_async(copiedPreviousInterceptor.dispatchQueue, ^{
-      [copiedPreviousInterceptor didReceiveRawMessage:data];
-    });
-  } else if ([_previousInterceptor respondsToSelector:@selector(didReceiveData:)]) {
-    id<GRPCResponseHandler> copiedPreviousInterceptor = _previousInterceptor;
-    dispatch_async(copiedPreviousInterceptor.dispatchQueue, ^{
-      [copiedPreviousInterceptor didReceiveData:data];
-    });
-  }
+  id<GRPCResponseHandler> copiedPreviousInterceptor = _previousInterceptor;
+  dispatch_async(copiedPreviousInterceptor.dispatchQueue, ^{
+    [copiedPreviousInterceptor didReceiveData:data];
+  });
 }
 
 /** Forward call close and trailing metadata to the previous interceptor in the chain */
   - (void)forwardPreviousInterceptorCloseWithTrailingMetadata:(NSDictionary *)trailingMetadata
 error:(nullable NSError *)error {
-  NSAssert(_previousInterceptor != nil,
-           @"The interceptor has been closed; cannot forward more response to the previous"
-           "interceptor");
   if (_previousInterceptor == nil) {
     return;
   }
-  if ([_previousInterceptor respondsToSelector:@selector(didCloseWithTrailingMetadata:error:)]) {
-    id<GRPCResponseHandler> copiedPreviousInterceptor = _previousInterceptor;
-    dispatch_async(copiedPreviousInterceptor.dispatchQueue, ^{
-      [copiedPreviousInterceptor didCloseWithTrailingMetadata:trailingMetadata error:error];
-    });
-  }
+  id<GRPCResponseHandler> copiedPreviousInterceptor = _previousInterceptor;
+  dispatch_async(copiedPreviousInterceptor.dispatchQueue, ^{
+    [copiedPreviousInterceptor didCloseWithTrailingMetadata:trailingMetadata error:error];
+  });
 }
 
 /** Forward write completion to the previous interceptor in the chain */
 - (void)forwardPreviousInterceptorDidWriteData {
-  NSAssert(_previousInterceptor != nil,
-           @"The interceptor has been closed; cannot forward more response to the previous"
-           "interceptor");
   if (_previousInterceptor == nil) {
     return;
   }
-  if ([_previousInterceptor respondsToSelector:@selector(didWriteData)]) {
-    id<GRPCResponseHandler> copiedPreviousInterceptor = _previousInterceptor;
-    dispatch_async(copiedPreviousInterceptor.dispatchQueue, ^{
-      [copiedPreviousInterceptor didWriteData];
-    });
-  }
+  id<GRPCResponseHandler> copiedPreviousInterceptor = _previousInterceptor;
+  dispatch_async(copiedPreviousInterceptor.dispatchQueue, ^{
+    [copiedPreviousInterceptor didWriteData];
+  });
 }
 
   - (dispatch_queue_t)dispatchQueue {
@@ -220,68 +193,39 @@ error:(nullable NSError *)error {
   }
 
   - (void)start {
-    NSAssert(_thisInterceptor != nil, @"The interceptor failed to initialize");
-    if (_thisInterceptor == nil) {
-      return;
-    }
     [_thisInterceptor start];
   }
 
   - (void)writeData:(id)data {
-    if (_thisInterceptor == nil) {
-      return;
-    }
     [_thisInterceptor writeData:data];
   }
 
   - (void)finish {
-    if (_thisInterceptor == nil) {
-      return;
-    }
     [_thisInterceptor finish];
   }
 
   - (void)cancel {
-    if (_thisInterceptor == nil) {
-      return;
-    }
     [_thisInterceptor cancel];
   }
 
   - (void)receiveNextMessages:(NSUInteger)numberOfMessages {
-    NSAssert(_thisInterceptor != nil, @"The interceptor has been shut down.");
-    if (_thisInterceptor == nil) {
-      return;
-    }
     [_thisInterceptor receiveNextMessages:numberOfMessages];
   }
 
   - (void)didReceiveInitialMetadata:(nullable NSDictionary *)initialMetadata {
-    NSAssert(_thisInterceptor != nil, @"The interceptor has been shut down.");
-    if (_thisInterceptor == nil) {
-      return;
-    }
     if ([_thisInterceptor respondsToSelector:@selector(didReceiveInitialMetadata:)]) {
       [_thisInterceptor didReceiveInitialMetadata:initialMetadata];
     }
   }
 
   - (void)didReceiveData:(id)data {
-    NSAssert(_thisInterceptor != nil, @"The interceptor has been shut down.");
-    if (_thisInterceptor == nil) {
-      return;
-    }
     if ([_thisInterceptor respondsToSelector:@selector(didReceiveData:)]) {
       [_thisInterceptor didReceiveData:data];
     }
   }
 
   - (void)didCloseWithTrailingMetadata:(nullable NSDictionary *)trailingMetadata
-error:(nullable NSError *)error {
-  NSAssert(_thisInterceptor != nil, @"The interceptor has been shut down.");
-  if (_thisInterceptor == nil) {
-    return;
-  }
+                                 error:(nullable NSError *)error {
   if ([_thisInterceptor respondsToSelector:@selector(didCloseWithTrailingMetadata:error:)]) {
     [_thisInterceptor didCloseWithTrailingMetadata:trailingMetadata error:error];
   }
@@ -289,10 +233,6 @@ error:(nullable NSError *)error {
 }
 
   - (void)didWriteData {
-    NSAssert(_thisInterceptor != nil, @"The interceptor has been shut down.");
-    if (_thisInterceptor == nil) {
-      return;
-    }
     if ([_thisInterceptor respondsToSelector:@selector(didWriteData)]) {
       [_thisInterceptor didWriteData];
     }
@@ -307,6 +247,11 @@ error:(nullable NSError *)error {
   id<GRPCResponseHandler> _responseHandler;
   GRPCCallOptions *_callOptions;
 }
+
+  - (instancetype)init {
+    [NSException raise:NSGenericException format:@"init of GRPCInterceptor is not implemented"];
+    return nil;
+  }
 
 - (instancetype)initWithInterceptorManager:(GRPCInterceptorManager *)interceptorManager
                       dispatchQueue:(dispatch_queue_t)dispatchQueue

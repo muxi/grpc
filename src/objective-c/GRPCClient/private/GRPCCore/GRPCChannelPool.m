@@ -50,19 +50,15 @@ static const NSTimeInterval kDefaultChannelDestroyDelay = 30;
   GRPCChannel *_wrappedChannel;
   NSDate *_lastTimedDestroy;
   dispatch_queue_t _timerQueue;
-  id<GRPCChannelFactory> _channelFactory;
 }
 
-- (instancetype)initWithChannelConfiguration:(GRPCChannelConfiguration *)channelConfiguration
-                              channelFactory:(id<GRPCChannelFactory>)channelFactory {
+- (instancetype)initWithChannelConfiguration:(GRPCChannelConfiguration *)channelConfiguration {
   return [self initWithChannelConfiguration:channelConfiguration
-                             channelFactory:(id<GRPCChannelFactory>)channelFactory
                                destroyDelay:kDefaultChannelDestroyDelay];
 }
 
 - (nullable instancetype)initWithChannelConfiguration:
                              (GRPCChannelConfiguration *)channelConfiguration
-                                       channelFactory:(id<GRPCChannelFactory>)channelFactory
                                          destroyDelay:(NSTimeInterval)destroyDelay {
   NSAssert(channelConfiguration != nil, @"channelConfiguration cannot be empty.");
   if (channelConfiguration == nil) {
@@ -71,7 +67,6 @@ static const NSTimeInterval kDefaultChannelDestroyDelay = 30;
 
   if ((self = [super init])) {
     _channelConfiguration = [channelConfiguration copy];
-    _channelFactory = channelFactory;
     _destroyDelay = destroyDelay;
     _wrappedCalls = [NSHashTable weakObjectsHashTable];
     _wrappedChannel = nil;
@@ -114,7 +109,7 @@ static const NSTimeInterval kDefaultChannelDestroyDelay = 30;
 
   @synchronized(self) {
     if (_wrappedChannel == nil) {
-      _wrappedChannel = [[GRPCChannel alloc] initWithChannelConfiguration:_channelConfiguration channelFactory:_channelFactory];
+      _wrappedChannel = [[GRPCChannel alloc] initWithChannelConfiguration:_channelConfiguration];
       if (_wrappedChannel == nil) {
         NSAssert(_wrappedChannel != nil, @"Unable to get a raw channel for proxy.");
         return nil;
@@ -234,7 +229,7 @@ static const NSTimeInterval kDefaultChannelDestroyDelay = 30;
   [GRPCConnectivityMonitor unregisterObserver:self];
 }
 
-- (GRPCPooledChannel *)channelWithHost:(NSString *)host callOptions:(GRPCCallOptions *)callOptions channelFactory:(id<GRPCChannelFactory>)_channelFactory {
+- (GRPCPooledChannel *)channelWithHost:(NSString *)host callOptions:(GRPCCallOptions *)callOptions {
   NSAssert(host.length > 0, @"Host must not be empty.");
   NSAssert(callOptions != nil, @"callOptions must not be empty.");
   if (host.length == 0 || callOptions == nil) {
@@ -253,7 +248,7 @@ static const NSTimeInterval kDefaultChannelDestroyDelay = 30;
   @synchronized(self) {
     pooledChannel = _channelPool[configuration];
     if (pooledChannel == nil) {
-      pooledChannel = [[GRPCPooledChannel alloc] initWithChannelConfiguration:configuration channelFactory:_channelFactory];
+      pooledChannel = [[GRPCPooledChannel alloc] initWithChannelConfiguration:configuration];
       _channelPool[configuration] = pooledChannel;
     }
   }

@@ -179,8 +179,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 + (instancetype) new NS_UNAVAILABLE;
 
-- (nullable instancetype)initWithFactories:(NSArray<id<GRPCInterceptorFactory>> *)factories
-                       previousInterceptor:(id<GRPCResponseHandler>)previousInterceptor
+- (nullable instancetype)initWithFactories:(nullable NSArray<id<GRPCInterceptorFactory>> *)factories
+                       previousInterceptor:(nullable id<GRPCResponseHandler>)previousInterceptor
                             requestOptions:(GRPCRequestOptions *)requestOptions
                                callOptions:(GRPCCallOptions *)callOptions;
 
@@ -242,8 +242,7 @@ NS_ASSUME_NONNULL_BEGIN
                                       dispatchQueue:(dispatch_queue_t)dispatchQueue
                                      requestOptions:(GRPCRequestOptions *)requestOptions
                                     responseHandler:(id<GRPCResponseHandler>)responseHandler
-                                        callOptions:(GRPCCallOptions *)callOptions
-    NS_DESIGNATED_INITIALIZER;
+                                        callOptions:(GRPCCallOptions *)callOptions;
 
 // Default implementation of GRPCInterceptorInterface
 

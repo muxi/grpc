@@ -29,6 +29,8 @@
 #import "GRPCInsecureChannelFactory.h"
 #import "GRPCSecureChannelFactory.h"
 #import "version.h"
+#import "GRPCCoreFactory.h"
+#import "../GRPCTransport+Private.h"
 
 #import <GRPCClient/GRPCCall+Cronet.h>
 #import <GRPCClient/GRPCCallOptions.h>
@@ -50,33 +52,43 @@
 }
 
 - (id<GRPCChannelFactory>)channelFactory {
-  GRPCTransportType type = _callOptions.transportType;
-  switch (type) {
-    case GRPCTransportTypeChttp2BoringSSL:
-      // TODO (mxyan): Remove when the API is deprecated
+  if (_callOptions.transport != NULL) {
+    id<GRPCTransportFactory> transportFactory = [[GRPCTransportRegistry sharedInstance] getTransportFactoryWithId:_callOptions.transport];
+    if (![transportFactory respondsToSelector:@selector(createCoreChannelFactoryWithCallOptions:)]) {
+      // impossible because we are using GRPCCore now
+      [NSException raise:NSInternalInconsistencyException format:@"Transport factory type is wrong"];
+    }
+    id<GRPCCoreTransportFactory> coreTransportFactory = (id<GRPCCoreTransportFactory>)transportFactory;
+    return [coreTransportFactory createCoreChannelFactoryWithCallOptions:_callOptions];
+  } else {
+    GRPCTransportType type = _callOptions.transportType;
+    switch (type) {
+      case GRPCTransportTypeChttp2BoringSSL:
+        // TODO (mxyan): Remove when the API is deprecated
 #ifdef GRPC_COMPILE_WITH_CRONET
-      if (![GRPCCall isUsingCronet]) {
+        if (![GRPCCall isUsingCronet]) {
 #else
-    {
+          {
 #endif
-        NSError *error;
-        id<GRPCChannelFactory> factory = [GRPCSecureChannelFactory
-            factoryWithPEMRootCertificates:_callOptions.PEMRootCertificates
-                                privateKey:_callOptions.PEMPrivateKey
-                                 certChain:_callOptions.PEMCertificateChain
-                                     error:&error];
-        NSAssert(factory != nil, @"Failed to create secure channel factory");
-        if (factory == nil) {
-          NSLog(@"Error creating secure channel factory: %@", error);
+            NSError *error;
+            id<GRPCChannelFactory> factory = [GRPCSecureChannelFactory
+                                              factoryWithPEMRootCertificates:_callOptions.PEMRootCertificates
+                                              privateKey:_callOptions.PEMPrivateKey
+                                              certChain:_callOptions.PEMCertificateChain
+                                              error:&error];
+            NSAssert(factory != nil, @"Failed to create secure channel factory");
+            if (factory == nil) {
+              NSLog(@"Error creating secure channel factory: %@", error);
+            }
+            return factory;
+          }
+          // fallthrough
+        case GRPCTransportTypeCronet:
+          return [GRPCCronetChannelFactory sharedInstance];
+        case GRPCTransportTypeInsecure:
+          return [GRPCInsecureChannelFactory sharedInstance];
         }
-        return factory;
-      }
-      // fallthrough
-    case GRPCTransportTypeCronet:
-      return [GRPCCronetChannelFactory sharedInstance];
-    case GRPCTransportTypeInsecure:
-      return [GRPCInsecureChannelFactory sharedInstance];
-  }
+    }
 }
 
 - (NSDictionary *)channelArgs {
@@ -178,8 +190,7 @@
   grpc_channel *_unmanagedChannel;
 }
 
-  - (instancetype)initWithChannelConfiguration:(GRPCChannelConfiguration *)channelConfiguration
-                                 channelFactory:(id<GRPCChannelFactory>)channelFactory{
+  - (instancetype)initWithChannelConfiguration:(GRPCChannelConfiguration *)channelConfiguration {
   NSAssert(channelConfiguration != nil, @"channelConfiguration must not be empty.");
   if (channelConfiguration == nil) {
     return nil;
@@ -200,11 +211,7 @@
       channelArgs = channelConfiguration.channelArgs;
     }
 
-    id<GRPCChannelFactory> factory = channelFactory;
-    // For backwards compatibility with users that do not use callOptions.transport
-    if (factory == nil || channelConfiguration.host.transport == nil) {
-      factory = channelConfiguration.channelFactory;
-    }
+    id<GRPCChannelFactory> factory = channelConfiguration.channelFactory;
     _unmanagedChannel = [factory createChannelWithHost:host channelArgs:channelArgs];
     NSAssert(_unmanagedChannel != NULL, @"Failed to create channel");
     if (_unmanagedChannel == NULL) {
