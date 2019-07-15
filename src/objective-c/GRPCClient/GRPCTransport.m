@@ -19,6 +19,9 @@ BOOL TransportIdIsEqual(GRPCTransportId lhs, GRPCTransportId rhs) {
 }
 
 NSUInteger TransportIdHash(GRPCTransportId transportId) {
+  if (transportId == NULL) {
+    transportId = gDefaultTransportId;
+  }
   return [NSString stringWithCString:transportId encoding:NSUTF8StringEncoding].hash;
 }
 

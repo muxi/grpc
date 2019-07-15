@@ -176,7 +176,6 @@ static NSString *const kBearerPrefix = @"Bearer ";
                  callSafety:GRPCCallSafetyDefault
              requestsWriter:requestWriter
                 callOptions:nil
-             channelFactory:nil
                   writeDone:nil];
 }
 
@@ -185,7 +184,6 @@ static NSString *const kBearerPrefix = @"Bearer ";
                   callSafety:(GRPCCallSafety)safety
               requestsWriter:(GRXWriter *)requestsWriter
                  callOptions:(GRPCCallOptions *)callOptions
-              channelFactory:(id<GRPCChannelFactory>)channelFactory
                    writeDone:(void (^)(void))writeDone {
   // Purposely using pointer rather than length (host.length == 0) for backwards compatibility.
   NSAssert(host != nil && path != nil, @"Neither host nor path can be nil.");

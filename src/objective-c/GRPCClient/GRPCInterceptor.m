@@ -244,25 +244,17 @@ error:(nullable NSError *)error {
   GRPCInterceptorManager *_manager;
   dispatch_queue_t _dispatchQueue;
   GRPCRequestOptions *_requestOptions;
-  id<GRPCResponseHandler> _responseHandler;
   GRPCCallOptions *_callOptions;
 }
 
-  - (instancetype)init {
-    [NSException raise:NSGenericException format:@"init of GRPCInterceptor is not implemented"];
-    return nil;
-  }
-
 - (instancetype)initWithInterceptorManager:(GRPCInterceptorManager *)interceptorManager
                       dispatchQueue:(dispatch_queue_t)dispatchQueue
-requestOptions:(GRPCRequestOptions *)requestOptions
-responseHandler:(id<GRPCResponseHandler>)responseHandler
-callOptions:(GRPCCallOptions *)callOptions {
+                      requestOptions:(GRPCRequestOptions *)requestOptions
+                          callOptions:(GRPCCallOptions *)callOptions {
   if ((self = [super init])) {
     _manager = interceptorManager;
     _dispatchQueue = dispatchQueue;
     _requestOptions = requestOptions;
-    _responseHandler = responseHandler;
     _callOptions = callOptions;
   }
 

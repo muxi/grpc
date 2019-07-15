@@ -67,23 +67,28 @@
     return nil;
   }
 
-  if ((self = [super init])) {
-  // Set queue QoS only when iOS version is 8.0 or above and Xcode version is 9.0 or above
+    dispatch_queue_t dispatchQueue;
+    // Set queue QoS only when iOS version is 8.0 or above and Xcode version is 9.0 or above
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 110000 || __MAC_OS_X_VERSION_MAX_ALLOWED >= 101300
     if (@available(iOS 8.0, macOS 10.10, *)) {
-      _dispatchQueue = dispatch_queue_create(
-          NULL,
-          dispatch_queue_attr_make_with_qos_class(DISPATCH_QUEUE_SERIAL, QOS_CLASS_DEFAULT, 0));
+      dispatchQueue = dispatch_queue_create(
+                                             NULL,
+                                             dispatch_queue_attr_make_with_qos_class(DISPATCH_QUEUE_SERIAL, QOS_CLASS_DEFAULT, 0));
     } else {
 #else
-    {
+      {
 #endif
-      _dispatchQueue = dispatch_queue_create(NULL, DISPATCH_QUEUE_SERIAL);
-    }
+        dispatchQueue = dispatch_queue_create(NULL, DISPATCH_QUEUE_SERIAL);
+      }
+  if ((self = [super initWithInterceptorManager:interceptorManager
+                                  dispatchQueue:dispatchQueue
+                                 requestOptions:requestOptions
+                                    callOptions:callOptions])) {
     _pipe = [GRXBufferedPipe pipe];
       _requestOptions = [requestOptions copy];
       _callOptions = [callOptions copy];
       _interceptorManager = interceptorManager;
+    _dispatchQueue = dispatchQueue;
   }
   return self;
 }
