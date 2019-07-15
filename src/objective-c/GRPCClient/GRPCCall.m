@@ -136,6 +136,10 @@ error:(nullable NSError *)error {
    * call options when the user provided a NULL call options object.
    */
   GRPCCallOptions *_actualCallOptions;
+
+  NSMutableArray *_pendingWriteData;
+  NSUInteger _pendingReceiveNextMessages;
+  BOOL _pendingCancel;
 }
 
 - (instancetype)initWithRequestOptions:(GRPCRequestOptions *)requestOptions
@@ -164,6 +168,8 @@ error:(nullable NSError *)error {
       _actualCallOptions = [callOptions copy];
     }
     _responseHandler = responseHandler;
+
+    _pendingWriteData = [NSMutableArray array];
   }
 
   return self;
@@ -183,11 +189,33 @@ error:(nullable NSError *)error {
                                                                       previousInterceptor:dispatcher
                                                                            requestOptions:_requestOptions
                                                                               callOptions:_actualCallOptions];
-  _firstInterceptor = nextManager;
-  
   id<GRPCInterceptorInterface> copiedFirstInterceptor;
+  NSMutableArray *pendingWriteData = nil;
+  NSUInteger pendingReceiveNextMessages = 0;
+  BOOL pendingCancel = NO;
   @synchronized(self) {
+    _firstInterceptor = nextManager;
+    pendingWriteData = _pendingWriteData;
+    pendingReceiveNextMessages = _pendingReceiveNextMessages;
+    pendingCancel = _pendingCancel;
     copiedFirstInterceptor = _firstInterceptor;
+  }
+  if (pendingWriteData.count > 0) {
+    dispatch_async(copiedFirstInterceptor.dispatchQueue, ^{
+      for (id data in pendingWriteData) {
+        [copiedFirstInterceptor writeData:data];
+      }
+    });
+  }
+  if (pendingReceiveNextMessages > 0) {
+    dispatch_async(copiedFirstInterceptor.dispatchQueue, ^{
+      [copiedFirstInterceptor receiveNextMessages:pendingReceiveNextMessages];
+    });
+  }
+  if (pendingCancel) {
+    dispatch_async(copiedFirstInterceptor.dispatchQueue, ^{
+      [copiedFirstInterceptor cancel];
+    });
   }
   dispatch_async(copiedFirstInterceptor.dispatchQueue, ^{
     [copiedFirstInterceptor start];
@@ -197,16 +225,26 @@ error:(nullable NSError *)error {
 - (void)cancel {
   id<GRPCInterceptorInterface> copiedFirstInterceptor;
   @synchronized(self) {
+    if (_firstInterceptor == nil) {
+      _pendingCancel = YES;
+      return;
+    }
     copiedFirstInterceptor = _firstInterceptor;
   }
-  dispatch_async(copiedFirstInterceptor.dispatchQueue, ^{
-    [copiedFirstInterceptor cancel];
-  });
+  if (copiedFirstInterceptor != nil) {
+    dispatch_async(copiedFirstInterceptor.dispatchQueue, ^{
+      [copiedFirstInterceptor cancel];
+    });
+  }
 }
 
 - (void)writeData:(id)data {
   id<GRPCInterceptorInterface> copiedFirstInterceptor;
   @synchronized(self) {
+    if (_firstInterceptor == nil) {
+      [_pendingWriteData addObject:data];
+      return;
+    }
     copiedFirstInterceptor = _firstInterceptor;
   }
   dispatch_async(copiedFirstInterceptor.dispatchQueue, ^{
@@ -228,6 +266,9 @@ error:(nullable NSError *)error {
   id<GRPCInterceptorInterface> copiedFirstInterceptor;
   @synchronized(self) {
     copiedFirstInterceptor = _firstInterceptor;
+    if (_firstInterceptor == nil) {
+      _pendingReceiveNextMessages++;
+    }
   }
   dispatch_async(copiedFirstInterceptor.dispatchQueue, ^{
     [copiedFirstInterceptor receiveNextMessages:numberOfMessages];

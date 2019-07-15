@@ -31,6 +31,10 @@
   GRPCInterceptor *_thisInterceptor;
   dispatch_queue_t _dispatchQueue;
   NSArray<id<GRPCInterceptorFactory>> *_factories;
+
+  NSMutableArray *_pendingWriteData;
+  NSUInteger _pendingReceiveNextMessages;
+  BOOL _pendingCancel;
 }
 
 - (instancetype)initWithFactories:(NSArray<id<GRPCInterceptorFactory>> *)factories
@@ -61,6 +65,8 @@
         _dispatchQueue = dispatch_queue_create(NULL, DISPATCH_QUEUE_SERIAL);
       }
       dispatch_set_target_queue(_dispatchQueue, _thisInterceptor.dispatchQueue);
+
+      _pendingWriteData = [NSMutableArray array];
   }
     return self;
 }
@@ -102,6 +108,8 @@
 
 - (void)writeNextInterceptorWithData:(id)data {
   if (_nextInterceptor == nil) {
+    // support writing next interceptor before they start
+    [_pendingWriteData addObject:data];
     return;
   }
   id<GRPCInterceptorInterface> copiedNextInterceptor = _nextInterceptor;
@@ -122,6 +130,7 @@
 
 - (void)cancelNextInterceptor {
   if (_nextInterceptor == nil) {
+    // support canceling next interceptor before they start
     return;
   }
   id<GRPCInterceptorInterface> copiedNextInterceptor = _nextInterceptor;
