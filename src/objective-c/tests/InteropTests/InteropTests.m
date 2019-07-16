@@ -402,6 +402,10 @@ static dispatch_once_t initGlobalInterceptorFactory;
   return GRPCTransportTypeChttp2BoringSSL;
 }
 
++ (GRPCTransportId)transport {
+  return NULL;
+}
+
 + (NSString *)PEMRootCertificates {
   return nil;
 }
@@ -475,6 +479,7 @@ static dispatch_once_t initGlobalInterceptorFactory;
   GPBEmpty *request = [GPBEmpty message];
   GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
   options.transportType = [[self class] transportType];
+  options.transport = [[self class] transport];
   options.PEMRootCertificates = [[self class] PEMRootCertificates];
   options.hostNameOverride = [[self class] hostNameOverride];
 
@@ -504,6 +509,7 @@ static dispatch_once_t initGlobalInterceptorFactory;
   GPBEmpty *request = [GPBEmpty message];
   GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
   options.transportType = [[self class] transportType];
+  options.transport = [[self class] transport];
   options.PEMRootCertificates = [[self class] PEMRootCertificates];
   options.hostNameOverride = [[self class] hostNameOverride];
 
@@ -581,6 +587,7 @@ static dispatch_once_t initGlobalInterceptorFactory;
 
   GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
   options.transportType = [[self class] transportType];
+  options.transport = [[self class] transport];
   options.PEMRootCertificates = [[self class] PEMRootCertificates];
   options.hostNameOverride = [[self class] hostNameOverride];
 
@@ -629,6 +636,7 @@ static dispatch_once_t initGlobalInterceptorFactory;
     }
     GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
     options.transportType = [[self class] transportType];
+    options.transport = [[self class] transport];
     options.PEMRootCertificates = [[self class] PEMRootCertificates];
     options.hostNameOverride = [[self class] hostNameOverride];
 
@@ -931,6 +939,7 @@ static dispatch_once_t initGlobalInterceptorFactory;
                                                requestedResponseSize:responses[index]];
   GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
   options.transportType = [[self class] transportType];
+  options.transport = [[self class] transport];
   options.PEMRootCertificates = [[self class] PEMRootCertificates];
   options.hostNameOverride = [[self class] hostNameOverride];
 
@@ -983,6 +992,7 @@ static dispatch_once_t initGlobalInterceptorFactory;
                                                requestedResponseSize:responses[index]];
   GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
   options.transportType = [[self class] transportType];
+  options.transport = [[self class] transport];
   options.PEMRootCertificates = [[self class] PEMRootCertificates];
   options.hostNameOverride = [[self class] hostNameOverride];
   options.flowControlEnabled = YES;
@@ -1140,6 +1150,7 @@ static dispatch_once_t initGlobalInterceptorFactory;
 
   GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
   options.transportType = self.class.transportType;
+  options.transport = [[self class] transport];
   options.PEMRootCertificates = self.class.PEMRootCertificates;
   options.hostNameOverride = [[self class] hostNameOverride];
 
@@ -1173,6 +1184,7 @@ static dispatch_once_t initGlobalInterceptorFactory;
 
   GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
   options.transportType = self.class.transportType;
+  options.transport = [[self class] transport];
   options.PEMRootCertificates = self.class.PEMRootCertificates;
   options.hostNameOverride = [[self class] hostNameOverride];
 
@@ -1315,6 +1327,7 @@ static dispatch_once_t initGlobalInterceptorFactory;
                                                requestedResponseSize:responses[index]];
   GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
   options.transportType = [[self class] transportType];
+  options.transport = [[self class] transport];
   options.PEMRootCertificates = [[self class] PEMRootCertificates];
   options.hostNameOverride = [[self class] hostNameOverride];
   options.interceptorFactories = @[ [[DefaultInterceptorFactory alloc] init] ];
@@ -1418,6 +1431,7 @@ static dispatch_once_t initGlobalInterceptorFactory;
                                                requestedResponseSize:responses[index]];
   GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
   options.transportType = [[self class] transportType];
+  options.transport = [[self class] transport];
   options.PEMRootCertificates = [[self class] PEMRootCertificates];
   options.hostNameOverride = [[self class] hostNameOverride];
   options.flowControlEnabled = YES;
@@ -1522,6 +1536,7 @@ static dispatch_once_t initGlobalInterceptorFactory;
         // finish must happen after the hijacking, so directly reply with a close
         [manager forwardPreviousInterceptorCloseWithTrailingMetadata:@{@"grpc-status" : @"0"}
                                                                error:nil];
+        [manager shutDown];
       }
       receiveNextMessagesHook:nil
       responseHeaderHook:^(NSDictionary *initialMetadata, GRPCInterceptorManager *manager) {
@@ -1541,7 +1556,7 @@ static dispatch_once_t initGlobalInterceptorFactory;
         XCTAssertEqual(error.code, GRPC_STATUS_CANCELLED);
         [expectCallInternalComplete fulfill];
       }
-      didWriteDataHook:nil];
+                                        didWriteDataHook:nil];
 
   NSArray *requests = @[ @1, @2, @3, @4 ];
 
@@ -1549,6 +1564,7 @@ static dispatch_once_t initGlobalInterceptorFactory;
                                                requestedResponseSize:responses[index]];
   GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
   options.transportType = [[self class] transportType];
+  options.transport = [[self class] transport];
   options.PEMRootCertificates = [[self class] PEMRootCertificates];
   options.hostNameOverride = [[self class] hostNameOverride];
   options.interceptorFactories = @[ [[DefaultInterceptorFactory alloc] init], factory ];
@@ -1658,6 +1674,7 @@ static dispatch_once_t initGlobalInterceptorFactory;
                                                requestedResponseSize:responses[index]];
   GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
   options.transportType = [[self class] transportType];
+  options.transport = [[self class] transport];
   options.PEMRootCertificates = [[self class] PEMRootCertificates];
   options.hostNameOverride = [[self class] hostNameOverride];
   options.flowControlEnabled = YES;
@@ -1841,6 +1858,7 @@ static dispatch_once_t initGlobalInterceptorFactory;
                                                requestedResponseSize:responses[index]];
   GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
   options.transportType = [[self class] transportType];
+  options.transport = [[self class] transport];
   options.PEMRootCertificates = [[self class] PEMRootCertificates];
   options.hostNameOverride = [[self class] hostNameOverride];
   options.flowControlEnabled = YES;
