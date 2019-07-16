@@ -31,16 +31,22 @@
   GRPCInterceptor *_thisInterceptor;
   dispatch_queue_t _dispatchQueue;
   NSArray<id<GRPCInterceptorFactory>> *_factories;
+  GRPCTransportId _transportId;
+  BOOL _shutDown;
 }
 
 - (instancetype)initWithFactories:(NSArray<id<GRPCInterceptorFactory>> *)factories
-              previousInterceptor:(id<GRPCResponseHandler>)previousInterceptor {
+              previousInterceptor:(id<GRPCResponseHandler>)previousInterceptor
+                      transportId:(nonnull GRPCTransportId)transportId {
   if ((self = [super init])) {
-    _previousInterceptor = previousInterceptor;
     if (factories.count == 0) {
       [NSException raise:NSInternalInconsistencyException format:@"Interceptor manager must have factories"];
     }
     _thisInterceptor = [factories[0] createInterceptorWithManager:self];
+    if (_thisInterceptor == nil) {
+      return nil;
+    }
+    _previousInterceptor = previousInterceptor;
     _factories = factories;
       // Generate interceptor
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 110000 || __MAC_OS_X_VERSION_MAX_ALLOWED >= 101300
@@ -53,6 +59,7 @@
         _dispatchQueue = dispatch_queue_create(NULL, DISPATCH_QUEUE_SERIAL);
       }
       dispatch_set_target_queue(_dispatchQueue, _thisInterceptor.dispatchQueue);
+      _transportId = transportId;
   }
     return self;
 }
@@ -61,36 +68,54 @@
   _nextInterceptor = nil;
   _previousInterceptor = nil;
   _thisInterceptor = nil;
-  _dispatchQueue = nil;
+  _shutDown = YES;
 }
 
-- (void)startNextInterceptorWithRequest:(GRPCRequestOptions *)requestOptions
-                            callOptions:(GRPCCallOptions *)callOptions {
-  NSAssert(_nextInterceptor == nil, @"Starting the next interceptor more than once");
-                              NSAssert(_factories.count > 0, @"Interceptor manager of transport cannot start next interceptor");
-  if (_nextInterceptor != nil) {
-    NSLog(@"Starting the next interceptor more than once");
+  - (void)createNextInterceptor {
+    NSAssert(_nextInterceptor == nil, @"Starting the next interceptor more than once");
+    NSAssert(_factories.count > 0, @"Interceptor manager of transport cannot start next interceptor");
+    if (_nextInterceptor != nil) {
+      NSLog(@"Starting the next interceptor more than once");
+      return;
+    }
+    NSMutableArray<id<GRPCInterceptorFactory>> *interceptorFactories = [NSMutableArray arrayWithArray:[_factories subarrayWithRange:NSMakeRange(1, _factories.count - 1)]];
+    while (_nextInterceptor == nil) {
+      if (interceptorFactories.count == 0) {
+        _nextInterceptor = [[GRPCTransportManager alloc] initWithTransportId:_transportId previousInterceptor:self];
+        break;
+      } else {
+        _nextInterceptor =  [[GRPCInterceptorManager alloc] initWithFactories:interceptorFactories
+                                                          previousInterceptor:self
+                                                                  transportId:_transportId];
+        if (_nextInterceptor == nil) {
+          [interceptorFactories removeObjectAtIndex:0];
+        }
+      }
+    }
+    NSAssert(_nextInterceptor != nil, @"Failed to create interceptor or transport.");
+    if (_nextInterceptor == nil) {
+      NSLog(@"Failed to create interceptor or transport.");
+    }
+  }
+
+  - (void)startNextInterceptorWithRequest:(GRPCRequestOptions *)requestOptions
+callOptions:(GRPCCallOptions *)callOptions {
+  if (_nextInterceptor == nil && !_shutDown) {
+    [self createNextInterceptor];
+  }
+  if (_nextInterceptor == nil) {
     return;
   }
-                              if (_factories.count == 1) {
-                                _nextInterceptor = [[GRPCTransportManager alloc] initWithTransportId:callOptions.transport previousInterceptor:self];
-                                                    } else {
-                                                      _nextInterceptor = [[GRPCInterceptorManager alloc] initWithFactories:[_factories subarrayWithRange:NSMakeRange(1, _factories.count)]
-                                                                                                       previousInterceptor:self];
-                                                    }
-                                NSAssert(_nextInterceptor != nil, @"Falied to create next hop in the interceptor chain");
-                                if (_nextInterceptor == nil) {
-                                  NSLog(@"Falied to create next hop in the interceptor chain");
-                                  return;
-                                }
-
-                              id<GRPCInterceptorInterface> copiedNextInterceptor = _nextInterceptor;
-    dispatch_async(copiedNextInterceptor.dispatchQueue, ^{
-      [copiedNextInterceptor startWithRequestOptions:requestOptions callOptions:callOptions];
-    });
-  }
+  id<GRPCInterceptorInterface> copiedNextInterceptor = _nextInterceptor;
+  dispatch_async(copiedNextInterceptor.dispatchQueue, ^{
+    [copiedNextInterceptor startWithRequestOptions:requestOptions callOptions:callOptions];
+  });
+}
 
 - (void)writeNextInterceptorWithData:(id)data {
+  if (_nextInterceptor == nil && !_shutDown) {
+    [self createNextInterceptor];
+  }
   if (_nextInterceptor == nil) {
     return;
   }
@@ -101,6 +126,9 @@
 }
 
 - (void)finishNextInterceptor {
+  if (_nextInterceptor == nil && !_shutDown) {
+    [self createNextInterceptor];
+  }
   if (_nextInterceptor == nil) {
     return;
   }
@@ -111,6 +139,9 @@
 }
 
 - (void)cancelNextInterceptor {
+  if (_nextInterceptor == nil && !_shutDown) {
+    [self createNextInterceptor];
+  }
   if (_nextInterceptor == nil) {
     return;
   }
@@ -122,6 +153,9 @@
 
 /** Notify the next interceptor in the chain to receive more messages */
 - (void)receiveNextInterceptorMessages:(NSUInteger)numberOfMessages {
+  if (_nextInterceptor == nil && !_shutDown) {
+    [self createNextInterceptor];
+  }
   if (_nextInterceptor == nil) {
     return;
   }
@@ -135,7 +169,10 @@
 
 /** Forward initial metadata to the previous interceptor in the chain */
 - (void)forwardPreviousInterceptorWithInitialMetadata:(NSDictionary *)initialMetadata {
-  if (_previousInterceptor == nil) {
+  if (_nextInterceptor == nil && !_shutDown) {
+    [self createNextInterceptor];
+  }
+  if (_nextInterceptor == nil) {
     return;
   }
   id<GRPCResponseHandler> copiedPreviousInterceptor = _previousInterceptor;
@@ -219,7 +256,6 @@ error:(NSError *)error {
   if ([_thisInterceptor respondsToSelector:@selector(didCloseWithTrailingMetadata:error:)]) {
     [_thisInterceptor didCloseWithTrailingMetadata:trailingMetadata error:error];
   }
-  [self shutDown];
 }
 
   - (void)didWriteData {

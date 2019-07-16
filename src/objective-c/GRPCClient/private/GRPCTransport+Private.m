@@ -3,8 +3,10 @@
 #import <GRPCClient/GRPCTransport.h>
 
 @implementation GRPCTransportManager {
+  GRPCTransportId _transportId;
   GRPCTransport *_transport;
   id<GRPCResponseHandler> _previousInterceptor;
+  dispatch_queue_t _dispatchQueue;
 }
 
 - (instancetype)initWithTransportId:(GRPCTransportId)transportId
@@ -19,6 +21,7 @@
       return nil;
     }
     _previousInterceptor = previousInterceptor;
+    _dispatchQueue = _transport.dispatchQueue;
   }
   return self;
 }
@@ -29,10 +32,14 @@
 }
 
 - (dispatch_queue_t)dispatchQueue {
-  return _transport.dispatchQueue;
+  return _dispatchQueue;
 }
 
 - (void)startWithRequestOptions:(GRPCRequestOptions *)requestOptions callOptions:(GRPCCallOptions *)callOptions {
+  if (_transportId != callOptions.transport) {
+    [NSException raise:NSInvalidArgumentException format:@"Interceptors cannot change the call option 'transport'"];
+    return;
+  }
   [_transport startWithRequestOptions:requestOptions callOptions:callOptions];
 }
 

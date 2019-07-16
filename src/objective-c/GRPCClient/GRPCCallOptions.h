@@ -383,6 +383,8 @@ typedef NS_ENUM(NSUInteger, GRPCTransportType) {
  * identifier defined in \a GRPCTransport or provided by a non-native ttransport
  * implementation. If the option is left to be NULL, gRPC will use its default
  * transport.
+ *
+ * An interceptor must not change the value of this option.
  */
 @property(readwrite) GRPCTransportId transport;
 

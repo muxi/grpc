@@ -176,7 +176,8 @@ NS_ASSUME_NONNULL_BEGIN
 + (instancetype) new NS_UNAVAILABLE;
 
 - (nullable instancetype)initWithFactories:(nullable NSArray<id<GRPCInterceptorFactory>> *)factories
-                       previousInterceptor:(nullable id<GRPCResponseHandler>)previousInterceptor;
+                       previousInterceptor:(nullable id<GRPCResponseHandler>)previousInterceptor
+                               transportId:(GRPCTransportId)transportId;
 
 - (void)shutDown;
 

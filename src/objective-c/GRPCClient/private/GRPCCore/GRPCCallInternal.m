@@ -259,6 +259,7 @@
 - (void)issueClosedWithTrailingMetadata:(NSDictionary *)trailingMetadata error:(NSError *)error {
   [_transportManager forwardPreviousInterceptorCloseWithTrailingMetadata:trailingMetadata
                                                                      error:error];
+  [_transportManager shutDown];
 }
 
 - (void)issueDidWriteData {

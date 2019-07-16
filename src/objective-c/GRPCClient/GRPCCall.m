@@ -17,12 +17,14 @@
  */
 
 #import "GRPCCall.h"
-#import "GRPCCallOptions.h"
-#import "GRPCInterceptor.h"
-#import "private/GRPCTransport+Private.h"
 
 #include <grpc/support/time.h>
 
+#import "GRPCCallOptions.h"
+#import "GRPCInterceptor.h"
+#import "GRPCCall+Interceptor.h"
+
+#import "private/GRPCTransport+Private.h"
 #import "private/GRPCCore/GRPCCoreFactory.h"
 
 NSString *const kGRPCHeadersKey = @"io.grpc.HeadersKey";
@@ -168,12 +170,33 @@ error:(nullable NSError *)error {
     _responseHandler = responseHandler;
 
     GRPCResponseDispatcher *dispatcher = [[GRPCResponseDispatcher alloc] initWithResponseHandler:_responseHandler];
-    NSArray<id<GRPCInterceptorFactory>> *interceptorFactories = _actualCallOptions.interceptorFactories;
-    if (interceptorFactories.count == 0) {
-      _firstInterceptor = [[GRPCTransportManager alloc] initWithTransportId:_callOptions.transport previousInterceptor:dispatcher];
+    NSMutableArray<id<GRPCInterceptorFactory>> *interceptorFactories;
+    if (_actualCallOptions.interceptorFactories != nil) {
+      interceptorFactories = [NSMutableArray arrayWithArray:_actualCallOptions.interceptorFactories];
     } else {
-      _firstInterceptor = [[GRPCInterceptorManager alloc] initWithFactories:interceptorFactories
-                                                      previousInterceptor:dispatcher];
+      interceptorFactories = [NSMutableArray array];
+    }
+    id<GRPCInterceptorFactory> globalInterceptorFactory = [GRPCCall2 globalInterceptorFactory];
+    if (globalInterceptorFactory != nil) {
+      [interceptorFactories addObject:globalInterceptorFactory];
+    }
+    // continuously create interceptor until one is successfully created
+    while (_firstInterceptor == nil) {
+      if (interceptorFactories.count == 0) {
+        _firstInterceptor = [[GRPCTransportManager alloc] initWithTransportId:_callOptions.transport previousInterceptor:dispatcher];
+        break;
+      } else {
+        _firstInterceptor = [[GRPCInterceptorManager alloc] initWithFactories:interceptorFactories
+                                                        previousInterceptor:dispatcher
+                                                                  transportId:_callOptions.transport];
+        if (_firstInterceptor == nil) {
+          [interceptorFactories removeObjectAtIndex:0];
+        }
+      }
+    }
+    NSAssert(_firstInterceptor != nil, @"Failed to create interceptor or transport.");
+    if (_firstInterceptor == nil) {
+      NSLog(@"Failed to create interceptor or transport.");
     }
   }
 
