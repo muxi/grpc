@@ -22,6 +22,7 @@
     }
     _previousInterceptor = previousInterceptor;
     _dispatchQueue = _transport.dispatchQueue;
+    _transportId = transportId;
   }
   return self;
 }

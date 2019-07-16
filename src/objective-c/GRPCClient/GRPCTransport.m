@@ -42,6 +42,13 @@ NSUInteger TransportIdHash(GRPCTransportId transportId) {
   return gTransportRegistry;
 }
 
+- (instancetype)init {
+  if ((self = [super init])) {
+    _registry = [NSMutableDictionary dictionary];
+  }
+  return self;
+}
+
 - (void)registerTransportWithId:(GRPCTransportId)transportId factory:(id<GRPCTransportFactory>)factory {
   NSString *nsTransportId = [NSString stringWithCString:transportId
                                                        encoding:NSUTF8StringEncoding];

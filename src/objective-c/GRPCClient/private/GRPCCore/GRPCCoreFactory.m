@@ -8,12 +8,13 @@
 
 static GRPCCoreSecureFactory *gGRPCCoreSecureFactory = nil;
 static GRPCCoreInsecureFactory *gGRPCCoreInsecureFactory = nil;
-static dispatch_once_t gInitGRPCCoreFactory;
+static dispatch_once_t gInitGRPCCoreSecureFactory;
+static dispatch_once_t gInitGRPCCoreInsecureFactory;
 
 @implementation GRPCCoreSecureFactory
 
 + (instancetype)sharedInstance {
-  dispatch_once(&gInitGRPCCoreFactory, ^{
+  dispatch_once(&gInitGRPCCoreSecureFactory, ^{
     gGRPCCoreSecureFactory = [[GRPCCoreSecureFactory alloc] init];
   });
   return gGRPCCoreSecureFactory;
@@ -45,7 +46,7 @@ static dispatch_once_t gInitGRPCCoreFactory;
 @implementation GRPCCoreInsecureFactory
 
 + (instancetype)sharedInstance {
-  dispatch_once(&gInitGRPCCoreFactory, ^{
+  dispatch_once(&gInitGRPCCoreInsecureFactory, ^{
     gGRPCCoreInsecureFactory = [[GRPCCoreInsecureFactory alloc] init];
   });
   return gGRPCCoreInsecureFactory;
