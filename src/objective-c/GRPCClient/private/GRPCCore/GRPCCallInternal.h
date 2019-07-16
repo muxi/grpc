@@ -26,11 +26,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface GRPCCall2Internal : GRPCTransport
 
-- (instancetype)initWithRequestOptions:(GRPCRequestOptions *)requestOptions
-                           callOptions:(GRPCCallOptions *)callOptions
-                    interceptorManager:(GRPCInterceptorManager*)interceptorManager;
+- (instancetype)initWithTransportManager:(GRPCTransportManager*)transportManager;
 
-- (void)start;
+- (void)startWithRequestOptions:(GRPCRequestOptions *)requestOptions callOptions:(GRPCCallOptions *)callOptions;
 
 - (void)writeData:(id)data;
 

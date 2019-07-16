@@ -31,28 +31,16 @@
   GRPCInterceptor *_thisInterceptor;
   dispatch_queue_t _dispatchQueue;
   NSArray<id<GRPCInterceptorFactory>> *_factories;
-
-  NSMutableArray *_pendingWriteData;
-  NSUInteger _pendingReceiveNextMessages;
-  BOOL _pendingCancel;
 }
 
 - (instancetype)initWithFactories:(NSArray<id<GRPCInterceptorFactory>> *)factories
-              previousInterceptor:(id<GRPCResponseHandler>)previousInterceptor
-                   requestOptions:(GRPCRequestOptions *)requestOptions
-                      callOptions:(GRPCCallOptions *)callOptions {
+              previousInterceptor:(id<GRPCResponseHandler>)previousInterceptor {
   if ((self = [super init])) {
     _previousInterceptor = previousInterceptor;
     if (factories.count == 0) {
-      _thisInterceptor = [[[GRPCTransportRegistry sharedInstance] getTransportFactoryWithId:callOptions.transport] createTransportWithManager:self
-                                                                                                                               requestOptions:requestOptions
-                                                                                                                                  callOptions:callOptions];
-    } else {
-      _thisInterceptor = [factories[0] createInterceptorWithManager:self
-                                                     requestOptions:requestOptions
-                                                    responseHandler:previousInterceptor
-                                                        callOptions:callOptions];
+      [NSException raise:NSInternalInconsistencyException format:@"Interceptor manager must have factories"];
     }
+    _thisInterceptor = [factories[0] createInterceptorWithManager:self];
     _factories = factories;
       // Generate interceptor
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 110000 || __MAC_OS_X_VERSION_MAX_ALLOWED >= 101300
@@ -65,8 +53,6 @@
         _dispatchQueue = dispatch_queue_create(NULL, DISPATCH_QUEUE_SERIAL);
       }
       dispatch_set_target_queue(_dispatchQueue, _thisInterceptor.dispatchQueue);
-
-      _pendingWriteData = [NSMutableArray array];
   }
     return self;
 }
@@ -86,30 +72,26 @@
     NSLog(@"Starting the next interceptor more than once");
     return;
   }
-                              if (_factories.count == 0) {
-                                [NSException raise:NSGenericException format:@"Interceptor manager of transport cannot start next interceptor"];
-                                return;
-                              }
-                              _nextInterceptor = [[GRPCInterceptorManager alloc] initWithFactories:[_factories subarrayWithRange:NSMakeRange(1, _factories.count)]
-                                                                                   previousInterceptor:self
-                                                                                    requestOptions:requestOptions
-                                                                                       callOptions:callOptions];
-                                NSAssert(_nextInterceptor != nil, @"Falied to create transport");
+                              if (_factories.count == 1) {
+                                _nextInterceptor = [[GRPCTransportManager alloc] initWithTransportId:callOptions.transport previousInterceptor:self];
+                                                    } else {
+                                                      _nextInterceptor = [[GRPCInterceptorManager alloc] initWithFactories:[_factories subarrayWithRange:NSMakeRange(1, _factories.count)]
+                                                                                                       previousInterceptor:self];
+                                                    }
+                                NSAssert(_nextInterceptor != nil, @"Falied to create next hop in the interceptor chain");
                                 if (_nextInterceptor == nil) {
-                                  NSLog(@"Failed to create transport");
+                                  NSLog(@"Falied to create next hop in the interceptor chain");
                                   return;
                                 }
 
                               id<GRPCInterceptorInterface> copiedNextInterceptor = _nextInterceptor;
     dispatch_async(copiedNextInterceptor.dispatchQueue, ^{
-      [copiedNextInterceptor start];
+      [copiedNextInterceptor startWithRequestOptions:requestOptions callOptions:callOptions];
     });
   }
 
 - (void)writeNextInterceptorWithData:(id)data {
   if (_nextInterceptor == nil) {
-    // support writing next interceptor before they start
-    [_pendingWriteData addObject:data];
     return;
   }
   id<GRPCInterceptorInterface> copiedNextInterceptor = _nextInterceptor;
@@ -130,7 +112,6 @@
 
 - (void)cancelNextInterceptor {
   if (_nextInterceptor == nil) {
-    // support canceling next interceptor before they start
     return;
   }
   id<GRPCInterceptorInterface> copiedNextInterceptor = _nextInterceptor;
@@ -176,7 +157,7 @@
 
 /** Forward call close and trailing metadata to the previous interceptor in the chain */
   - (void)forwardPreviousInterceptorCloseWithTrailingMetadata:(NSDictionary *)trailingMetadata
-error:(nullable NSError *)error {
+error:(NSError *)error {
   if (_previousInterceptor == nil) {
     return;
   }
@@ -201,8 +182,8 @@ error:(nullable NSError *)error {
     return _dispatchQueue;
   }
 
-  - (void)start {
-    [_thisInterceptor start];
+  - (void)startWithRequestOptions:(GRPCRequestOptions *)requestOptions callOptions:(GRPCCallOptions *)callOptions {
+    [_thisInterceptor startWithRequestOptions:requestOptions callOptions:callOptions];
   }
 
   - (void)writeData:(id)data {
@@ -252,19 +233,13 @@ error:(nullable NSError *)error {
 @implementation GRPCInterceptor {
   GRPCInterceptorManager *_manager;
   dispatch_queue_t _dispatchQueue;
-  GRPCRequestOptions *_requestOptions;
-  GRPCCallOptions *_callOptions;
 }
 
 - (instancetype)initWithInterceptorManager:(GRPCInterceptorManager *)interceptorManager
-                      dispatchQueue:(dispatch_queue_t)dispatchQueue
-                      requestOptions:(GRPCRequestOptions *)requestOptions
-                          callOptions:(GRPCCallOptions *)callOptions {
+                      dispatchQueue:(dispatch_queue_t)dispatchQueue {
   if ((self = [super init])) {
     _manager = interceptorManager;
     _dispatchQueue = dispatchQueue;
-    _requestOptions = requestOptions;
-    _callOptions = callOptions;
   }
 
   return self;
@@ -274,8 +249,8 @@ error:(nullable NSError *)error {
   return _dispatchQueue;
 }
 
-- (void)start {
-  [_manager startNextInterceptorWithRequest:_requestOptions callOptions:_callOptions];
+- (void)startWithRequestOptions:(GRPCRequestOptions *)requestOptions callOptions:(GRPCCallOptions *)callOptions {
+  [_manager startNextInterceptorWithRequest:requestOptions callOptions:callOptions];
 }
 
 - (void)writeData:(id)data {

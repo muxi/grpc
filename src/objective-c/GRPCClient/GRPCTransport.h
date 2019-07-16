@@ -35,16 +35,14 @@ NSUInteger TransportIdHash(GRPCTransportId);
 
 @protocol GRPCInterceptorInterface;
 @protocol GRPCResponseHandler;
-@class GRPCInterceptorManager;
+@class GRPCTransportManager;
 @class GRPCRequestOptions;
 @class GRPCCallOptions;
 @class GRPCTransport;
 
 @protocol GRPCTransportFactory <NSObject>
 
-- (GRPCTransport *)createTransportWithManager:(GRPCInterceptorManager *)interceptorManager
-                                 requestOptions:(GRPCRequestOptions *)requestOptions
-                                    callOptions:(GRPCCallOptions *)callOptions;
+- (GRPCTransport *)createTransportWithManager:(GRPCTransportManager *)transportManager;
 
 @end
 
@@ -56,7 +54,7 @@ NSUInteger TransportIdHash(GRPCTransportId);
 
 @end
 
-@interface GRPCTransport : GRPCInterceptor
+@interface GRPCTransport : NSObject<GRPCInterceptorInterface>
 
 @end
 

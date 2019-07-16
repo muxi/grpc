@@ -81,12 +81,29 @@ NSUInteger TransportIdHash(GRPCTransportId transportId) {
 
 @implementation GRPCTransport
 
-- (void)didReceiveInitialMetadata:(NSDictionary *)initialMetadata {}
+- (dispatch_queue_t)dispatchQueue {
+  [NSException raise:NSGenericException format:@"Implementations should override the dispatch queue"];
+  return nil;
+}
 
-- (void)didReceiveData:(id)data {}
+- (void)startWithRequestOptions:(nonnull GRPCRequestOptions *)requestOptions callOptions:(nonnull GRPCCallOptions *)callOptions {
+  [NSException raise:NSGenericException format:@"Implementations should override the methods of GRPCTransport"];
+}
 
-- (void)didCloseWithTrailingMetadata:(NSDictionary *)trailingMetadata error:(NSError *)error {}
+- (void)writeData:(nonnull id)data {
+  [NSException raise:NSGenericException format:@"Implementations should override the methods of GRPCTransport"];
+}
 
-- (void)didWriteData {}
+- (void)cancel {
+  [NSException raise:NSGenericException format:@"Implementations should override the methods of GRPCTransport"];
+}
+
+- (void)finish {
+  [NSException raise:NSGenericException format:@"Implementations should override the methods of GRPCTransport"];
+}
+
+- (void)receiveNextMessages:(NSUInteger)numberOfMessages {
+  [NSException raise:NSGenericException format:@"Implementations should override the methods of GRPCTransport"];
+}
 
 @end

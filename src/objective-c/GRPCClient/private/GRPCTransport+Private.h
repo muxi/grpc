@@ -17,9 +17,39 @@
  */
 
 #import <GRPCClient/GRPCTransport.h>
+#import <GRPCClient/GRPCInterceptor.h>
+
+NS_ASSUME_NONNULL_BEGIN
 
 @interface GRPCTransportRegistry (Private)
+
+- (nullable instancetype)initWithTransportId:(GRPCTransportId)transportId
+                         previousInterceptor:(id<GRPCResponseHandler>)previousInterceptor;
 
 - (id<GRPCTransportFactory>)getTransportFactoryWithId:(GRPCTransportId)id;
 
 @end
+
+@interface GRPCTransportManager : NSObject<GRPCInterceptorInterface>
+
+- (instancetype)initWithTransportId:(GRPCTransportId)transportId
+                previousInterceptor:(id<GRPCResponseHandler>)previousInterceptor;
+
+- (void)shutDown;
+
+/** Forward initial metadata to the previous interceptor in the interceptor chain */
+- (void)forwardPreviousInterceptorWithInitialMetadata:(nullable NSDictionary *)initialMetadata;
+
+/** Forward a received message to the previous interceptor in the interceptor chain */
+- (void)forwardPreviousInterceptorWithData:(nullable id)data;
+
+/** Forward call close and trailing metadata to the previous interceptor in the interceptor chain */
+- (void)forwardPreviousInterceptorCloseWithTrailingMetadata:(nullable NSDictionary *)trailingMetadata
+                                                      error:(nullable NSError *)error;
+
+/** Forward write completion to the previous interceptor in the interceptor chain */
+- (void)forwardPreviousInterceptorDidWriteData;
+
+@end
+
+NS_ASSUME_NONNULL_END

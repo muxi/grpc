@@ -24,12 +24,8 @@ static dispatch_once_t gInitGRPCCoreFactory;
                                                           factory:[self sharedInstance]];
 }
 
-- (GRPCTransport *)createTransportWithManager:(GRPCInterceptorManager *)interceptorManager
-                               requestOptions:(GRPCRequestOptions *)requestOptions
-                                  callOptions:(GRPCCallOptions *)callOptions {
-  return [[GRPCCall2Internal alloc] initWithRequestOptions:requestOptions
-                                               callOptions:callOptions
-                                        interceptorManager:interceptorManager];
+- (GRPCTransport *)createTransportWithManager:(GRPCTransportManager *)transportManager {
+  return [[GRPCCall2Internal alloc] initWithTransportManager:transportManager];
 }
 
 - (id<GRPCChannelFactory>)createCoreChannelFactoryWithCallOptions:(GRPCCallOptions *)callOptions {
@@ -60,12 +56,8 @@ static dispatch_once_t gInitGRPCCoreFactory;
                                                           factory:[self sharedInstance]];
 }
 
-- (GRPCTransport *)createTransportWithManager:(GRPCInterceptorManager *)interceptorManager
-                               requestOptions:(GRPCRequestOptions *)requestOptions
-                                  callOptions:(GRPCCallOptions *)callOptions {
-  return [[GRPCCall2Internal alloc] initWithRequestOptions:requestOptions
-                                               callOptions:callOptions
-                                        interceptorManager:interceptorManager];
+- (GRPCTransport *)createTransportWithManager:(GRPCTransportManager *)transportManager {
+  return [[GRPCCall2Internal alloc] initWithTransportManager:transportManager];
 }
 
 - (id<GRPCChannelFactory>)createCoreChannelFactoryWithCallOptions:(GRPCCallOptions *)callOptions {

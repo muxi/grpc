@@ -122,11 +122,10 @@ NS_ASSUME_NONNULL_BEGIN
 @protocol GRPCInterceptorInterface<NSObject, GRPCDispatchable>
 
 /**
- * To start the call. This method will only be called once for each instance. Request, response
- * handler, and call options should be passed to the interceptor by its corresponding factory
- * (GRPCInterceptorFactory).
+ * To start the call. This method will only be called once for each instance.
  */
-- (void)start;
+- (void)startWithRequestOptions:(GRPCRequestOptions *)requestOptions
+                    callOptions:(GRPCCallOptions *)callOptions;
 
 /**
  * To write data to the call.
@@ -160,10 +159,7 @@ NS_ASSUME_NONNULL_BEGIN
  * Create an interceptor object. gRPC uses the returned object as the interceptor for the current
  * call
  */
-- (GRPCInterceptor *)createInterceptorWithManager:(GRPCInterceptorManager *)interceptorManager
-                                   requestOptions:(GRPCRequestOptions *)requestOptions
-                                  responseHandler:(id<GRPCResponseHandler>)responseHandler
-                                      callOptions:(GRPCCallOptions *)callOptions;
+- (GRPCInterceptor *)createInterceptorWithManager:(GRPCInterceptorManager *)interceptorManager;
 
 @end
 
@@ -180,9 +176,7 @@ NS_ASSUME_NONNULL_BEGIN
 + (instancetype) new NS_UNAVAILABLE;
 
 - (nullable instancetype)initWithFactories:(nullable NSArray<id<GRPCInterceptorFactory>> *)factories
-                       previousInterceptor:(nullable id<GRPCResponseHandler>)previousInterceptor
-                            requestOptions:(GRPCRequestOptions *)requestOptions
-                               callOptions:(GRPCCallOptions *)callOptions;
+                       previousInterceptor:(nullable id<GRPCResponseHandler>)previousInterceptor;
 
 - (void)shutDown;
 
@@ -242,13 +236,11 @@ NS_ASSUME_NONNULL_BEGIN
  * that this interceptor's methods are dispatched onto.
  */
 - (nullable instancetype)initWithInterceptorManager:(GRPCInterceptorManager *)interceptorManager
-                                      dispatchQueue:(dispatch_queue_t)dispatchQueue
-                                     requestOptions:(GRPCRequestOptions *)requestOptions
-                                        callOptions:(GRPCCallOptions *)callOptions;
+                                      dispatchQueue:(dispatch_queue_t)dispatchQueue;
 
 // Default implementation of GRPCInterceptorInterface
 
-- (void)start;
+- (void)startWithRequestOptions:(GRPCRequestOptions *)requestOptions callOptions:(GRPCCallOptions *)callOptions;
 - (void)writeData:(id)data;
 - (void)finish;
 - (void)cancel;
