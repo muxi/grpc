@@ -20,9 +20,7 @@
 
 #include <grpc/status.h>
 
-#ifdef GRPC_COMPILE_WITH_CRONET
 #import <Cronet/Cronet.h>
-#endif
 #import <GRPCClient/GRPCCall+ChannelArg.h>
 #import <GRPCClient/GRPCCall+Cronet.h>
 #import <GRPCClient/GRPCCall+Interceptor.h>
@@ -398,6 +396,7 @@ static dispatch_once_t initGlobalInterceptorFactory;
   return 0;
 }
 
+// For backwards compatibility
 + (GRPCTransportType)transportType {
   return GRPCTransportTypeChttp2BoringSSL;
 }
@@ -419,12 +418,10 @@ static dispatch_once_t initGlobalInterceptorFactory;
 }
 
 + (void)setUp {
-#ifdef GRPC_COMPILE_WITH_CRONET
   configureCronet();
   if ([self useCronet]) {
     [GRPCCall useCronetWithEngine:[Cronet getGlobalEngine]];
   }
-#endif
 #ifdef GRPC_CFSTREAM
   setenv(kCFStreamVarName, "1", 1);
 #endif
@@ -478,6 +475,7 @@ static dispatch_once_t initGlobalInterceptorFactory;
 
   GPBEmpty *request = [GPBEmpty message];
   GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
+  // For backwards compatibility
   options.transportType = [[self class] transportType];
   options.transport = [[self class] transport];
   options.PEMRootCertificates = [[self class] PEMRootCertificates];
@@ -508,6 +506,7 @@ static dispatch_once_t initGlobalInterceptorFactory;
 
   GPBEmpty *request = [GPBEmpty message];
   GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
+  // For backwards compatibility
   options.transportType = [[self class] transportType];
   options.transport = [[self class] transport];
   options.PEMRootCertificates = [[self class] PEMRootCertificates];
@@ -586,6 +585,7 @@ static dispatch_once_t initGlobalInterceptorFactory;
   request.payload.body = [NSMutableData dataWithLength:271828];
 
   GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
+  // For backwards compatibility
   options.transportType = [[self class] transportType];
   options.transport = [[self class] transport];
   options.PEMRootCertificates = [[self class] PEMRootCertificates];
@@ -635,6 +635,7 @@ static dispatch_once_t initGlobalInterceptorFactory;
       request.responseStatus.code = GRPC_STATUS_CANCELLED;
     }
     GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
+  // For backwards compatibility
     options.transportType = [[self class] transportType];
     options.transport = [[self class] transport];
     options.PEMRootCertificates = [[self class] PEMRootCertificates];
@@ -938,6 +939,7 @@ static dispatch_once_t initGlobalInterceptorFactory;
   id request = [RMTStreamingOutputCallRequest messageWithPayloadSize:requests[index]
                                                requestedResponseSize:responses[index]];
   GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
+  // For backwards compatibility
   options.transportType = [[self class] transportType];
   options.transport = [[self class] transport];
   options.PEMRootCertificates = [[self class] PEMRootCertificates];
@@ -991,6 +993,7 @@ static dispatch_once_t initGlobalInterceptorFactory;
   id request = [RMTStreamingOutputCallRequest messageWithPayloadSize:requests[index]
                                                requestedResponseSize:responses[index]];
   GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
+  // For backwards compatibility
   options.transportType = [[self class] transportType];
   options.transport = [[self class] transport];
   options.PEMRootCertificates = [[self class] PEMRootCertificates];
@@ -1149,6 +1152,7 @@ static dispatch_once_t initGlobalInterceptorFactory;
   __block BOOL receivedResponse = NO;
 
   GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
+  // For backwards compatibility
   options.transportType = self.class.transportType;
   options.transport = [[self class] transport];
   options.PEMRootCertificates = self.class.PEMRootCertificates;
@@ -1183,6 +1187,7 @@ static dispatch_once_t initGlobalInterceptorFactory;
       [self expectationWithDescription:@"Call completed."];
 
   GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
+  // For backwards compatibility
   options.transportType = self.class.transportType;
   options.transport = [[self class] transport];
   options.PEMRootCertificates = self.class.PEMRootCertificates;
@@ -1270,48 +1275,43 @@ static dispatch_once_t initGlobalInterceptorFactory;
   [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];
 }
 
-#ifndef GRPC_COMPILE_WITH_CRONET
-- (void)testKeepalive {
+- (void)testKeepaliveWithV2API {
   XCTAssertNotNil([[self class] host]);
   __weak XCTestExpectation *expectation = [self expectationWithDescription:@"Keepalive"];
 
-  [GRPCCall setKeepaliveWithInterval:1500 timeout:0 forHost:[[self class] host]];
 
-  NSArray *requests = @[ @27182, @8 ];
-  NSArray *responses = @[ @31415, @9 ];
+  NSNumber *kRequestSize = @27182;
+  NSNumber *kResponseSize = @31415;
 
-  GRXBufferedPipe *requestsBuffer = [[GRXBufferedPipe alloc] init];
+  id request = [RMTStreamingOutputCallRequest messageWithPayloadSize:kRequestSize
+                                               requestedResponseSize:kResponseSize];
+  GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
+  options.transportType = [[self class] transportType];
+  options.transport = [[self class] transport];
+  options.PEMRootCertificates = [[self class] PEMRootCertificates];
+  options.hostNameOverride = [[self class] hostNameOverride];
+  options.keepaliveInterval = 1.5;
+  options.keepaliveTimeout = 0;
 
-  __block int index = 0;
-
-  id request = [RMTStreamingOutputCallRequest messageWithPayloadSize:requests[index]
-                                               requestedResponseSize:responses[index]];
-  [requestsBuffer writeValue:request];
-
-  [_service
-      fullDuplexCallWithRequestsWriter:requestsBuffer
-                          eventHandler:^(BOOL done, RMTStreamingOutputCallResponse *response,
-                                         NSError *error) {
-                            if (index == 0) {
-                              XCTAssertNil(error, @"Finished with unexpected error: %@", error);
-                              XCTAssertTrue(response, @"Event handler called without an event.");
-                              XCTAssertFalse(done);
-                              index++;
-                            } else {
-                              // Keepalive should kick after 1s elapsed and fails the call.
-                              XCTAssertNotNil(error);
-                              XCTAssertEqual(error.code, GRPC_STATUS_UNAVAILABLE);
-                              XCTAssertEqualObjects(
-                                  error.localizedDescription, @"keepalive watchdog timeout",
-                                  @"Unexpected failure that is not keepalive watchdog timeout.");
-                              XCTAssertTrue(done);
-                              [expectation fulfill];
-                            }
-                          }];
+  __block GRPCStreamingProtoCall *call = [_service
+                                          fullDuplexCallWithResponseHandler:[[InteropTestsBlockCallbacks alloc]
+                                                                             initWithInitialMetadataCallback:nil
+                                                                             messageCallback:nil
+                                                                             closeCallback:^(NSDictionary *trailingMetadata,
+                                                                                             NSError *error) {
+                                                                               XCTAssertNotNil(error);
+                                                                               XCTAssertEqual(error.code, GRPC_STATUS_UNAVAILABLE,
+                                                                                              @"Received status %ld instead of UNAVAILABLE (14).",
+                                                                                              error.code);
+                                                                               [expectation fulfill];
+                                                                             }]
+                                          callOptions:options];
+  [call writeMessage:request];
+  [call start];
 
   [self waitForExpectationsWithTimeout:TEST_TIMEOUT handler:nil];
+  [call finish];
 }
-#endif
 
 - (void)testDefaultInterceptor {
   XCTAssertNotNil([[self class] host]);
@@ -1326,6 +1326,7 @@ static dispatch_once_t initGlobalInterceptorFactory;
   id request = [RMTStreamingOutputCallRequest messageWithPayloadSize:requests[index]
                                                requestedResponseSize:responses[index]];
   GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
+  // For backwards compatibility
   options.transportType = [[self class] transportType];
   options.transport = [[self class] transport];
   options.PEMRootCertificates = [[self class] PEMRootCertificates];
@@ -1430,6 +1431,7 @@ static dispatch_once_t initGlobalInterceptorFactory;
   id request = [RMTStreamingOutputCallRequest messageWithPayloadSize:requests[index]
                                                requestedResponseSize:responses[index]];
   GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
+  // For backwards compatibility
   options.transportType = [[self class] transportType];
   options.transport = [[self class] transport];
   options.PEMRootCertificates = [[self class] PEMRootCertificates];
@@ -1563,6 +1565,7 @@ static dispatch_once_t initGlobalInterceptorFactory;
   id request = [RMTStreamingOutputCallRequest messageWithPayloadSize:requests[index]
                                                requestedResponseSize:responses[index]];
   GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
+  // For backwards compatibility
   options.transportType = [[self class] transportType];
   options.transport = [[self class] transport];
   options.PEMRootCertificates = [[self class] PEMRootCertificates];
@@ -1673,6 +1676,7 @@ static dispatch_once_t initGlobalInterceptorFactory;
   id request = [RMTStreamingOutputCallRequest messageWithPayloadSize:requests[index]
                                                requestedResponseSize:responses[index]];
   GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
+  // For backwards compatibility
   options.transportType = [[self class] transportType];
   options.transport = [[self class] transport];
   options.PEMRootCertificates = [[self class] PEMRootCertificates];
@@ -1857,6 +1861,7 @@ static dispatch_once_t initGlobalInterceptorFactory;
   id request = [RMTStreamingOutputCallRequest messageWithPayloadSize:requests[index]
                                                requestedResponseSize:responses[index]];
   GRPCMutableCallOptions *options = [[GRPCMutableCallOptions alloc] init];
+  // For backwards compatibility
   options.transportType = [[self class] transportType];
   options.transport = [[self class] transport];
   options.PEMRootCertificates = [[self class] PEMRootCertificates];

@@ -1,6 +1,6 @@
 /*
  *
- * Copyright 2016 gRPC authors.
+ * Copyright 2019 gRPC authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,20 +15,9 @@
  * limitations under the License.
  *
  */
-#import <Cronet/Cronet.h>
 
-#import "GRPCCall.h"
-#import "GRPCTransport.h"
+#import "GRPCCoreFactory.h"
 
-// Transport id for Cronet transport
-extern const GRPCTransportId gGRPCCoreCronetId;
-
-// Deprecated class. Please use the previous transport id with GRPCCallOptions instead.
-@interface GRPCCall (Cronet)
-
-+ (void)useCronetWithEngine:(stream_engine*)engine;
-+ (stream_engine*)cronetEngine;
-+ (BOOL)isUsingCronet;
+@interface GRPCCoreCronetFactory : NSObject<GRPCCoreTransportFactory>
 
 @end
-

@@ -167,7 +167,6 @@ static NSString *const kBearerPrefix = @"Bearer ";
   }
 }
 
-// Designated initializer
 - (instancetype)initWithHost:(NSString *)host
                         path:(NSString *)path
               requestsWriter:(GRXWriter *)requestWriter {

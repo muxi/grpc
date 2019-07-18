@@ -61,15 +61,12 @@
     id<GRPCCoreTransportFactory> coreTransportFactory = (id<GRPCCoreTransportFactory>)transportFactory;
     return [coreTransportFactory createCoreChannelFactoryWithCallOptions:_callOptions];
   } else {
+    // To maintain backwards compatibility with tranportType
     GRPCTransportType type = _callOptions.transportType;
     switch (type) {
       case GRPCTransportTypeChttp2BoringSSL:
         // TODO (mxyan): Remove when the API is deprecated
-#ifdef GRPC_COMPILE_WITH_CRONET
-        if (![GRPCCall isUsingCronet]) {
-#else
           {
-#endif
             NSError *error;
             id<GRPCChannelFactory> factory = [GRPCSecureChannelFactory
                                               factoryWithPEMRootCertificates:_callOptions.PEMRootCertificates
@@ -82,13 +79,18 @@
             }
             return factory;
           }
-          // fallthrough
-        case GRPCTransportTypeCronet:
-          return [GRPCCronetChannelFactory sharedInstance];
-        case GRPCTransportTypeInsecure:
-          return [GRPCInsecureChannelFactory sharedInstance];
-        }
+      case GRPCTransportTypeCronet:
+      {
+        id<GRPCCoreTransportFactory> transportFactory = (id<GRPCCoreTransportFactory>)[[GRPCTransportRegistry sharedInstance] getTransportFactoryWithId:gGRPCCoreCronetId];
+        return [transportFactory createCoreChannelFactoryWithCallOptions:_callOptions];
+      }
+      case GRPCTransportTypeInsecure:
+        return [GRPCInsecureChannelFactory sharedInstance];
+      default:
+        NSLog(@"Unrecognized transport type");
+        return nil;
     }
+  }
 }
 
 - (NSDictionary *)channelArgs {
