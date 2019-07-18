@@ -36,7 +36,6 @@
 #import <grpc/grpc.h>
 #import <grpc/support/log.h>
 
-#import "../ConfigureCronet.h"
 #import "InteropTestsBlockCallbacks.h"
 
 #define TEST_TIMEOUT 32
@@ -418,14 +417,6 @@ static dispatch_once_t initGlobalInterceptorFactory;
 }
 
 + (void)setUp {
-  configureCronet();
-  if ([self useCronet]) {
-    [GRPCCall useCronetWithEngine:[Cronet getGlobalEngine]];
-  }
-#ifdef GRPC_CFSTREAM
-  setenv(kCFStreamVarName, "1", 1);
-#endif
-
   dispatch_once(&initGlobalInterceptorFactory, ^{
     dispatch_queue_t globalInterceptorQueue = dispatch_queue_create(NULL, DISPATCH_QUEUE_SERIAL);
     globalInterceptorFactory =

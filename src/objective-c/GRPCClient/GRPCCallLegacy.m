@@ -20,6 +20,7 @@
 
 #import "GRPCCall+OAuth2.h"
 #import "GRPCCallOptions.h"
+#import "GRPCCall+Cronet.h"
 
 #import "private/GRPCCore/GRPCChannelPool.h"
 #import "private/GRPCCore/GRPCCompletionQueue.h"
@@ -598,6 +599,11 @@ static NSString *const kBearerPrefix = @"Bearer ";
 
     if (_callOptions == nil) {
       GRPCMutableCallOptions *callOptions = [[GRPCHost callOptionsForHost:_host] mutableCopy];
+      // By v1 API logic, insecure channel precedes Cronet channel; Cronet channel preceeds default
+      // channel. We maintain backwards compatibility here with v1 API by keep this logic.
+      if (callOptions.transport == GRPCTransportTypeDefault && [GRPCCall isUsingCronet]) {
+        callOptions.transport = gGRPCCoreCronetId;
+      }
       if (_serverName.length != 0) {
         callOptions.serverAuthority = _serverName;
       }

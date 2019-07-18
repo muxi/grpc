@@ -39,7 +39,7 @@ static dispatch_once_t gInitGRPCCoreCronetFactory;
 
 + (void)load {
   [[GRPCTransportRegistry sharedInstance] registerTransportWithId:gGRPCCoreCronetId
-                                                          factory:gGRPCCoreCronetFactory];
+                                                          factory:[GRPCCoreCronetFactory sharedInstance]];
 }
 
 - (GRPCTransport *)createTransportWithManager:(GRPCTransportManager *)transportManager {

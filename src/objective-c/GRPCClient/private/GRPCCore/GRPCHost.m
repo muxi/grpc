@@ -114,17 +114,10 @@ static NSMutableDictionary *gHostCache;
   options.PEMPrivateKey = _PEMPrivateKey;
   options.PEMCertificateChain = _PEMCertificateChain;
   options.hostNameOverride = _hostNameOverride;
-  // By old API logic, insecure channel precedes Cronet channel; Cronet channel preceeds default
-  // channel.
-  if ([GRPCCall isUsingCronet]) {
-    if (_transportType == GRPCTransportTypeInsecure) {
-      options.transportType = GRPCTransportTypeInsecure;
-    } else {
-      NSAssert(_transportType == GRPCTransportTypeDefault, @"Invalid transport type");
-      options.transportType = GRPCTransportTypeCronet;
-    }
+  if (_transportType == GRPCTransportTypeInsecure) {
+    options.transport = GRPCTransportImplList.core_insecure;
   } else {
-    options.transportType = _transportType;
+    options.transport = GRPCTransportImplList.core_secure;
   }
   options.logContext = _logContext;
 
