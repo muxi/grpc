@@ -519,21 +519,6 @@ GRPCErrorCode translateStatusCode(NSInteger status) {
     return;
   }
   GTMSessionFetcherService *service = [[GTMSessionFetcherService alloc] init];
-/*  NSURL *url = [NSURL URLWithString:requestOptions.host];
-  // URL parsing might be unsuccessful because the host does not contain scheme
-  if (url == nil || url.scheme == nil) {
-    url = [NSURL URLWithString:[@"https://" stringByAppendingString:requestOptions.host]];
-    NSAssert(url != nil && url.scheme != nil, @"Malformed host");
-    if (url == nil || url.scheme == nil) {
-      [self issueClosedWithTrailingMetadata:nil error:[NSError errorWithDomain:kGRPCErrorDomain
-                                                                          code:GRPCErrorCodeInvalidArgument
-                                                                      userInfo:@{NSLocalizedDescriptionKey :
-                                                                                   @"Malformed host."
-                                                                                 }]];
-      return;
-    }
-  }
-  url = [NSURL URLWithString:requestOptions.path relativeToURL:url];*/
   NSString *urlString = [[requestOptions.host stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"/"]] stringByAppendingString:requestOptions.path];
   urlString = [@"http://" stringByAppendingString:urlString];
   _fetcher = [service fetcherWithURLString:urlString];
@@ -570,37 +555,7 @@ GRPCErrorCode translateStatusCode(NSInteger status) {
       return;
     }
     NSDictionary *headers = self->_fetcher.responseHeaders;
-/*    // trailer-only case
-    if (headers[kGRPCStatus] != nil) {
-      NSError *error;
-      NSMutableDictionary *trailers = [[NSMutableDictionary alloc] initWithDictionary:headers];
-      error = parseGRPCStatus(trailers);
-      [self issueClosedWithTrailingMetadata:trailers error:error];
-    } else {
-      [self issueInitialMetadata:headers];
-
-      while (data.length) {
-        GRPCWebData *webData = [[GRPCWebData alloc] initWithData:data];
-        switch(webData.type) {
-          case Data:
-            [self issueMessage:webData.data];
-            break;
-          case Trailer: {
-            NSMutableDictionary *trailers = [[NSMutableDictionary alloc] initWithDictionary:webData.trailers];
-            NSError *error = parseGRPCStatus(trailers);
-            [self issueClosedWithTrailingMetadata:trailers error:error];
-            return;
-          }
-          default:
-            [self issueClosedWithTrailingMetadata:nil error:[NSError errorWithDomain:kGRPCErrorDomain
-                                                                                code:GRPCErrorCodeInternal
-                                                                            userInfo:@{NSLocalizedDescriptionKey :
-                                                                                         @"Malformated messages."
-                                                                                       }]];
-            return;
-        }
-      }
-    }*/
+    
     [self issueInitialMetadata:headers];
     if (data != nil && data.length != 0) {
       [self issueMessage:data];
