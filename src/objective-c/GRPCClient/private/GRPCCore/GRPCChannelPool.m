@@ -25,13 +25,11 @@
 #import "GRPCChannelPool.h"
 #import "GRPCCompletionQueue.h"
 #import "GRPCConnectivityMonitor.h"
-#import "GRPCCronetChannelFactory.h"
 #import "GRPCInsecureChannelFactory.h"
 #import "GRPCSecureChannelFactory.h"
 #import "GRPCWrappedCall.h"
 #import "version.h"
 
-#import <GRPCClient/GRPCCall+Cronet.h>
 #include <grpc/support/log.h>
 
 extern const char *kCFStreamVarName;

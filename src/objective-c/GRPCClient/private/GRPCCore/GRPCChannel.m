@@ -25,7 +25,6 @@
 #import "GRPCChannelFactory.h"
 #import "GRPCChannelPool.h"
 #import "GRPCCompletionQueue.h"
-#import "GRPCCronetChannelFactory.h"
 #import "GRPCInsecureChannelFactory.h"
 #import "GRPCSecureChannelFactory.h"
 #import "version.h"

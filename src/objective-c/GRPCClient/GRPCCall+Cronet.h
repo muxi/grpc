@@ -15,10 +15,11 @@
  * limitations under the License.
  *
  */
-#import <Cronet/Cronet.h>
 
 #import "GRPCCall.h"
 #import "GRPCTransport.h"
+
+typedef struct stream_engine stream_engine;
 
 // Transport id for Cronet transport
 extern const GRPCTransportId gGRPCCoreCronetId;
