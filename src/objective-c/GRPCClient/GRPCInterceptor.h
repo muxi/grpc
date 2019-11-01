@@ -115,6 +115,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class GRPCRequestOptions;
 @class GRPCCallOptions;
 @protocol GRPCResponseHandler;
+@protocol GRPCTransportContext;
 
 /**
  * The GRPCInterceptorInterface defines the request events that can occur to an interceptr.
@@ -184,7 +185,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (nullable instancetype)initWithFactories:(nullable NSArray<id<GRPCInterceptorFactory>> *)factories
                        previousInterceptor:(nullable id<GRPCResponseHandler>)previousInterceptor
-                               transportID:(GRPCTransportID)transportID;
+                          transportContext:(GRPCTransportContext *)transportContext;
 
 /**
  * Notify the manager that the interceptor has shut down and the manager should release references

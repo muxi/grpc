@@ -47,15 +47,37 @@ NSUInteger TransportIDHash(GRPCTransportID);
 @class GRPCRequestOptions;
 @class GRPCCallOptions;
 @class GRPCTransport;
+@protocol GRPCTransportContext;
 
-/** The factory to create a transport. */
-@protocol GRPCTransportFactory<NSObject>
+/** The factory to create a transport context. */
+@protocol GRPCTransportContextFactory<NSObject>
 
-/** Create a transport implementation. */
+/** Create a transport context. */
+- (id<GRPCTransportContext>)createTransportContext;
+
+@end
+
+/**
+ * The context of a transport associated with a particular call.
+ */
+@protocol GRPCTransportContext
+
+/** Create a transport implementation instance. */
 - (GRPCTransport *)createTransportWithManager:(GRPCTransportManager *)transportManager;
 
 /** Get a list of factories for transport inteceptors. */
 @property(nonatomic, readonly) NSArray<id<GRPCInterceptorFactory>> *transportInterceptorFactories;
+
+/** The ID of the corresponding transport implementation. */
+@property(nonatomic, readonly) GRPCTransportID transportID;
+
+@end
+
+/**
+ * Base class for transport implementations. All transport implementation should inherit from this
+ * class.
+ */
+@interface GRPCTransport : NSObject<GRPCInterceptorInterface>
 
 @end
 
@@ -71,15 +93,7 @@ NSUInteger TransportIDHash(GRPCTransportID);
  * object to create the corresponding transport instance.
  */
 - (void)registerTransportWithID:(GRPCTransportID)transportID
-                        factory:(id<GRPCTransportFactory>)factory;
-
-@end
-
-/**
- * Base class for transport implementations. All transport implementation should inherit from this
- * class.
- */
-@interface GRPCTransport : NSObject<GRPCInterceptorInterface>
+                        factory:(id<GRPCTransportContextFactory>)factory;
 
 @end
 

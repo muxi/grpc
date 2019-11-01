@@ -185,11 +185,11 @@ NSString *const kGRPCErrorDomain = @"io.grpc";
       [interceptorFactories addObject:globalInterceptorFactory];
     }
     if (_actualCallOptions.transport != NULL) {
-      id<GRPCTransportFactory> transportFactory = [[GRPCTransportRegistry sharedInstance]
-          getTransportFactoryWithID:_actualCallOptions.transport];
+      id<GRPCTransportContext> transportContext = [[GRPCTransportRegistry sharedInstance]
+          createTransportContextWithID:_actualCallOptions.transport];
 
       NSArray<id<GRPCInterceptorFactory>> *transportInterceptorFactories =
-          transportFactory.transportInterceptorFactories;
+          transportContext.transportInterceptorFactories;
       if (transportInterceptorFactories != nil) {
         [interceptorFactories addObjectsFromArray:transportInterceptorFactories];
       }

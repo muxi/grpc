@@ -19,11 +19,8 @@
 #import <Foundation/Foundation.h>
 
 #import "GRPCInterceptor.h"
+#import "GRPCTransport.h"
 #import "private/GRPCTransport+Private.h"
-
-@interface GRPCInterceptorManager ()<GRPCInterceptorInterface, GRPCResponseHandler>
-
-@end
 
 @implementation GRPCInterceptorManager {
   id<GRPCInterceptorInterface> _nextInterceptor;
@@ -31,13 +28,13 @@
   GRPCInterceptor *_thisInterceptor;
   dispatch_queue_t _dispatchQueue;
   NSArray<id<GRPCInterceptorFactory>> *_factories;
-  GRPCTransportID _transportID;
+  id<GRPCTransportContext> _transportContext;
   BOOL _shutDown;
 }
 
 - (instancetype)initWithFactories:(NSArray<id<GRPCInterceptorFactory>> *)factories
               previousInterceptor:(id<GRPCResponseHandler>)previousInterceptor
-                      transportID:(nonnull GRPCTransportID)transportID {
+                 transportContext:(id<GRPCTransportContext>)transportContext {
   if ((self = [super init])) {
     if (factories.count == 0) {
       [NSException raise:NSInternalInconsistencyException
@@ -62,7 +59,7 @@
       _dispatchQueue = dispatch_queue_create(NULL, DISPATCH_QUEUE_SERIAL);
     }
     dispatch_set_target_queue(_dispatchQueue, _thisInterceptor.dispatchQueue);
-    _transportID = transportID;
+    _transportContext = transportContext;
   }
   return self;
 }
@@ -87,12 +84,12 @@
   while (_nextInterceptor == nil) {
     if (interceptorFactories.count == 0) {
       _nextInterceptor =
-          [[GRPCTransportManager alloc] initWithTransportID:_transportID previousInterceptor:self];
+          [[GRPCTransportManager alloc] initWithTransportContext:_transportContext previousInterceptor:self];
       break;
     } else {
       _nextInterceptor = [[GRPCInterceptorManager alloc] initWithFactories:interceptorFactories
                                                        previousInterceptor:self
-                                                               transportID:_transportID];
+                                                          transportContext:_transportContext];
       if (_nextInterceptor == nil) {
         [interceptorFactories removeObjectAtIndex:0];
       }

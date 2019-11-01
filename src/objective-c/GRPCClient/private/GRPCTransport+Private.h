@@ -27,11 +27,9 @@ NS_ASSUME_NONNULL_BEGIN
 @interface GRPCTransportRegistry (Private)
 
 /**
- * Get a transport implementation's factory by its transport id. If the transport id was not
- * registered with the registry, the default transport factory (core + secure) is returned. If the
- * default transport does not exist, an exception is thrown.
+ * Get a call-specific transport context by transport id. If the transport id was not registered with the registry, the a context of the defalt transport implementation (core + secure) is returned. If the default transport implementation does not exist, an exception is thrown.
  */
-- (id<GRPCTransportFactory>)getTransportFactoryWithID:(GRPCTransportID)transportID;
+- (id<GRPCTransportContext>)createTransportContextWithID:(GRPCTransportID)transportID;
 
 @end
 
@@ -49,7 +47,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @interface GRPCTransportManager : NSObject<GRPCInterceptorInterface>
 
-- (instancetype)initWithTransportID:(GRPCTransportID)transportID
+- (instancetype)initWithTransportContext:(id<GRPCTransportContext>)transportContext
                 previousInterceptor:(id<GRPCResponseHandler>)previousInterceptor;
 
 /**

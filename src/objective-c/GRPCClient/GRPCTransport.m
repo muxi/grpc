@@ -43,8 +43,8 @@ NSUInteger TransportIDHash(GRPCTransportID transportID) {
 }
 
 @implementation GRPCTransportRegistry {
-  NSMutableDictionary<NSString *, id<GRPCTransportFactory>> *_registry;
-  id<GRPCTransportFactory> _defaultFactory;
+  NSMutableDictionary<NSString *, id<GRPCTransportContextFactory>> *_registry;
+  id<GRPCTransportContextFactory> _defaultContextFactory;
 }
 
 + (instancetype)sharedInstance {
@@ -67,7 +67,7 @@ NSUInteger TransportIDHash(GRPCTransportID transportID) {
 }
 
 - (void)registerTransportWithID:(GRPCTransportID)transportID
-                        factory:(id<GRPCTransportFactory>)factory {
+                        factory:(id<GRPCTransportContextFactory>)factory {
   NSString *nsTransportID = [NSString stringWithCString:transportID encoding:NSUTF8StringEncoding];
   NSAssert(_registry[nsTransportID] == nil, @"The transport %@ has already been registered.",
            nsTransportID);
@@ -79,35 +79,35 @@ NSUInteger TransportIDHash(GRPCTransportID transportID) {
 
   // if the default transport is registered, mark it.
   if (0 == strcmp(transportID, gDefaultTransportID)) {
-    _defaultFactory = factory;
+    _defaultContextFactory = factory;
   }
 }
 
-- (id<GRPCTransportFactory>)getTransportFactoryWithID:(GRPCTransportID)transportID {
+- (id<GRPCTransportContext>)createTransportContextWithID:(GRPCTransportID)transportID {
   if (transportID == NULL) {
-    if (_defaultFactory == nil) {
+    if (_defaultContextFactory == nil) {
       // fall back to default transport if no transport is provided
       [NSException raise:NSInvalidArgumentException
                   format:@"Did not specify transport and unable to find a default transport."];
       return nil;
     }
-    return _defaultFactory;
+    return [_defaultContextFactory createTransportContext];
   }
-  NSString *nsTransportID = [NSString stringWithCString:transportID encoding:NSUTF8StringEncoding];
-  id<GRPCTransportFactory> transportFactory = _registry[nsTransportID];
-  if (transportFactory == nil) {
-    if (_defaultFactory != nil) {
+  NSString *key = [NSString stringWithCString:transportID encoding:NSUTF8StringEncoding];
+  id<GRPCTransportContextFactory> factory = _registry[key];
+  if (factory == nil) {
+    if (_defaultContextFactory != nil) {
       // fall back to default transport if no transport is found
       NSLog(@"Unable to find transport with id %s; falling back to default transport.",
             transportID);
-      return _defaultFactory;
+      return [_defaultContextFactory createTransportContext];
     } else {
       [NSException raise:NSInvalidArgumentException
                   format:@"Unable to find transport with id %s", transportID];
       return nil;
     }
   }
-  return transportFactory;
+  return [factory createTransportContext];
 }
 
 @end

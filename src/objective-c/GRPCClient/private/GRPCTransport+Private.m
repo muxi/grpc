@@ -21,27 +21,24 @@
 #import <GRPCClient/GRPCTransport.h>
 
 @implementation GRPCTransportManager {
-  GRPCTransportID _transportID;
+  GRPCTransportContext _transportContext;
   GRPCTransport *_transport;
   id<GRPCResponseHandler> _previousInterceptor;
   dispatch_queue_t _dispatchQueue;
 }
 
-- (instancetype)initWithTransportID:(GRPCTransportID)transportID
-                previousInterceptor:(id<GRPCResponseHandler>)previousInterceptor {
+- (instancetype)initWithTransportContext:(id<GRPCTransportContext>)transportContext
+                     previousInterceptor:(id<GRPCResponseHandler>)previousInterceptor {
   if ((self = [super init])) {
-    id<GRPCTransportFactory> factory =
-        [[GRPCTransportRegistry sharedInstance] getTransportFactoryWithID:transportID];
-
-    _transport = [factory createTransportWithManager:self];
-    NSAssert(_transport != nil, @"Failed to create transport with id: %s", transportID);
+    _transport = [transportContext createTransportWithManager:self];
+    NSAssert(_transport != nil, @"Failed to create transport with id: %s", transportContext.transportID);
     if (_transport == nil) {
-      NSLog(@"Failed to create transport with id: %s", transportID);
+      NSLog(@"Failed to create transport with id: %s", transportContext.transportID);
       return nil;
     }
     _previousInterceptor = previousInterceptor;
     _dispatchQueue = _transport.dispatchQueue;
-    _transportID = transportID;
+    _transportContext = transportContext;
   }
   return self;
 }
@@ -58,7 +55,7 @@
 
 - (void)startWithRequestOptions:(GRPCRequestOptions *)requestOptions
                     callOptions:(GRPCCallOptions *)callOptions {
-  if (_transportID != callOptions.transport) {
+  if (TransportIDIsEqual(_transportContext.transportID, callOptions.transport) {
     [NSException raise:NSInvalidArgumentException
                 format:@"Interceptors cannot change the call option 'transport'"];
     return;
