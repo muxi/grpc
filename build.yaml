@@ -5147,6 +5147,18 @@ targets:
   - grpc++
   - grpc
   - gpr
+- name: rls_end2eund_test
+  gtest: true
+  build: test
+  language: c++
+  src:
+  - test/cpp/end2end/rls_end2end_test.cc
+  deps:
+  - grpc++_test_util
+  - grpc_test_util
+  - grpc++
+  - grpc
+  - gpr
 - name: grpclb_fallback_test
   build: test
   run: false
