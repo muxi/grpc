@@ -16,6 +16,12 @@
  *
  */
 
+#include <grpcpp/channel.h>
+
+#include "src/core/ext/filters/client_channel/parse_address.h"
+#include "src/core/ext/filters/client_channel/resolver/fake/fake_resolver.h"
+#include "src/core/lib/uri/uri_parser.h"
+#include "src/proto/grpc/testing/echo.grpc.pb.h"
 #include "test/cpp/end2end/test_service_impl.h"
 
 #include <gmock/gmock.h>
@@ -26,25 +32,17 @@
 #define SECONDS(x) (int(x))
 #define NANO_SECONDS(x) (int(((x) - int(x)) * 1e9))
 
+namespace grpc {
+namespace testing {
+namespace {
+
 // Subclass of TestServiceImpl that increments a request counter for
 // every call to the Echo Rpc.
 class MyTestServiceImpl : public TestServiceImpl {
  public:
   Status Echo(ServerContext* context, const EchoRequest* request,
               EchoResponse* response) override {
-    const udpa::data::orca::v1::OrcaLoadReport* load_report = nullptr;
-    {
-      grpc::internal::MutexLock lock(&mu_);
-      ++request_count_;
-      load_report = load_report_;
-    }
     AddClient(context->peer());
-    if (load_report != nullptr) {
-      // TODO(roth): Once we provide a more standard server-side API for
-      // populating this data, use that API here.
-      context->AddTrailingMetadata("x-endpoint-load-metrics-bin",
-                                   load_report->SerializeAsString());
-    }
     return TestServiceImpl::Echo(context, request, response);
   }
 
@@ -63,11 +61,6 @@ class MyTestServiceImpl : public TestServiceImpl {
     return clients_;
   }
 
-  void set_load_report(udpa::data::orca::v1::OrcaLoadReport* load_report) {
-    grpc::internal::MutexLock lock(&mu_);
-    load_report_ = load_report;
-  }
-
  private:
   void AddClient(const grpc::string& client) {
     grpc::internal::MutexLock lock(&clients_mu_);
@@ -76,7 +69,6 @@ class MyTestServiceImpl : public TestServiceImpl {
 
   grpc::internal::Mutex mu_;
   int request_count_ = 0;
-  const udpa::data::orca::v1::OrcaLoadReport* load_report_ = nullptr;
   grpc::internal::Mutex clients_mu_;
   std::set<grpc::string> clients_;
 };
@@ -213,7 +205,7 @@ class RlsPolicyEnd2endTest : public ::testing::Test {
 
   std::shared_ptr<Channel> BuildChannel(
       const FakeResolverResponseGeneratorWrapper& resolver_response_generator,
-      std::shared_ptr<FakeRlsControlChannelResponseGenerator> rls_response_generator,
+      std::shared_ptr<FakeRlsResponseGenerator> rls_response_generator,
       ChannelArguments args = ChannelArguments()) {
     auto control_channel_factory = new FakeRlsControlChannelFactory(rls_response_generator);
     args.SetPointer(GRPC_ARG_FAKE_RESOLVER_RESPONSE_GENERATOR,
@@ -408,7 +400,7 @@ class RlsPolicyEnd2endTest : public ::testing::Test {
     service_config << "        ]";
     service_config << "      },";
     service_config << "      \"lookup_service\":\"fake.lookup.service\"",;
-    service_config << "      \"max_age\":{;
+    service_config << "      \"max_age\":{;";
     service_config << "        \"seconds\":" << SECONDS(max_age) << ",";
     service_config << "        \"nanoseconds\":" << NANOSECONDS(max_age);
     service_config << "      },";
@@ -642,3 +634,7 @@ TEST_F(RlsLbPolicyEnd2endTest, NoKeybuilderMatch) {
 }
 TEST_F(RlsLbPolicyEnd2endTest, InsertChildPolicyConfig) {
 }
+
+}  // namespace
+}  // namespace testing
+}  // namespace grpc
