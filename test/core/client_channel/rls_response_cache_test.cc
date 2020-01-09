@@ -136,10 +136,11 @@ public:
 
   PickResult* Pick();
 
-  virtual bool ShouldRemove() override;
+  bool HasValidChildPolicy();
+  bool ShouldRemove() override;
 };
 
-class RlsLookupCache final {
+class RlsLookupCache {
 public:
   using CacheKey = std::pair<grpc::string, std::map<grpc::string, grpc::string>>;
 

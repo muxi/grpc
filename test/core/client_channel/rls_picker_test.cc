@@ -37,5 +37,3 @@ class KeyBuilder final {
 
   Key BuildKey(grpc_metadata_batch *headers);
 };
-
-
