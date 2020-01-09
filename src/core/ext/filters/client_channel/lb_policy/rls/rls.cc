@@ -42,8 +42,24 @@ class RlsPicker : SubchannelPicker {
 PickResult RlsPicker::Pick(PickArgs args) {
   PickResult result;
 
+  grpc::string path = ParsePath(args);
+  RlsLbPolicy::LookupResult lookup_result = policy_->LookupRoute(ParsePath(args), args.initial_metadata);
+  switch (lookup_result.result) {
+    case SUCCEEDED:
+      return lookup_result.subchannel_wrapper->picker()->Pick(args);
+    case PENDING:
+      result.type = PICK_QUEUE;
+      return std::move(result);
+    case FAILED:
+      result.type =  PICK_FAILED;
+      result.error = lookup_result.error;
+      return std::move(result);
+    default:
+      abort();
+  }
+}
+  // Control plane ops
   gpr_mu_lock(mu_);
-  grpc::string path = ParseServiceMethod(args);
   const RlsKeyBuilder* key_builder = FindKeyBuilder(path);
   RlsLookupCache::CacheKey key;
   if (key_builder == nullptr) {
@@ -108,6 +124,19 @@ class RlsLbPolicy : public LoadBalancingPolicy {
     OrphanablePtr<LoadBalancingPolicy> child_policy_;
     grpc_connectivity_state connectivity_state_;
     UniquePtr<LoadBalancingPolicy::SubchannelPicker> picker_;
+  };
+
+  struct RouteLookupResult {
+    enum class ResultType {
+      SUCCEEDED = 0,
+      PENDING,
+      FAILED
+    };
+    ResultType result;
+
+    RefCountedPtr<RlsLbPolicy::SubchannelWrapper> subchannel_wrapper;
+
+    grpc_error *error;
   };
 
   using KeyBuilderMap = std::map<grpc::string, KeyBuilder>;
