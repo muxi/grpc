@@ -2668,6 +2668,9 @@ grpc_cc_library(
     hdrs = [
         "src/core/lib/iomgr/poller/eventmanager_libuv.h",
     ],
+    external_deps = [
+        "libuv"
+    ],
     deps = [
         "gpr_base",
     ],
