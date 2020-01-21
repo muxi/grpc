@@ -134,8 +134,6 @@ public:
   RefCountedPtr<ChildPolicyWrapper> child_policy_wrapper;
   grpc_string header_data;
 
-  PickResult* Pick();
-
   bool HasValidChildPolicy();
   bool ShouldRemove() override;
 };
@@ -156,7 +154,7 @@ public:
   RefCountedPtr<CacheEntry> Find(const CacheKey& key);
 
   /** Add a cached entry to the end of the LRU list. If an entry of the same key exists, the original entry is kept and the cache will not be affected. */
-  void Add(const CacheKey& key, RefCountedPtr<CacheEntry> entry);
+  void Add(const CacheKey& key, RefCountedPtr<CacheEntry> entry, RefCountedPtr<CacheEntry>* evicted_entry);
 
   /** Move a cached entry to the end of the LRU list. */
   void Refresh(const CacheKey& key);
