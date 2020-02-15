@@ -120,6 +120,15 @@ filegroups:
   - src/core/ext/upb-generated/envoy/api/v2/eds.upb.h
   - src/core/ext/upb-generated/envoy/api/v2/endpoint/endpoint.upb.h
   - src/core/ext/upb-generated/envoy/api/v2/endpoint/load_report.upb.h
+  - src/core/ext/upb-generated/envoy/api/v2/lds.upb.h
+  - src/core/ext/upb-generated/envoy/api/v2/listener/listener.upb.h
+  - src/core/ext/upb-generated/envoy/api/v2/listener/udp_listener_config.upb.h
+  - src/core/ext/upb-generated/envoy/api/v2/rds.upb.h
+  - src/core/ext/upb-generated/envoy/api/v2/route/route.upb.h
+  - src/core/ext/upb-generated/envoy/api/v2/srds.upb.h
+  - src/core/ext/upb-generated/envoy/config/filter/accesslog/v2/accesslog.upb.h
+  - src/core/ext/upb-generated/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.upb.h
+  - src/core/ext/upb-generated/envoy/config/listener/v2/api_listener.upb.h
   - src/core/ext/upb-generated/envoy/service/discovery/v2/ads.upb.h
   - src/core/ext/upb-generated/envoy/service/load_stats/v2/lrs.upb.h
   src:
@@ -132,6 +141,15 @@ filegroups:
   - src/core/ext/upb-generated/envoy/api/v2/eds.upb.c
   - src/core/ext/upb-generated/envoy/api/v2/endpoint/endpoint.upb.c
   - src/core/ext/upb-generated/envoy/api/v2/endpoint/load_report.upb.c
+  - src/core/ext/upb-generated/envoy/api/v2/lds.upb.c
+  - src/core/ext/upb-generated/envoy/api/v2/listener/listener.upb.c
+  - src/core/ext/upb-generated/envoy/api/v2/listener/udp_listener_config.upb.c
+  - src/core/ext/upb-generated/envoy/api/v2/rds.upb.c
+  - src/core/ext/upb-generated/envoy/api/v2/route/route.upb.c
+  - src/core/ext/upb-generated/envoy/api/v2/srds.upb.c
+  - src/core/ext/upb-generated/envoy/config/filter/accesslog/v2/accesslog.upb.c
+  - src/core/ext/upb-generated/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.upb.c
+  - src/core/ext/upb-generated/envoy/config/listener/v2/api_listener.upb.c
   - src/core/ext/upb-generated/envoy/service/discovery/v2/ads.upb.c
   - src/core/ext/upb-generated/envoy/service/load_stats/v2/lrs.upb.c
   uses:
@@ -170,10 +188,14 @@ filegroups:
 - name: envoy_type_upb
   headers:
   - src/core/ext/upb-generated/envoy/type/http.upb.h
+  - src/core/ext/upb-generated/envoy/type/matcher/regex.upb.h
+  - src/core/ext/upb-generated/envoy/type/matcher/string.upb.h
   - src/core/ext/upb-generated/envoy/type/percent.upb.h
   - src/core/ext/upb-generated/envoy/type/range.upb.h
   src:
   - src/core/ext/upb-generated/envoy/type/http.upb.c
+  - src/core/ext/upb-generated/envoy/type/matcher/regex.upb.c
+  - src/core/ext/upb-generated/envoy/type/matcher/string.upb.c
   - src/core/ext/upb-generated/envoy/type/percent.upb.c
   - src/core/ext/upb-generated/envoy/type/range.upb.c
   uses:
@@ -226,6 +248,7 @@ filegroups:
   - src/core/lib/gpr/string_util_windows.cc
   - src/core/lib/gpr/string_windows.cc
   - src/core/lib/gpr/sync.cc
+  - src/core/lib/gpr/sync_abseil.cc
   - src/core/lib/gpr/sync_posix.cc
   - src/core/lib/gpr/sync_windows.cc
   - src/core/lib/gpr/time.cc
@@ -265,6 +288,7 @@ filegroups:
   - include/grpc/support/port_platform.h
   - include/grpc/support/string_util.h
   - include/grpc/support/sync.h
+  - include/grpc/support/sync_abseil.h
   - include/grpc/support/sync_custom.h
   - include/grpc/support/sync_generic.h
   - include/grpc/support/sync_posix.h
@@ -315,6 +339,7 @@ filegroups:
   - include/grpc/impl/codegen/log.h
   - include/grpc/impl/codegen/port_platform.h
   - include/grpc/impl/codegen/sync.h
+  - include/grpc/impl/codegen/sync_abseil.h
   - include/grpc/impl/codegen/sync_custom.h
   - include/grpc/impl/codegen/sync_generic.h
   - include/grpc/impl/codegen/sync_posix.h
@@ -573,7 +598,6 @@ filegroups:
   - src/cpp/client/create_channel_internal.cc
   - src/cpp/client/create_channel_posix.cc
   - src/cpp/client/credentials_cc.cc
-  - src/cpp/client/generic_stub.cc
   - src/cpp/common/alarm.cc
   - src/cpp/common/channel_arguments.cc
   - src/cpp/common/channel_filter.cc
@@ -605,7 +629,6 @@ filegroups:
   uses:
   - gpr_base_headers
   - grpc_base_headers
-  - grpc_client_channel
   - grpc_health_upb
   - grpc_transport_inproc_headers
   - grpc++_codegen_base
@@ -695,7 +718,6 @@ filegroups:
   - src/core/lib/iomgr/is_epollexclusive_available.cc
   - src/core/lib/iomgr/load_file.cc
   - src/core/lib/iomgr/lockfree_event.cc
-  - src/core/lib/iomgr/logical_thread.cc
   - src/core/lib/iomgr/poller/eventmanager_libuv.cc
   - src/core/lib/iomgr/polling_entity.cc
   - src/core/lib/iomgr/pollset.cc
@@ -749,7 +771,7 @@ filegroups:
   - src/core/lib/iomgr/wakeup_fd_nospecial.cc
   - src/core/lib/iomgr/wakeup_fd_pipe.cc
   - src/core/lib/iomgr/wakeup_fd_posix.cc
-  - src/core/lib/json/json.cc
+  - src/core/lib/iomgr/work_serializer.cc
   - src/core/lib/json/json_reader.cc
   - src/core/lib/json/json_writer.cc
   - src/core/lib/slice/b64.cc
@@ -875,7 +897,6 @@ filegroups:
   - src/core/lib/iomgr/is_epollexclusive_available.h
   - src/core/lib/iomgr/load_file.h
   - src/core/lib/iomgr/lockfree_event.h
-  - src/core/lib/iomgr/logical_thread.h
   - src/core/lib/iomgr/nameser.h
   - src/core/lib/iomgr/poller/eventmanager_libuv.h
   - src/core/lib/iomgr/polling_entity.h
@@ -916,6 +937,7 @@ filegroups:
   - src/core/lib/iomgr/unix_sockets_posix.h
   - src/core/lib/iomgr/wakeup_fd_pipe.h
   - src/core/lib/iomgr/wakeup_fd_posix.h
+  - src/core/lib/iomgr/work_serializer.h
   - src/core/lib/json/json.h
   - src/core/lib/slice/b64.h
   - src/core/lib/slice/percent_encoding.h
@@ -1053,14 +1075,6 @@ filegroups:
   plugin: grpc_deadline_filter
   uses:
   - grpc_base
-- name: grpc_grpclb_balancer_addresses
-  headers:
-  - src/core/ext/filters/client_channel/lb_policy/grpclb/grpclb_balancer_addresses.h
-  src:
-  - src/core/ext/filters/client_channel/lb_policy/grpclb/grpclb_balancer_addresses.cc
-  uses:
-  - grpc_base
-  - grpc_client_channel
 - name: grpc_health_upb
   headers:
   - src/core/ext/upb-generated/src/proto/grpc/health/v1/health.upb.h
@@ -1116,7 +1130,6 @@ filegroups:
   uses:
   - grpc_base
   - grpc_client_channel
-  - grpc_grpclb_balancer_addresses
   - grpc_lb_upb
   - grpc_resolver_fake
 - name: grpc_lb_policy_grpclb_secure
@@ -1138,7 +1151,6 @@ filegroups:
   uses:
   - grpc_base
   - grpc_client_channel
-  - grpc_grpclb_balancer_addresses
   - grpc_lb_upb
   - grpc_resolver_fake
   - grpc_secure
@@ -1229,7 +1241,6 @@ filegroups:
   - grpc_base
   - grpc_client_channel
   - grpc_resolver_dns_selection
-  - grpc_grpclb_balancer_addresses
 - name: grpc_resolver_dns_native
   src:
   - src/core/ext/filters/client_channel/resolver/dns/native/dns_resolver.cc
@@ -1699,6 +1710,12 @@ libs:
   filegroups:
   - grpc_test_util_base
   secure: true
+- name: engine_passthrough
+  build: test
+  language: c
+  src:
+  - test/core/end2end/engine_passthrough.cc
+  dll: only
 - name: gpr
   build: all
   language: c
@@ -1910,7 +1927,10 @@ libs:
   - src/cpp/common/alts_util.cc
   deps:
   - grpc++
+  - gpr
   baselib: true
+  filegroups:
+  - alts_upb
 - name: grpc++_core_stats
   build: private
   language: c++
@@ -2324,19 +2344,6 @@ targets:
   - gpr
   corpus_dirs:
   - test/core/security/corpus/alts_credentials_corpus
-  maxlen: 2048
-- name: api_fuzzer
-  build: fuzzer
-  language: c
-  src:
-  - test/core/end2end/fuzzers/api_fuzzer.cc
-  deps:
-  - grpc_test_util
-  - grpc
-  - gpr
-  corpus_dirs:
-  - test/core/end2end/fuzzers/api_fuzzer_corpus
-  dict: test/core/end2end/fuzzers/api_fuzzer.dictionary
   maxlen: 2048
 - name: arena_test
   cpu_cost: 10
@@ -3281,16 +3288,6 @@ targets:
   corpus_dirs:
   - test/core/json/corpus
   maxlen: 512
-- name: json_test
-  build: test
-  language: c
-  src:
-  - test/core/json/json_test.cc
-  deps:
-  - grpc_test_util
-  - grpc
-  - gpr
-  uses_polling: false
 - name: lame_client_test
   build: test
   language: c
@@ -4580,6 +4577,7 @@ targets:
   src:
   - test/cpp/common/channel_arguments_test.cc
   deps:
+  - grpc_test_util
   - grpc++
   - grpc
   - gpr
@@ -5374,16 +5372,17 @@ targets:
   - mac
   - linux
   - posix
-- name: logical_thread_test
-  cpu_cost: 10
+- name: json_test
+  gtest: true
   build: test
   language: c++
   src:
-  - test/core/iomgr/logical_thread_test.cc
+  - test/core/json/json_test.cc
   deps:
   - grpc_test_util
   - grpc
   - gpr
+  uses_polling: false
 - name: message_allocator_end2end_test
   gtest: true
   cpu_cost: 0.5
@@ -6055,6 +6054,16 @@ targets:
   - alts_test_util
   - gpr
   - grpc
+- name: work_serializer_test
+  cpu_cost: 10
+  build: test
+  language: c++
+  src:
+  - test/core/iomgr/work_serializer_test.cc
+  deps:
+  - grpc_test_util
+  - grpc
+  - gpr
 - name: writes_per_rpc_test
   gtest: true
   cpu_cost: 0.5
@@ -6089,7 +6098,9 @@ targets:
   language: c++
   src:
   - src/proto/grpc/testing/xds/ads_for_test.proto
+  - src/proto/grpc/testing/xds/cds_for_test.proto
   - src/proto/grpc/testing/xds/eds_for_test.proto
+  - src/proto/grpc/testing/xds/lds_rds_for_test.proto
   - src/proto/grpc/testing/xds/lrs_for_test.proto
   - test/cpp/end2end/xds_end2end_test.cc
   deps:
@@ -6098,6 +6109,40 @@ targets:
   - grpc++
   - grpc
   - gpr
+- name: xds_interop_client
+  build: test
+  run: false
+  language: c++
+  src:
+  - src/proto/grpc/testing/empty.proto
+  - src/proto/grpc/testing/messages.proto
+  - src/proto/grpc/testing/test.proto
+  - test/cpp/interop/xds_interop_client.cc
+  deps:
+  - grpc++_test_config
+  - grpc_test_util
+  - grpc++
+  - grpc
+  - gpr
+  platforms:
+  - linux
+- name: xds_interop_server
+  build: test
+  run: false
+  language: c++
+  src:
+  - src/proto/grpc/testing/empty.proto
+  - src/proto/grpc/testing/messages.proto
+  - src/proto/grpc/testing/test.proto
+  - test/cpp/interop/xds_interop_server.cc
+  deps:
+  - grpc++_test_config
+  - grpc_test_util
+  - grpc++
+  - grpc
+  - gpr
+  platforms:
+  - linux
 - name: public_headers_must_be_c89
   build: test
   language: c89
@@ -6265,7 +6310,7 @@ defaults:
     CPPFLAGS: -Ithird_party/benchmark/include -DHAVE_POSIX_REGEX
   boringssl:
     CFLAGS: -g
-    CPPFLAGS: -Ithird_party/boringssl/include -fvisibility=hidden -DOPENSSL_NO_ASM
+    CPPFLAGS: -Ithird_party/boringssl-with-bazel/src/include -fvisibility=hidden -DOPENSSL_NO_ASM
       -D_GNU_SOURCE -DWIN32_LEAN_AND_MEAN -D_HAS_EXCEPTIONS=0 -DNOMINMAX
     CXXFLAGS: -fno-exceptions
   global:

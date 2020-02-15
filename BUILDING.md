@@ -12,9 +12,16 @@ Other should follow the user instructions. See the [How to use](https://github.c
  $ [sudo] apt-get install build-essential autoconf libtool pkg-config
 ```
 
-If you plan to build from source and run tests, install the following as well:
+If you plan to build using CMake
 ```sh
- $ [sudo] apt-get install libgflags-dev libgtest-dev
+ $ [sudo] apt-get install cmake
+```
+
+If you are a contributor and plan to build and run tests, install the following as well:
+```sh
+ $ # libgflags-dev is only required if building with make (deprecated)
+ $ [sudo] apt-get install libgflags-dev
+ $ # clang and LLVM C++ lib is only required for sanitizer builds
  $ [sudo] apt-get install clang-5.0 libc++-dev
 ```
 
@@ -36,8 +43,11 @@ packages from [Homebrew](https://brew.sh):
  $ brew install autoconf automake libtool shtool
 ```
 
-If you plan to build from source and run tests, install the following as well:
+If you plan to build using CMake, follow the instructions from https://cmake.org/download/
+
+If you are a contributor and plan to build and run tests, install the following as well:
 ```sh
+ $ # gflags is only required if building with make (deprecated) 
  $ brew install gflags
 ```
 
@@ -56,8 +66,6 @@ To prepare for cmake + Microsoft Visual C++ compiler build
 - Install Visual Studio 2015 or 2017 (Visual C++ compiler will be used).
 - Install [Git](https://git-scm.com/).
 - Install [CMake](https://cmake.org/download/).
-- Install [Active State Perl](https://www.activestate.com/activeperl/) (`choco install activeperl`) - *required by boringssl*
-- Install [Go](https://golang.org/dl/) (`choco install golang`) - *required by boringssl*
 - Install [nasm](https://www.nasm.us/) and add it to `PATH` (`choco install nasm`) - *required by boringssl*
 - (Optional) Install [Ninja](https://ninja-build.org/) (`choco install ninja`)
 
@@ -153,10 +161,11 @@ Please note that when using Ninja, you will still need Visual C++ (part of Visua
 installed to be able to compile the C/C++ sources.
 ```
 > @rem Run from grpc directory after cloning the repo with --recursive or updating submodules.
-> md .build
-> cd .build
+> cd cmake
+> md build
+> cd build
 > call "%VS140COMNTOOLS%..\..\VC\vcvarsall.bat" x64
-> cmake .. -GNinja -DCMAKE_BUILD_TYPE=Release
+> cmake ..\.. -GNinja -DCMAKE_BUILD_TYPE=Release
 > cmake --build .
 ```
 
@@ -175,7 +184,7 @@ ie `gRPC_CARES_PROVIDER`.
 ### Install after build
 
 Perform the following steps to install gRPC using CMake.
-* Set `gRPC_INSTALL` to `ON`
+* Set `-DgRPC_INSTALL=ON`
 * Build the `install` target
 
 The install destination is controlled by the
@@ -188,16 +197,21 @@ in "module" mode and install them alongside gRPC in a single step.
 If you are using an older version of gRPC, you will need to select "package"
 mode (rather than "module" mode) for the dependencies.
 This means you will need to have external copies of these libraries available
-on your system.
+on your system. This [example](test/distrib/cpp/run_distrib_test_cmake.sh) shows
+how to install dependencies with cmake before proceeding to installing gRPC itself. 
+
 ```
-$ cmake .. -DgRPC_CARES_PROVIDER=package    \
-           -DgRPC_PROTOBUF_PROVIDER=package \
-           -DgRPC_SSL_PROVIDER=package      \
-           -DgRPC_ZLIB_PROVIDER=package
+# NOTE: all of gRPC's dependencies need to be already installed
+$ cmake ../.. -DgRPC_INSTALL=ON                \
+              -DCMAKE_BUILD_TYPE=Release       \
+              -DgRPC_ABSL_PROVIDER=package     \
+              -DgRPC_CARES_PROVIDER=package    \
+              -DgRPC_PROTOBUF_PROVIDER=package \
+              -DgRPC_SSL_PROVIDER=package      \
+              -DgRPC_ZLIB_PROVIDER=package
 $ make
 $ make install
 ```
-[Example](test/distrib/cpp/run_distrib_test_cmake.sh)
 
 ### Cross-compiling
 
@@ -214,7 +228,7 @@ that will be used for this build.
 This toolchain file is specified to CMake by setting the `CMAKE_TOOLCHAIN_FILE`
 variable.
 ```
-$ cmake .. -DCMAKE_TOOLCHAIN_FILE=path/to/file
+$ cmake ../.. -DCMAKE_TOOLCHAIN_FILE=path/to/file
 $ make
 ```
 
