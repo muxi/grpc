@@ -2676,7 +2676,7 @@ grpc_cc_library(
         "src/core/lib/iomgr/poller/eventmanager_libuv.h",
     ],
     external_deps = [
-        "libuv"
+        "libuv",
     ],
     deps = [
         "gpr_base",
