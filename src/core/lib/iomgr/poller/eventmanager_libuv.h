@@ -20,7 +20,6 @@
 #define GRPC_CORE_LIB_IOMGR_POLLER_EVENTMANAGER_LIBUV_H
 
 #include <grpc/support/port_platform.h>
-
 #include <uv.h>
 
 #include <string>
