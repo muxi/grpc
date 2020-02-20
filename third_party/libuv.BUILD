@@ -144,9 +144,7 @@ cc_library(
         "//tools/cc_target_os:windows": COMMON_LIBUV_SOURCES + WINDOWS_LIBUV_SOURCES,
         "//conditions:default": COMMON_LIBUV_SOURCES + UNIX_LIBUV_SOURCES + LINUX_LIBUV_SOURCES,
     }),
-    hdrs = [
-        "include/uv.h",
-    ] + select({
+    hdrs = select({
         "//tools/cc_target_os:android": COMMON_LIBUV_HEADERS + UNIX_LIBUV_HEADERS + LINUX_LIBUV_HEADERS + ANDROID_LIBUV_HEADERS,
         "//tools/cc_target_os:apple": COMMON_LIBUV_HEADERS + UNIX_LIBUV_HEADERS + DARWIN_LIBUV_HEADERS,
         "//tools/cc_target_os:windows": COMMON_LIBUV_HEADERS + WINDOWS_LIBUV_HEADERS,
