@@ -1447,6 +1447,7 @@ target_include_directories(gpr
 target_link_libraries(gpr
   ${_gRPC_ALLTARGETS_LIBRARIES}
   absl::inlined_vector
+  absl::memory
   absl::strings
   absl::optional
 )
