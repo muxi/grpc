@@ -123,7 +123,7 @@ def grpc_deps():
 
     native.bind(
         name = "libuv",
-        actual = "@libuv//:libuv",
+        actual = "@com_github_libuv_libuv//:libuv",
     )
 
     if "boringssl" not in native.existing_rules():
@@ -270,9 +270,9 @@ def grpc_deps():
             sha256 = "122ebf7fe7d1c8e938af6aeaee0efe788a3a2449ece5a8d6a428cb18d6f88033",
         )
 
-    if "libuv" not in native.existing_rules():
+    if "com_github_libuv_libuv" not in native.existing_rules():
         http_archive(
-            name = "libuv",
+            name = "com_github_libuv_libuv",
             build_file = "@com_github_grpc_grpc//third_party:libuv.BUILD",
             sha256 = "dfb4fe1ff0b47340978490a14bf253475159ecfcbad46ab2a350c78f9ce3360f",
             strip_prefix = "libuv-15ae750151ac9341e5945eb38f8982d59fb99201",
