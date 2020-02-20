@@ -20,7 +20,7 @@ if(gRPC_LIBUV_PROVIDER STREQUAL "module")
     add_subdirectory(${LIBUV_ROOT_DIR} third_party/libuv)
     if(TARGET libuv)
       set(_gRPC_LIBUV_LIBRARIES libuv)
-      set(_gRPC_LIBUV_INCLUDE_DIR "${LIBUV_ROOT_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/third_party/libuv")
+      set(_gRPC_LIBUV_INCLUDE_DIR "${LIBUV_ROOT_DIR}/include")
       if(gRPC_INSTALL AND _gRPC_INSTALL_SUPPORTED_FROM_MODULE)
         install(TARGETS libuv EXPORT gRPCTargets
           RUNTIME DESTINATION ${gRPC_INSTALL_BINDIR}
