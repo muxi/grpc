@@ -1,3 +1,18 @@
+config_setting(
+    name = "android",
+    values = {"cpu": "android"},
+)
+
+config_setting(
+    name = "apple",
+    values = {"cpu": "darwin"},
+)
+
+config_setting(
+    name = "windows",
+    values = {"cpu": "x64_windows"},
+)
+
 COMMON_LIBUV_HEADERS = [
     "include/uv.h",
     "include/uv/errno.h",
@@ -139,15 +154,15 @@ WINDOWS_LIBUV_SOURCES = [
 cc_library(
     name = "libuv",
     srcs = select({
-        "//tools/cc_target_os:android": COMMON_LIBUV_SOURCES + UNIX_LIBUV_SOURCES + LINUX_LIBUV_SOURCES + ANDROID_LIBUV_SOURCES,
-        "//tools/cc_target_os:apple": COMMON_LIBUV_SOURCES + UNIX_LIBUV_SOURCES + DARWIN_LIBUV_SOURCES,
-        "//tools/cc_target_os:windows": COMMON_LIBUV_SOURCES + WINDOWS_LIBUV_SOURCES,
+        ":android": COMMON_LIBUV_SOURCES + UNIX_LIBUV_SOURCES + LINUX_LIBUV_SOURCES + ANDROID_LIBUV_SOURCES,
+        ":apple": COMMON_LIBUV_SOURCES + UNIX_LIBUV_SOURCES + DARWIN_LIBUV_SOURCES,
+        ":windows": COMMON_LIBUV_SOURCES + WINDOWS_LIBUV_SOURCES,
         "//conditions:default": COMMON_LIBUV_SOURCES + UNIX_LIBUV_SOURCES + LINUX_LIBUV_SOURCES,
     }),
     hdrs = select({
-        "//tools/cc_target_os:android": COMMON_LIBUV_HEADERS + UNIX_LIBUV_HEADERS + LINUX_LIBUV_HEADERS + ANDROID_LIBUV_HEADERS,
-        "//tools/cc_target_os:apple": COMMON_LIBUV_HEADERS + UNIX_LIBUV_HEADERS + DARWIN_LIBUV_HEADERS,
-        "//tools/cc_target_os:windows": COMMON_LIBUV_HEADERS + WINDOWS_LIBUV_HEADERS,
+        "android": COMMON_LIBUV_HEADERS + UNIX_LIBUV_HEADERS + LINUX_LIBUV_HEADERS + ANDROID_LIBUV_HEADERS,
+        "apple": COMMON_LIBUV_HEADERS + UNIX_LIBUV_HEADERS + DARWIN_LIBUV_HEADERS,
+        "windows": COMMON_LIBUV_HEADERS + WINDOWS_LIBUV_HEADERS,
         "//conditions:default": COMMON_LIBUV_HEADERS + UNIX_LIBUV_HEADERS + LINUX_LIBUV_HEADERS,
     }),
     copts = [
@@ -165,8 +180,8 @@ cc_library(
         "-Wno-unused-function",
         "-Wno-unused-variable",
     ] + select({
-        "//tools/cc_target_os:apple": [],
-        "//tools/cc_target_os:windows": [
+        ":apple": [],
+        ":windows": [
             "-DWIN32_LEAN_AND_MEAN",
             "-D_WIN32_WINNT=0x0600",
         ],
@@ -182,7 +197,7 @@ cc_library(
         "src",
     ],
     linkopts = select({
-        "//tools/cc_target_os:windows": [
+        ":windows": [
             "-Xcrosstool-compilation-mode=$(COMPILATION_MODE)",
             "-Wl,Iphlpapi.lib",
             "-Wl,Psapi.lib",
