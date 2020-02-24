@@ -195,7 +195,9 @@ cc_library(
         "include",
         "src",
     ],
-    linkopts = select({
+    linkopts = [
+        "-ldl",
+    ] + select({
         ":windows": [
             "-Xcrosstool-compilation-mode=$(COMPILATION_MODE)",
             "-Wl,Iphlpapi.lib",
