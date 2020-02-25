@@ -1436,7 +1436,7 @@ run_dep_checks:
 	$(PROTOBUF_CHECK_CMD) || true
 	$(PROTOC_CHECK_VERSION_CMD) || true
 	$(CARES_CHECK_CMD) || true
-      $(LIBUV_CHECK_CMD) || true
+	$(LIBUV_CHECK_CMD) || true
 
 third_party/protobuf/configure:
 	$(E) "[AUTOGEN] Preparing protobuf"
