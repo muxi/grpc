@@ -8865,18 +8865,7 @@ PUBLIC_HEADERS_C += \
 LIBUV_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(LIBUV_SRC))))
 
 
-ifeq ($(NO_SECURE),true)
-
-# You can't build secure libraries if you don't have OpenSSL.
-
-$(LIBDIR)/$(CONFIG)/libuv.a: openssl_dep_error
-
-$(LIBDIR)/$(CONFIG)/$(SHARED_PREFIX)uv$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE): openssl_dep_error
-
-else
-
-
-$(LIBDIR)/$(CONFIG)/libuv.a: $(ZLIB_DEP) $(OPENSSL_DEP) $(CARES_DEP) $(ADDRESS_SORTING_DEP) $(UPB_DEP) $(GRPC_ABSEIL_DEP) $(LIBUV_DEP)  $(LIBUV_OBJS) 
+$(LIBDIR)/$(CONFIG)/libuv.a:  $(LIBUV_OBJS) 
 	$(E) "[AR]      Creating $@"
 	$(Q) mkdir -p `dirname $@`
 	$(Q) rm -f $(LIBDIR)/$(CONFIG)/libuv.a
@@ -8888,12 +8877,12 @@ endif
 
 
 ifeq ($(SYSTEM),MINGW32)
-$(LIBDIR)/$(CONFIG)/uv$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE): $(LIBUV_OBJS)  $(ZLIB_DEP) $(CARES_DEP) $(ADDRESS_SORTING_DEP) $(UPB_DEP) $(GRPC_ABSEIL_DEP) $(LIBUV_DEP) $(OPENSSL_DEP)
+$(LIBDIR)/$(CONFIG)/uv$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE): $(LIBUV_OBJS)  $(ZLIB_DEP) $(CARES_DEP) $(ADDRESS_SORTING_DEP) $(UPB_DEP) $(GRPC_ABSEIL_DEP) $(LIBUV_DEP)
 	$(E) "[LD]      Linking $@"
 	$(Q) mkdir -p `dirname $@`
 	$(Q) $(LDXX) $(LDFLAGS) -L$(LIBDIR)/$(CONFIG) -shared -Wl,--output-def=$(LIBDIR)/$(CONFIG)/uv$(SHARED_VERSION_CORE).def -Wl,--out-implib=$(LIBDIR)/$(CONFIG)/libuv$(SHARED_VERSION_CORE)-dll.a -o $(LIBDIR)/$(CONFIG)/uv$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE) $(LIBUV_OBJS) $(ZLIB_MERGE_LIBS) $(CARES_MERGE_LIBS) $(ADDRESS_SORTING_MERGE_LIBS) $(UPB_MERGE_LIBS) $(GRPC_ABSEIL_MERGE_LIBS) $(LIBUV_MERGE_LIBS) $(LDLIBS)
 else
-$(LIBDIR)/$(CONFIG)/libuv$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE): $(LIBUV_OBJS)  $(ZLIB_DEP) $(CARES_DEP) $(ADDRESS_SORTING_DEP) $(UPB_DEP) $(GRPC_ABSEIL_DEP) $(LIBUV_DEP) $(OPENSSL_DEP)
+$(LIBDIR)/$(CONFIG)/libuv$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE): $(LIBUV_OBJS)  $(ZLIB_DEP) $(CARES_DEP) $(ADDRESS_SORTING_DEP) $(UPB_DEP) $(GRPC_ABSEIL_DEP) $(LIBUV_DEP)
 	$(E) "[LD]      Linking $@"
 	$(Q) mkdir -p `dirname $@`
 ifeq ($(SYSTEM),Darwin)
@@ -8905,12 +8894,8 @@ else
 endif
 endif
 
-endif
-
-ifneq ($(NO_SECURE),true)
 ifneq ($(NO_DEPS),true)
 -include $(LIBUV_OBJS:.o=.dep)
-endif
 endif
 
 
@@ -23682,47 +23667,6 @@ test/cpp/util/string_ref_helper.cc: $(OPENSSL_DEP)
 test/cpp/util/subprocess.cc: $(OPENSSL_DEP)
 test/cpp/util/test_config_cc.cc: $(OPENSSL_DEP)
 test/cpp/util/test_credentials_provider.cc: $(OPENSSL_DEP)
-third_party/libuv/src/fs-poll.c: $(OPENSSL_DEP)
-third_party/libuv/src/heap-inl.h: $(OPENSSL_DEP)
-third_party/libuv/src/idna.c: $(OPENSSL_DEP)
-third_party/libuv/src/idna.h: $(OPENSSL_DEP)
-third_party/libuv/src/inet.c: $(OPENSSL_DEP)
-third_party/libuv/src/queue.h: $(OPENSSL_DEP)
-third_party/libuv/src/strscpy.c: $(OPENSSL_DEP)
-third_party/libuv/src/strscpy.h: $(OPENSSL_DEP)
-third_party/libuv/src/threadpool.c: $(OPENSSL_DEP)
-third_party/libuv/src/timer.c: $(OPENSSL_DEP)
-third_party/libuv/src/unix/async.c: $(OPENSSL_DEP)
-third_party/libuv/src/unix/atomic-ops.h: $(OPENSSL_DEP)
-third_party/libuv/src/unix/core.c: $(OPENSSL_DEP)
-third_party/libuv/src/unix/dl.c: $(OPENSSL_DEP)
-third_party/libuv/src/unix/fs.c: $(OPENSSL_DEP)
-third_party/libuv/src/unix/getaddrinfo.c: $(OPENSSL_DEP)
-third_party/libuv/src/unix/getnameinfo.c: $(OPENSSL_DEP)
-third_party/libuv/src/unix/internal.h: $(OPENSSL_DEP)
-third_party/libuv/src/unix/linux-core.c: $(OPENSSL_DEP)
-third_party/libuv/src/unix/linux-inotify.c: $(OPENSSL_DEP)
-third_party/libuv/src/unix/linux-syscalls.c: $(OPENSSL_DEP)
-third_party/libuv/src/unix/linux-syscalls.h: $(OPENSSL_DEP)
-third_party/libuv/src/unix/loop-watcher.c: $(OPENSSL_DEP)
-third_party/libuv/src/unix/loop.c: $(OPENSSL_DEP)
-third_party/libuv/src/unix/pipe.c: $(OPENSSL_DEP)
-third_party/libuv/src/unix/poll.c: $(OPENSSL_DEP)
-third_party/libuv/src/unix/process.c: $(OPENSSL_DEP)
-third_party/libuv/src/unix/procfs-exepath.c: $(OPENSSL_DEP)
-third_party/libuv/src/unix/proctitle.c: $(OPENSSL_DEP)
-third_party/libuv/src/unix/signal.c: $(OPENSSL_DEP)
-third_party/libuv/src/unix/spinlock.h: $(OPENSSL_DEP)
-third_party/libuv/src/unix/stream.c: $(OPENSSL_DEP)
-third_party/libuv/src/unix/sysinfo-loadavg.c: $(OPENSSL_DEP)
-third_party/libuv/src/unix/tcp.c: $(OPENSSL_DEP)
-third_party/libuv/src/unix/thread.c: $(OPENSSL_DEP)
-third_party/libuv/src/unix/tty.c: $(OPENSSL_DEP)
-third_party/libuv/src/unix/udp.c: $(OPENSSL_DEP)
-third_party/libuv/src/uv-common.c: $(OPENSSL_DEP)
-third_party/libuv/src/uv-common.h: $(OPENSSL_DEP)
-third_party/libuv/src/uv-data-getter-setters.c: $(OPENSSL_DEP)
-third_party/libuv/src/version.c: $(OPENSSL_DEP)
 endif
 
 .PHONY: all strip tools dep_error openssl_dep_error openssl_dep_message git_update stop buildtests buildtests_c buildtests_cxx test test_c test_cxx install install_c install_cxx install-headers install-headers_c install-headers_cxx install-shared install-shared_c install-shared_cxx install-static install-static_c install-static_cxx strip strip-shared strip-static strip_c strip-shared_c strip-static_c strip_cxx strip-shared_cxx strip-static_cxx dep_c dep_cxx bins_dep_c bins_dep_cxx clean

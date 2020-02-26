@@ -28,6 +28,8 @@ try:
             'all',
         'language':
             'c',
+        'secure':
+            False,
         'src': [
             "third_party/libuv/src/fs-poll.c",
             "third_party/libuv/src/heap-inl.h",
