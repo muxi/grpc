@@ -23,6 +23,7 @@ gen_build_yaml_dirs="  \
   src/upb              \
   src/zlib             \
   src/c-ares           \
+  src/libuv            \
   test/core/bad_client \
   test/core/bad_ssl    \
   test/core/end2end    \

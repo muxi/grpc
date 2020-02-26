@@ -1455,7 +1455,7 @@ $(LIBDIR)/$(CONFIG)/protobuf/libprotobuf.a: third_party/protobuf/configure
 
 static: static_c static_cxx
 
-static_c: pc_c pc_c_unsecure cache.mk  $(LIBDIR)/$(CONFIG)/libaddress_sorting.a $(LIBDIR)/$(CONFIG)/libgpr.a $(LIBDIR)/$(CONFIG)/libgrpc.a $(LIBDIR)/$(CONFIG)/libgrpc_cronet.a $(LIBDIR)/$(CONFIG)/libgrpc_unsecure.a $(LIBDIR)/$(CONFIG)/libupb.a
+static_c: pc_c pc_c_unsecure cache.mk  $(LIBDIR)/$(CONFIG)/libaddress_sorting.a $(LIBDIR)/$(CONFIG)/libgpr.a $(LIBDIR)/$(CONFIG)/libgrpc.a $(LIBDIR)/$(CONFIG)/libgrpc_cronet.a $(LIBDIR)/$(CONFIG)/libgrpc_unsecure.a $(LIBDIR)/$(CONFIG)/libupb.a $(LIBDIR)/$(CONFIG)/libuv.a
 
 static_cxx: pc_cxx pc_cxx_unsecure cache.mk  $(LIBDIR)/$(CONFIG)/libgrpc++.a $(LIBDIR)/$(CONFIG)/libgrpc++_alts.a $(LIBDIR)/$(CONFIG)/libgrpc++_error_details.a $(LIBDIR)/$(CONFIG)/libgrpc++_reflection.a $(LIBDIR)/$(CONFIG)/libgrpc++_unsecure.a $(LIBDIR)/$(CONFIG)/libgrpcpp_channelz.a
 
@@ -1463,7 +1463,7 @@ static_csharp: static_c  $(LIBDIR)/$(CONFIG)/libgrpc_csharp_ext.a
 
 shared: shared_c shared_cxx
 
-shared_c: pc_c pc_c_unsecure cache.mk $(LIBDIR)/$(CONFIG)/$(SHARED_PREFIX)address_sorting$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE) $(LIBDIR)/$(CONFIG)/$(SHARED_PREFIX)gpr$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE) $(LIBDIR)/$(CONFIG)/$(SHARED_PREFIX)grpc$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE) $(LIBDIR)/$(CONFIG)/$(SHARED_PREFIX)grpc_cronet$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE) $(LIBDIR)/$(CONFIG)/$(SHARED_PREFIX)grpc_unsecure$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE) $(LIBDIR)/$(CONFIG)/$(SHARED_PREFIX)upb$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE)
+shared_c: pc_c pc_c_unsecure cache.mk $(LIBDIR)/$(CONFIG)/$(SHARED_PREFIX)address_sorting$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE) $(LIBDIR)/$(CONFIG)/$(SHARED_PREFIX)gpr$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE) $(LIBDIR)/$(CONFIG)/$(SHARED_PREFIX)grpc$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE) $(LIBDIR)/$(CONFIG)/$(SHARED_PREFIX)grpc_cronet$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE) $(LIBDIR)/$(CONFIG)/$(SHARED_PREFIX)grpc_unsecure$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE) $(LIBDIR)/$(CONFIG)/$(SHARED_PREFIX)upb$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE) $(LIBDIR)/$(CONFIG)/$(SHARED_PREFIX)uv$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE)
 shared_cxx: pc_cxx pc_cxx_unsecure cache.mk $(LIBDIR)/$(CONFIG)/$(SHARED_PREFIX)grpc++$(SHARED_VERSION_CPP).$(SHARED_EXT_CPP) $(LIBDIR)/$(CONFIG)/$(SHARED_PREFIX)grpc++_alts$(SHARED_VERSION_CPP).$(SHARED_EXT_CPP) $(LIBDIR)/$(CONFIG)/$(SHARED_PREFIX)grpc++_error_details$(SHARED_VERSION_CPP).$(SHARED_EXT_CPP) $(LIBDIR)/$(CONFIG)/$(SHARED_PREFIX)grpc++_reflection$(SHARED_VERSION_CPP).$(SHARED_EXT_CPP) $(LIBDIR)/$(CONFIG)/$(SHARED_PREFIX)grpc++_unsecure$(SHARED_VERSION_CPP).$(SHARED_EXT_CPP) $(LIBDIR)/$(CONFIG)/$(SHARED_PREFIX)grpcpp_channelz$(SHARED_VERSION_CPP).$(SHARED_EXT_CPP)
 
 shared_csharp: shared_c  $(LIBDIR)/$(CONFIG)/$(SHARED_PREFIX)grpc_csharp_ext$(SHARED_VERSION_CSHARP).$(SHARED_EXT_CSHARP)
@@ -2638,6 +2638,8 @@ ifeq ($(CONFIG),opt)
 	$(Q) $(STRIP) $(LIBDIR)/$(CONFIG)/libgrpc_unsecure.a
 	$(E) "[STRIP]   Stripping libupb.a"
 	$(Q) $(STRIP) $(LIBDIR)/$(CONFIG)/libupb.a
+	$(E) "[STRIP]   Stripping libuv.a"
+	$(Q) $(STRIP) $(LIBDIR)/$(CONFIG)/libuv.a
 endif
 
 strip-static_cxx: static_cxx
@@ -2670,6 +2672,8 @@ ifeq ($(CONFIG),opt)
 	$(Q) $(STRIP) $(LIBDIR)/$(CONFIG)/$(SHARED_PREFIX)grpc_unsecure$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE)
 	$(E) "[STRIP]   Stripping $(SHARED_PREFIX)upb$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE)"
 	$(Q) $(STRIP) $(LIBDIR)/$(CONFIG)/$(SHARED_PREFIX)upb$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE)
+	$(E) "[STRIP]   Stripping $(SHARED_PREFIX)uv$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE)"
+	$(Q) $(STRIP) $(LIBDIR)/$(CONFIG)/$(SHARED_PREFIX)uv$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE)
 endif
 
 strip-shared_cxx: shared_cxx
@@ -3280,6 +3284,9 @@ install-static_c: static_c strip-static_c install-pkg-config_c
 	$(E) "[INSTALL] Installing libupb.a"
 	$(Q) $(INSTALL) -d $(prefix)/lib
 	$(Q) $(INSTALL) $(LIBDIR)/$(CONFIG)/libupb.a $(prefix)/lib/libupb.a
+	$(E) "[INSTALL] Installing libuv.a"
+	$(Q) $(INSTALL) -d $(prefix)/lib
+	$(Q) $(INSTALL) $(LIBDIR)/$(CONFIG)/libuv.a $(prefix)/lib/libuv.a
 
 install-static_cxx: static_cxx strip-static_cxx install-pkg-config_cxx
 	$(E) "[INSTALL] Installing libgrpc++.a"
@@ -3357,6 +3364,15 @@ ifeq ($(SYSTEM),MINGW32)
 else ifneq ($(SYSTEM),Darwin)
 	$(Q) ln -sf $(SHARED_PREFIX)upb$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE) $(prefix)/lib/libupb.so.9
 	$(Q) ln -sf $(SHARED_PREFIX)upb$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE) $(prefix)/lib/libupb.so
+endif
+	$(E) "[INSTALL] Installing $(SHARED_PREFIX)uv$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE)"
+	$(Q) $(INSTALL) -d $(prefix)/lib
+	$(Q) $(INSTALL) $(LIBDIR)/$(CONFIG)/$(SHARED_PREFIX)uv$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE) $(prefix)/lib/$(SHARED_PREFIX)uv$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE)
+ifeq ($(SYSTEM),MINGW32)
+	$(Q) $(INSTALL) $(LIBDIR)/$(CONFIG)/libuv$(SHARED_VERSION_CORE)-dll.a $(prefix)/lib/libuv.a
+else ifneq ($(SYSTEM),Darwin)
+	$(Q) ln -sf $(SHARED_PREFIX)uv$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE) $(prefix)/lib/libuv.so.9
+	$(Q) ln -sf $(SHARED_PREFIX)uv$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE) $(prefix)/lib/libuv.so
 endif
 ifneq ($(SYSTEM),MINGW32)
 ifneq ($(SYSTEM),Darwin)
@@ -8798,6 +8814,103 @@ endif
 
 ifneq ($(NO_DEPS),true)
 -include $(LIBARES_OBJS:.o=.dep)
+endif
+
+
+LIBUV_SRC = \
+    third_party/libuv/src/fs-poll.c \
+    third_party/libuv/src/heap-inl.h \
+    third_party/libuv/src/idna.c \
+    third_party/libuv/src/idna.h \
+    third_party/libuv/src/inet.c \
+    third_party/libuv/src/queue.h \
+    third_party/libuv/src/strscpy.c \
+    third_party/libuv/src/strscpy.h \
+    third_party/libuv/src/threadpool.c \
+    third_party/libuv/src/timer.c \
+    third_party/libuv/src/uv-data-getter-setters.c \
+    third_party/libuv/src/uv-common.c \
+    third_party/libuv/src/uv-common.h \
+    third_party/libuv/src/version.c \
+    third_party/libuv/src/unix/async.c \
+    third_party/libuv/src/unix/atomic-ops.h \
+    third_party/libuv/src/unix/core.c \
+    third_party/libuv/src/unix/dl.c \
+    third_party/libuv/src/unix/fs.c \
+    third_party/libuv/src/unix/getaddrinfo.c \
+    third_party/libuv/src/unix/getnameinfo.c \
+    third_party/libuv/src/unix/internal.h \
+    third_party/libuv/src/unix/loop.c \
+    third_party/libuv/src/unix/loop-watcher.c \
+    third_party/libuv/src/unix/pipe.c \
+    third_party/libuv/src/unix/poll.c \
+    third_party/libuv/src/unix/process.c \
+    third_party/libuv/src/unix/signal.c \
+    third_party/libuv/src/unix/spinlock.h \
+    third_party/libuv/src/unix/stream.c \
+    third_party/libuv/src/unix/tcp.c \
+    third_party/libuv/src/unix/thread.c \
+    third_party/libuv/src/unix/tty.c \
+    third_party/libuv/src/unix/udp.c \
+    third_party/libuv/src/unix/linux-core.c \
+    third_party/libuv/src/unix/linux-inotify.c \
+    third_party/libuv/src/unix/linux-syscalls.c \
+    third_party/libuv/src/unix/linux-syscalls.h \
+    third_party/libuv/src/unix/procfs-exepath.c \
+    third_party/libuv/src/unix/proctitle.c \
+    third_party/libuv/src/unix/sysinfo-loadavg.c \
+
+PUBLIC_HEADERS_C += \
+
+LIBUV_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(LIBUV_SRC))))
+
+
+ifeq ($(NO_SECURE),true)
+
+# You can't build secure libraries if you don't have OpenSSL.
+
+$(LIBDIR)/$(CONFIG)/libuv.a: openssl_dep_error
+
+$(LIBDIR)/$(CONFIG)/$(SHARED_PREFIX)uv$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE): openssl_dep_error
+
+else
+
+
+$(LIBDIR)/$(CONFIG)/libuv.a: $(ZLIB_DEP) $(OPENSSL_DEP) $(CARES_DEP) $(ADDRESS_SORTING_DEP) $(UPB_DEP) $(GRPC_ABSEIL_DEP) $(LIBUV_DEP)  $(LIBUV_OBJS) 
+	$(E) "[AR]      Creating $@"
+	$(Q) mkdir -p `dirname $@`
+	$(Q) rm -f $(LIBDIR)/$(CONFIG)/libuv.a
+	$(Q) $(AR) $(AROPTS) $(LIBDIR)/$(CONFIG)/libuv.a $(LIBUV_OBJS) 
+ifeq ($(SYSTEM),Darwin)
+	$(Q) ranlib -no_warning_for_no_symbols $(LIBDIR)/$(CONFIG)/libuv.a
+endif
+
+
+
+ifeq ($(SYSTEM),MINGW32)
+$(LIBDIR)/$(CONFIG)/uv$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE): $(LIBUV_OBJS)  $(ZLIB_DEP) $(CARES_DEP) $(ADDRESS_SORTING_DEP) $(UPB_DEP) $(GRPC_ABSEIL_DEP) $(LIBUV_DEP) $(OPENSSL_DEP)
+	$(E) "[LD]      Linking $@"
+	$(Q) mkdir -p `dirname $@`
+	$(Q) $(LDXX) $(LDFLAGS) -L$(LIBDIR)/$(CONFIG) -shared -Wl,--output-def=$(LIBDIR)/$(CONFIG)/uv$(SHARED_VERSION_CORE).def -Wl,--out-implib=$(LIBDIR)/$(CONFIG)/libuv$(SHARED_VERSION_CORE)-dll.a -o $(LIBDIR)/$(CONFIG)/uv$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE) $(LIBUV_OBJS) $(ZLIB_MERGE_LIBS) $(CARES_MERGE_LIBS) $(ADDRESS_SORTING_MERGE_LIBS) $(UPB_MERGE_LIBS) $(GRPC_ABSEIL_MERGE_LIBS) $(LIBUV_MERGE_LIBS) $(LDLIBS)
+else
+$(LIBDIR)/$(CONFIG)/libuv$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE): $(LIBUV_OBJS)  $(ZLIB_DEP) $(CARES_DEP) $(ADDRESS_SORTING_DEP) $(UPB_DEP) $(GRPC_ABSEIL_DEP) $(LIBUV_DEP) $(OPENSSL_DEP)
+	$(E) "[LD]      Linking $@"
+	$(Q) mkdir -p `dirname $@`
+ifeq ($(SYSTEM),Darwin)
+	$(Q) $(LDXX) $(LDFLAGS) -L$(LIBDIR)/$(CONFIG) -install_name $(SHARED_PREFIX)uv$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE) -dynamiclib -o $(LIBDIR)/$(CONFIG)/libuv$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE) $(LIBUV_OBJS) $(ZLIB_MERGE_LIBS) $(CARES_MERGE_LIBS) $(ADDRESS_SORTING_MERGE_LIBS) $(UPB_MERGE_LIBS) $(GRPC_ABSEIL_MERGE_LIBS) $(LIBUV_MERGE_LIBS) $(LDLIBS)
+else
+	$(Q) $(LDXX) $(LDFLAGS) -L$(LIBDIR)/$(CONFIG) -shared -Wl,-soname,libuv.so.9 -o $(LIBDIR)/$(CONFIG)/libuv$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE) $(LIBUV_OBJS) $(ZLIB_MERGE_LIBS) $(CARES_MERGE_LIBS) $(ADDRESS_SORTING_MERGE_LIBS) $(UPB_MERGE_LIBS) $(GRPC_ABSEIL_MERGE_LIBS) $(LIBUV_MERGE_LIBS) $(LDLIBS)
+	$(Q) ln -sf $(SHARED_PREFIX)uv$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE) $(LIBDIR)/$(CONFIG)/libuv$(SHARED_VERSION_CORE).so.9
+	$(Q) ln -sf $(SHARED_PREFIX)uv$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE) $(LIBDIR)/$(CONFIG)/libuv$(SHARED_VERSION_CORE).so
+endif
+endif
+
+endif
+
+ifneq ($(NO_SECURE),true)
+ifneq ($(NO_DEPS),true)
+-include $(LIBUV_OBJS:.o=.dep)
+endif
 endif
 
 
@@ -23569,6 +23682,47 @@ test/cpp/util/string_ref_helper.cc: $(OPENSSL_DEP)
 test/cpp/util/subprocess.cc: $(OPENSSL_DEP)
 test/cpp/util/test_config_cc.cc: $(OPENSSL_DEP)
 test/cpp/util/test_credentials_provider.cc: $(OPENSSL_DEP)
+third_party/libuv/src/fs-poll.c: $(OPENSSL_DEP)
+third_party/libuv/src/heap-inl.h: $(OPENSSL_DEP)
+third_party/libuv/src/idna.c: $(OPENSSL_DEP)
+third_party/libuv/src/idna.h: $(OPENSSL_DEP)
+third_party/libuv/src/inet.c: $(OPENSSL_DEP)
+third_party/libuv/src/queue.h: $(OPENSSL_DEP)
+third_party/libuv/src/strscpy.c: $(OPENSSL_DEP)
+third_party/libuv/src/strscpy.h: $(OPENSSL_DEP)
+third_party/libuv/src/threadpool.c: $(OPENSSL_DEP)
+third_party/libuv/src/timer.c: $(OPENSSL_DEP)
+third_party/libuv/src/unix/async.c: $(OPENSSL_DEP)
+third_party/libuv/src/unix/atomic-ops.h: $(OPENSSL_DEP)
+third_party/libuv/src/unix/core.c: $(OPENSSL_DEP)
+third_party/libuv/src/unix/dl.c: $(OPENSSL_DEP)
+third_party/libuv/src/unix/fs.c: $(OPENSSL_DEP)
+third_party/libuv/src/unix/getaddrinfo.c: $(OPENSSL_DEP)
+third_party/libuv/src/unix/getnameinfo.c: $(OPENSSL_DEP)
+third_party/libuv/src/unix/internal.h: $(OPENSSL_DEP)
+third_party/libuv/src/unix/linux-core.c: $(OPENSSL_DEP)
+third_party/libuv/src/unix/linux-inotify.c: $(OPENSSL_DEP)
+third_party/libuv/src/unix/linux-syscalls.c: $(OPENSSL_DEP)
+third_party/libuv/src/unix/linux-syscalls.h: $(OPENSSL_DEP)
+third_party/libuv/src/unix/loop-watcher.c: $(OPENSSL_DEP)
+third_party/libuv/src/unix/loop.c: $(OPENSSL_DEP)
+third_party/libuv/src/unix/pipe.c: $(OPENSSL_DEP)
+third_party/libuv/src/unix/poll.c: $(OPENSSL_DEP)
+third_party/libuv/src/unix/process.c: $(OPENSSL_DEP)
+third_party/libuv/src/unix/procfs-exepath.c: $(OPENSSL_DEP)
+third_party/libuv/src/unix/proctitle.c: $(OPENSSL_DEP)
+third_party/libuv/src/unix/signal.c: $(OPENSSL_DEP)
+third_party/libuv/src/unix/spinlock.h: $(OPENSSL_DEP)
+third_party/libuv/src/unix/stream.c: $(OPENSSL_DEP)
+third_party/libuv/src/unix/sysinfo-loadavg.c: $(OPENSSL_DEP)
+third_party/libuv/src/unix/tcp.c: $(OPENSSL_DEP)
+third_party/libuv/src/unix/thread.c: $(OPENSSL_DEP)
+third_party/libuv/src/unix/tty.c: $(OPENSSL_DEP)
+third_party/libuv/src/unix/udp.c: $(OPENSSL_DEP)
+third_party/libuv/src/uv-common.c: $(OPENSSL_DEP)
+third_party/libuv/src/uv-common.h: $(OPENSSL_DEP)
+third_party/libuv/src/uv-data-getter-setters.c: $(OPENSSL_DEP)
+third_party/libuv/src/version.c: $(OPENSSL_DEP)
 endif
 
 .PHONY: all strip tools dep_error openssl_dep_error openssl_dep_message git_update stop buildtests buildtests_c buildtests_cxx test test_c test_cxx install install_c install_cxx install-headers install-headers_c install-headers_cxx install-shared install-shared_c install-shared_cxx install-static install-static_c install-static_cxx strip strip-shared strip-static strip_c strip-shared_c strip-static_c strip_cxx strip-shared_cxx strip-static_cxx dep_c dep_cxx bins_dep_c bins_dep_cxx clean
