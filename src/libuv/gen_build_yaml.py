@@ -24,8 +24,10 @@ try:
     out['libs'] = [{
         'name':
             'uv',
+        'defaults':
+            'uv',
         'build':
-            'all',
+            'private',
         'language':
             'c',
         'secure':

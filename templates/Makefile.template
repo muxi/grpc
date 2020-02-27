@@ -729,7 +729,14 @@
   LIBUV_DEP = $(LIBDIR)/$(CONFIG)/libuv.a
   LIBUV_MERGE_LIBS = $(LIBDIR)/$(CONFIG)/libuv.a
   LIBUV_MERGE_OBJS = $(LIBUV_OBJS)
-  CPPFLAGS += -Ithird_party/libuv/include
+  CPPFLAGS += -Ithird_party/libuv/include -Ithird_party/libuv/src
+  ifeq ($(SYSTEM), LINUX)
+  CPPFLAGS += -Ithird_party/libuv/src/unix
+  else
+  ifeq ($(SYSTEM),MINGW32)
+  CPPFLAGS += -Ithird_party/libuv/src/win -DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0600
+  endif
+  endif
   else
   ifeq ($(HAS_PKG_CONFIG),true)
   CPPFLAGS += $(shell $(PKG_CONFIG) --cflags libuv)
@@ -1555,6 +1562,45 @@
       ${proto_to_cc(src)} \\
 
   % endfor
+
+  % if "win_src" in lib:
+  ifeq ($(SYSTEM),MINGW32)
+  LIB${lib.name.upper()}_SRC += \\
+
+  % for src in lib.win_src:
+      ${proto_to_cc(src)} \\
+
+  % endfor
+
+  endif
+
+  % endif
+
+  % if "linux_src" in lib:
+  ifeq ($(SYSTEM),Linux)
+  LIB${lib.name.upper()}_SRC += \\
+
+  % for src in lib.linux_src:
+      ${proto_to_cc(src)} \\
+
+  % endfor
+
+  endif
+
+  % endif
+
+  % if "darwin_src" in lib:
+  ifeq ($(SYSTEM),Darwin)
+  LIB${lib.name.upper()}_SRC += \\
+
+  % for src in lib.darwin_src:
+      ${proto_to_cc(src)} \\
+
+  % endfor
+
+  endif
+
+  % endif
 
   % if "public_headers" in lib:
   % if lib.language == "c++":
