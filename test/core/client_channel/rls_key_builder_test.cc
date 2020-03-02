@@ -27,9 +27,9 @@ class RlsKeyBuilderTest : public ::testing::Test {
     }
   }
 
-  void BuildJson(std::string json_string, Json& json) {
+  void BuildJson(std::string json_string, Json* json) {
     grpc_error* error;
-    json.Parse(json_string, &error);
+    *json = Json::Parse(json_string, &error);
     CheckNoError(error, true);
   }
 };
@@ -122,7 +122,7 @@ TEST_F(RlsKeyBuilderTest, ParseConfig) {
   Json config_json;
   grpc_error *error;
 
-  BuildJson(default_build_map_config, config_json);
+  BuildJson(default_build_map_config, &config_json);
 
   auto key_builder_map = RlsCreateKeyMapBuilderMap(config_json, &error);
   CheckNoError(error);
@@ -139,7 +139,7 @@ TEST_F(RlsKeyBuilderTest, ParseConfig) {
             "      {"
             "        \"service\":\"test_service1\","
             "        \"method\":\"test_method1\""
-            "      },"
+            "      }"
             "    ],"
             "    \"headers\":["
             "      {"
@@ -148,7 +148,7 @@ TEST_F(RlsKeyBuilderTest, ParseConfig) {
             "          \"key1_field1\","
             "          \"key1_field2\""
             "        ]"
-            "      },"
+            "      }"
             "    ]"
             "  },"
             "  {"
@@ -168,8 +168,7 @@ TEST_F(RlsKeyBuilderTest, ParseConfig) {
             "      }"
             "    ]"
             "  }"
-            "]", config_json);
-  BuildJson("", config_json);
+            "]", &config_json);
   key_builder_map = RlsCreateKeyMapBuilderMap(config_json, &error);
   EXPECT_NE(error, GRPC_ERROR_NONE);
 
@@ -185,15 +184,12 @@ TEST_F(RlsKeyBuilderTest, ParseConfig) {
             "          \"key1_field1\","
             "          \"key1_field2\""
             "        ]"
-            "      },"
+            "      }"
             "    ]"
-            "  },"
-            "]", config_json);
-  BuildJson("", config_json);
+            "  }"
+            "]", &config_json);
   key_builder_map = RlsCreateKeyMapBuilderMap(config_json, &error);
   EXPECT_NE(error, GRPC_ERROR_NONE);
-
-  //TODO: empty key "headers" or "name" case
 }
 
 TEST_F(RlsKeyBuilderTest, WildcardMatch) {
@@ -217,11 +213,10 @@ TEST_F(RlsKeyBuilderTest, WildcardMatch) {
             "          \"key1_field1\","
             "          \"key1_field2\""
             "        ]"
-            "      },"
+            "      }"
             "    ]"
-            "  },"
-            "]", config_json);
-  BuildJson("", config_json);
+            "  }"
+            "]", &config_json);
 
   grpc_error* error;
   auto key_builder_map = RlsCreateKeyMapBuilderMap(config_json, &error);
@@ -244,7 +239,7 @@ TEST_F(RlsKeyBuilderTest, KeyExtraction) {
   Json config_json;
   grpc_error *error;
 
-  BuildJson(default_build_map_config, config_json);
+  BuildJson(default_build_map_config, &config_json);
   auto key_builder_map = RlsCreateKeyMapBuilderMap(config_json, &error);
 
   TestMetadata metadata;

@@ -60,9 +60,9 @@ TraceFlag grpc_lb_rls_trace(false, "rls");
 
 static const char* kRls = "rls";
 static const char kGrpc[] = "grpc";
-static const std::string kWildcardMethod("*");
 static const char* kRlsRequestPath = "/grpc.lookup.v1.RouteLookupRequest/RouteLookup";
 static const char* kDummyTargetFieldValue = "dummy_target_field_value";
+static const std::string kWildcardMethod("*");
 
 static const grpc_millis kDefaultLookupServiceTimeout = 10000;
 static const grpc_millis kMaxMaxAge = 5 * 60 * GPR_MS_PER_SEC;
@@ -78,6 +78,7 @@ static const int kDefaultThrottlePaddings = 8;
 static const grpc_millis kCacheCleanupTimerInterval = 60 * GPR_MS_PER_SEC;
 
 inline static const Json* ParseFieldJsonFromJsonObject(const Json::Object& object, const std::string& field, grpc_error** error, bool optional = false) {
+  *error = GRPC_ERROR_NONE;
   auto it = object.find(field);
   if (it == object.end()) {
     if (!optional) {
@@ -89,13 +90,16 @@ inline static const Json* ParseFieldJsonFromJsonObject(const Json::Object& objec
   }
 }
 
+/* TODO
 inline static Json* ParseFieldJsonFromJsonObject(Json::Object& object, const std::string& field, grpc_error** error, bool optional = false) {
   return const_cast<Json*>(ParseFieldJsonFromJsonObject(const_cast<const Json::Object&>(object), field, error, optional));
 }
+*/
 
 static const Json::Object* ParseObjectFieldFromJsonObject(const Json::Object& object, const std::string& field, grpc_error** error, bool optional = false) {
+  *error = GRPC_ERROR_NONE;
   const Json* child_json = ParseFieldJsonFromJsonObject(object, field, error, optional);
-  if (*error) {
+  if (*error != GRPC_ERROR_NONE) {
     return nullptr;
   }
   if (child_json == nullptr) return nullptr;
@@ -107,8 +111,9 @@ static const Json::Object* ParseObjectFieldFromJsonObject(const Json::Object& ob
 }
 
 static const Json::Array* ParseArrayFieldFromJsonObject(const Json::Object& object, const std::string& field, grpc_error** error, bool optional = false) {
+  *error = GRPC_ERROR_NONE;
   const Json* child_json = ParseFieldJsonFromJsonObject(object, field, error, optional);
-  if (*error) {
+  if (*error != GRPC_ERROR_NONE) {
     return nullptr;
   }
   if (child_json == nullptr) return nullptr;
@@ -120,8 +125,9 @@ static const Json::Array* ParseArrayFieldFromJsonObject(const Json::Object& obje
 }
 
 static const std::string* ParseStringFieldFromJsonObject(const Json::Object& object, const std::string& field, grpc_error** error, bool optional = false) {
+  *error = GRPC_ERROR_NONE;
   const Json* child_json = ParseFieldJsonFromJsonObject(object, field, error, optional);
-  if (*error) {
+  if (*error != GRPC_ERROR_NONE) {
     return nullptr;
   }
   if (child_json == nullptr) return nullptr;
@@ -133,8 +139,9 @@ static const std::string* ParseStringFieldFromJsonObject(const Json::Object& obj
 }
 
 static int64_t ParseNumberFieldFromJsonObject(const Json::Object& object, const std::string& field, grpc_error** error, bool optional = false, int64_t optional_default = 0) {
+  *error = GRPC_ERROR_NONE;
   const Json* child_json = ParseFieldJsonFromJsonObject(object, field, error, optional);
-  if (*error) {
+  if (*error != GRPC_ERROR_NONE) {
     return 0;
   }
   if (child_json == nullptr) return optional_default;
@@ -146,6 +153,7 @@ static int64_t ParseNumberFieldFromJsonObject(const Json::Object& object, const 
 }
 
 inline static grpc_millis ParseDuration(const Json::Object& duration_object, grpc_error** error) {
+  *error = GRPC_ERROR_NONE;
   int64_t seconds = ParseNumberFieldFromJsonObject(duration_object, "seconds", error);
   if (*error != GRPC_ERROR_NONE) {
     return 0;
@@ -192,8 +200,9 @@ static std::string ParseChildPolicyName(const Json& config) {
 */
 
 RlsLb::KeyMapBuilderMap RlsCreateKeyMapBuilderMap(const Json& config, grpc_error** error) {
+  *error = GRPC_ERROR_NONE;
   RlsLb::KeyMapBuilderMap result;
-  grpc_error* internal_error;
+  grpc_error* internal_error = GRPC_ERROR_NONE;
 
   if (config.type() != Json::Type::ARRAY) {
     *error = GRPC_ERROR_CREATE_FROM_STATIC_STRING("malformed RLS JSON configuration");
@@ -319,7 +328,7 @@ LoadBalancingPolicy::PickResult RlsLb::Picker::Pick(PickArgs args) {
     PickResult result;
     result.type = PickResult::PICK_FAILED;
     result.error = GRPC_ERROR_CREATE_FROM_STATIC_STRING("LB policy already shut down");
-    return std::move(result);
+    return result;
   }
   auto key_map_builder = lb_policy_->FindKeyMapBuilder(key.path);
   if (key_map_builder != nullptr) {
@@ -334,7 +343,7 @@ LoadBalancingPolicy::PickResult RlsLb::Picker::Pick(PickArgs args) {
       PickResult result;
       result.type = PickResult::PICK_FAILED;
       result.error = GRPC_ERROR_CREATE_FROM_STATIC_STRING("RLS request throttled");
-      return std::move(result);
+      return result;
     } else if (lb_policy_->current_config_->request_processing_strategy() == RequestProcessingStrategy::ASYNC_LOOKUP_DEFAULT_TARGET_ON_MISS) {
       if (GRPC_TRACE_FLAG_ENABLED(grpc_lb_rls_trace)) {
         gpr_log(GPR_DEBUG, "[grpclb %p] picker=%p: pick forwarded to the default child policy", lb_policy_.get(), this);
@@ -346,7 +355,7 @@ LoadBalancingPolicy::PickResult RlsLb::Picker::Pick(PickArgs args) {
       }
       PickResult result;
       result.type = PickResult::PICK_QUEUE;
-      return std::move(result);
+      return result;
     }
   } else {
     if (GRPC_TRACE_FLAG_ENABLED(grpc_lb_rls_trace)) {
@@ -1116,7 +1125,7 @@ void RlsLb::UpdateLocked(UpdateArgs args) {
   MutexLock lock(&mu_);
 
   RefCountedPtr<RlsLbConfig> old_config = current_config_;
-  ServerAddressList old_addresses = std::move(old_addresses);
+  ServerAddressList old_addresses = std::move(current_addresses_);
   current_config_ = args.config;
   current_addresses_ = args.addresses;
   if (current_channel_args_ == nullptr ||
@@ -1226,6 +1235,7 @@ void RlsLb::UpdatePickerLocked() {
 }
 
 RlsLb::KeyMapBuilder::KeyMapBuilder(const Json* config_ptr, grpc_error** error) {
+  *error = GRPC_ERROR_NONE;
   if (config_ptr == nullptr) {
     *error = GRPC_ERROR_NONE;
     return;
@@ -1236,7 +1246,7 @@ RlsLb::KeyMapBuilder::KeyMapBuilder(const Json* config_ptr, grpc_error** error) 
     return;
   }
   InlinedVector<grpc_error*, 1> error_list;
-  grpc_error* internal_error;
+  grpc_error* internal_error = GRPC_ERROR_NONE;
   auto headers = config.array_value();
   pattern_.reserve(headers.size());
   std::unordered_set<std::string> key_set;
@@ -1334,6 +1344,7 @@ OrphanablePtr<LoadBalancingPolicy> RlsLbFactory::CreateLoadBalancingPolicy(
 
 RefCountedPtr<LoadBalancingPolicy::Config> RlsLbFactory::ParseLoadBalancingConfig(
     const Json& config_json, grpc_error** error) const {
+  *error = GRPC_ERROR_NONE;
   GPR_DEBUG_ASSERT(error != nullptr);
   if (config_json.type() != Json::Type::OBJECT) {
     *error = GRPC_ERROR_CREATE_FROM_STATIC_STRING("RLS config is not object");
@@ -1342,7 +1353,7 @@ RefCountedPtr<LoadBalancingPolicy::Config> RlsLbFactory::ParseLoadBalancingConfi
   InlinedVector<grpc_error*, 1> error_list;
   RefCountedPtr<RlsLbConfig> result;
   result.reset(new RlsLbConfig());
-  grpc_error* internal_error;
+  grpc_error* internal_error = GRPC_ERROR_NONE;
   auto& config = config_json.object_value();
 
   auto route_lookup_config_ptr = ParseObjectFieldFromJsonObject(config, "route_lookup_config", &internal_error);

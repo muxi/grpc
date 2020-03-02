@@ -181,7 +181,6 @@ class RlsLb : public LoadBalancingPolicy {
 
      private:
       RefCountedPtr<ChildPolicyWrapper> wrapper_;
-      LoadBalancingPolicy* child_;
     };
 
     RefCountedPtr<RlsLb> lb_policy_;
