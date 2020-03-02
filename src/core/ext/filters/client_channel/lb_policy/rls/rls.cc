@@ -17,8 +17,6 @@
  */
 
 #include <algorithm>
-// DEBUG
-#include <iostream>
 #include <string>
 #include <sstream>
 #include <utility>
@@ -31,6 +29,9 @@
 #include <grpc/impl/codegen/grpc_types.h>
 #include <grpc/grpc_security.h>
 #include <grpc/impl/codegen/byte_buffer_reader.h>
+
+#include "absl/strings/str_cat.h"
+#include "absl/memory/memory.h"
 
 #include "src/core/lib/security/credentials/credentials.h"
 #include "src/core/ext/filters/client_channel/lb_policy/rls/rls.h"
@@ -80,10 +81,7 @@ inline static const Json* ParseFieldJsonFromJsonObject(const Json::Object& objec
   auto it = object.find(field);
   if (it == object.end()) {
     if (!optional) {
-      char* msg;
-      gpr_asprintf(&msg, "\"%s\" field is not found.", field.c_str());
-      *error = GRPC_ERROR_CREATE_FROM_COPIED_STRING(msg);
-      gpr_free(msg);
+      *error = GRPC_ERROR_CREATE_FROM_COPIED_STRING(absl::StrCat(field, " field is not found").c_str());
     }
     return nullptr;
   } else {
@@ -102,10 +100,7 @@ static const Json::Object* ParseObjectFieldFromJsonObject(const Json::Object& ob
   }
   if (child_json == nullptr) return nullptr;
   if (child_json->type() != Json::Type::OBJECT) {
-    char* msg;
-    gpr_asprintf(&msg, "\"%s\" field is not an object", field.c_str());
-    *error = GRPC_ERROR_CREATE_FROM_COPIED_STRING(msg);
-    gpr_free(msg);
+    *error = GRPC_ERROR_CREATE_FROM_COPIED_STRING(absl::StrCat(field, " field is not an object").c_str());
     return nullptr;
   }
   return &child_json->object_value();
@@ -118,10 +113,7 @@ static const Json::Array* ParseArrayFieldFromJsonObject(const Json::Object& obje
   }
   if (child_json == nullptr) return nullptr;
   if (child_json->type() != Json::Type::ARRAY) {
-    char* msg;
-    gpr_asprintf(&msg, "\"%s\" field is not an array", field.c_str());
-    *error = GRPC_ERROR_CREATE_FROM_COPIED_STRING(msg);
-    gpr_free(msg);
+    *error = GRPC_ERROR_CREATE_FROM_COPIED_STRING(absl::StrCat(field, " field is not an array").c_str());
     return nullptr;
   }
   return &child_json->array_value();
@@ -134,10 +126,7 @@ static const std::string* ParseStringFieldFromJsonObject(const Json::Object& obj
   }
   if (child_json == nullptr) return nullptr;
   if (child_json->type() != Json::Type::STRING) {
-    char* msg;
-    gpr_asprintf(&msg, "\"%s\" field is not a string", field.c_str());
-    *error = GRPC_ERROR_CREATE_FROM_COPIED_STRING(msg);
-    gpr_free(msg);
+    *error = GRPC_ERROR_CREATE_FROM_COPIED_STRING(absl::StrCat(field, " field is not a string").c_str());
     return nullptr;
   }
   return &child_json->string_value();
@@ -150,10 +139,7 @@ static int64_t ParseNumberFieldFromJsonObject(const Json::Object& object, const 
   }
   if (child_json == nullptr) return optional_default;
   if (child_json->type() != Json::Type::NUMBER) {
-    char* msg;
-    gpr_asprintf(&msg, "\"%s\" field is not a string", field.c_str());
-    *error = GRPC_ERROR_CREATE_FROM_COPIED_STRING(msg);
-    gpr_free(msg);
+    *error = GRPC_ERROR_CREATE_FROM_COPIED_STRING(absl::StrCat("\"", field, "\" field is not a string").c_str());
     return 0;
   }
   return strtol(child_json->string_value().c_str(), nullptr, 10);
@@ -195,24 +181,21 @@ static grpc_error* InsertOrUpdateChildPolicyField(Json* config, const std::strin
     }
   }
 
-  char* msg;
-  gpr_asprintf(&msg, "errors when inserting field \"%s:%s\" for child policy", field.c_str(), value.c_str());
-  grpc_error* result = GRPC_ERROR_CREATE_FROM_VECTOR(msg, &error_list);
-  gpr_free(msg);
+  grpc_error* result = GRPC_ERROR_CREATE_FROM_VECTOR(absl::StrCat("errors when inserting field \"", field, "\" for child policy").c_str(), &error_list);
   return result;
 }
 
+/* TODO 
 static std::string ParseChildPolicyName(const Json& config) {
   return config.array_value()[0].object_value().begin()->first;
 }
+*/
 
 RlsLb::KeyMapBuilderMap RlsCreateKeyMapBuilderMap(const Json& config, grpc_error** error) {
   RlsLb::KeyMapBuilderMap result;
   grpc_error* internal_error;
 
   if (config.type() != Json::Type::ARRAY) {
-    // DEBUG
-    std::cout << int(config.type()) << std::endl;
     *error = GRPC_ERROR_CREATE_FROM_STATIC_STRING("malformed RLS JSON configuration");
     return RlsLb::KeyMapBuilderMap();
   }
@@ -223,10 +206,7 @@ RlsLb::KeyMapBuilderMap RlsCreateKeyMapBuilderMap(const Json& config, grpc_error
   int idx = 0;
   for (auto& key_builder_json : config.array_value()) {
     if (key_builder_json.type() != Json::Type::OBJECT) {
-      char* msg;
-      gpr_asprintf(&msg, "\"grpc_keybuilders\" array element %d is not an object", idx);
-      error_list.push_back(GRPC_ERROR_CREATE_FROM_COPIED_STRING(msg));
-      gpr_free(msg);
+      error_list.push_back(GRPC_ERROR_CREATE_FROM_COPIED_STRING(absl::StrCat("\"grpc_keybuilders\" array element ", idx, " is not an object").c_str()));
     }
     auto& key_builder = key_builder_json.object_value();
     auto names_ptr = ParseArrayFieldFromJsonObject(key_builder, "names", &internal_error);
@@ -240,10 +220,7 @@ RlsLb::KeyMapBuilderMap RlsCreateKeyMapBuilderMap(const Json& config, grpc_error
       int idx2 = 0;
       for (auto& name_json : names) {
         if (name_json.type() != Json::Type::OBJECT) {
-          char* msg;
-          gpr_asprintf(&msg, "\"names\" array element %d is not an object", idx2);
-          error_list.push_back(GRPC_ERROR_CREATE_FROM_COPIED_STRING(msg));
-          gpr_free(msg);
+          error_list.push_back(GRPC_ERROR_CREATE_FROM_COPIED_STRING(absl::StrCat("\"names\" array element ", idx2, " is not an object").c_str()));
           continue;
         }
         auto& name = name_json.object_value();
@@ -261,10 +238,7 @@ RlsLb::KeyMapBuilderMap RlsCreateKeyMapBuilderMap(const Json& config, grpc_error
           std::stringstream ss;
           ss << '/' << *service << '/' << *method;
           if (result.find(ss.str()) != result.end()) {
-            char* msg;
-            gpr_asprintf(&msg, "duplicate name \"%s\"", ss.str().c_str());
-            error_list.push_back(GRPC_ERROR_CREATE_FROM_COPIED_STRING(msg));
-            gpr_free(msg);
+            error_list.push_back(GRPC_ERROR_CREATE_FROM_COPIED_STRING(absl::StrCat("duplicate name ", ss.str()).c_str()));
           } else {
             auto headers_json_ptr = ParseFieldJsonFromJsonObject(key_builder, "headers", &internal_error, true);
             if (internal_error != GRPC_ERROR_NONE) {
@@ -412,9 +386,9 @@ LoadBalancingPolicy::PickResult RlsLb::Cache::Entry::Pick(PickArgs args) {
       result.error = GRPC_ERROR_CREATE_FROM_STATIC_STRING("child policy does not exist");
     } else {
       if (GRPC_TRACE_FLAG_ENABLED(grpc_lb_rls_trace)) {
-        gpr_log(GPR_DEBUG, "[grpclb %p] cache entry=%p: pick forwarded to child policy %p", lb_policy_.get(), this, child_policy_wrapper_.get());
+        gpr_log(GPR_DEBUG, "[grpclb %p] cache entry=%p: pick forwarded to child policy %p", lb_policy_.get(), this, child_policy_wrapper_->child());
       }
-      return child_policy_wrapper_->Pick(args);
+      return child_policy_wrapper_->child()->Pick(args);
     }
   } else if (now <= backoff_time_) {
     switch (lb_policy_->current_config_->request_processing_strategy()) {
@@ -493,7 +467,7 @@ void RlsLb::Cache::Entry::OnRlsResponseLocked(ResponseInfo response,
                          std::unique_ptr<BackOff> backoff_state) {
   if (response.error == GRPC_ERROR_NONE) {
     if (child_policy_wrapper_ != nullptr &&
-        child_policy_wrapper_->target() == response.target) {
+        child_policy_wrapper_->child()->target() == response.target) {
       if (lb_policy_->current_config_->request_processing_strategy() == RequestProcessingStrategy::SYNC_LOOKUP_CLIENT_SEES_ERROR ||
           lb_policy_->current_config_->request_processing_strategy() == RequestProcessingStrategy::SYNC_LOOKUP_DEFAULT_TARGET_ON_ERROR) {
         lb_policy_->UpdatePickerLocked();
@@ -501,13 +475,13 @@ void RlsLb::Cache::Entry::OnRlsResponseLocked(ResponseInfo response,
     } else {
       auto it = lb_policy_->child_policy_map_.find(response.target);
       if (it == lb_policy_->child_policy_map_.end()) {
-        child_policy_wrapper_ = RefCountedPtr<ChildPolicyWrapper>(new ChildPolicyWrapper(lb_policy_->Ref(), response.target));
+        child_policy_wrapper_ = RefCountedPtr<ChildPolicyWrapper::RefHandler>(new ChildPolicyWrapper::RefHandler(new ChildPolicyWrapper(lb_policy_->Ref(), response.target)));
         Json copied_child_policy_config = lb_policy_->current_config_->child_policy_config();
         grpc_error* error = InsertOrUpdateChildPolicyField(&copied_child_policy_config,
                                                       lb_policy_->current_config_->child_policy_config_target_field_name(),
                                                       response.target);
         GPR_ASSERT(error == GRPC_ERROR_NONE);
-        child_policy_wrapper_->UpdateLocked(copied_child_policy_config, lb_policy_->current_addresses_, lb_policy_->current_channel_args_);
+        child_policy_wrapper_->child()->UpdateLocked(copied_child_policy_config, lb_policy_->current_addresses_, lb_policy_->current_channel_args_);
       } else {
         child_policy_wrapper_ = it->second->Ref();
         if (lb_policy_->current_config_->request_processing_strategy() == RequestProcessingStrategy::SYNC_LOOKUP_CLIENT_SEES_ERROR ||
@@ -977,13 +951,8 @@ void RlsLb::ControlChannel::StateWatcher::OnReadyLocked(void* arg, grpc_error* e
   }
 }
 
-RlsLb::ChildPolicyWrapper::~ChildPolicyWrapper() {
-  if (child_policy_ != nullptr) {
-    grpc_pollset_set_del_pollset_set(child_policy_->interested_parties(), lb_policy_->interested_parties());
-  }
-  if (pending_child_policy_ != nullptr) {
-    grpc_pollset_set_del_pollset_set(pending_child_policy_->interested_parties(), lb_policy_->interested_parties());
-  }
+RlsLb::ChildPolicyWrapper* RlsLb::ChildPolicyWrapper::RefHandler::child() const {
+  return child_.get();
 }
 
 // ChildPolicyWrapper implementation
@@ -1032,60 +1001,32 @@ void RlsLb::ChildPolicyWrapper::UpdateLocked(const Json& child_policy_config, Se
   grpc_error *error;
   update_args.config = LoadBalancingPolicyRegistry::ParseLoadBalancingConfig(child_policy_config, &error);
   GPR_DEBUG_ASSERT(error == GRPC_ERROR_NONE);
-  // returned target fails the validation
+  // returned RLS target fails the validation
   if (error != GRPC_ERROR_NONE) {
     picker_ = std::unique_ptr<LoadBalancingPolicy::SubchannelPicker>(new TransientFailurePicker(error));
     child_policy_ = nullptr;
-    pending_child_policy_ = nullptr;
     return;
   }
 
-  const char* child_policy_name = ParseChildPolicyName(child_policy_config).c_str();
-  const bool create_policy =
-      // case 1
-      child_policy_ == nullptr ||
-      // case 2b
-      (pending_child_policy_ == nullptr &&
-       strcmp(child_policy_->name(), child_policy_name) != 0) ||
-      // case 3b
-      (pending_child_policy_ != nullptr &&
-       strcmp(pending_child_policy_->name(), child_policy_name) != 0);
-  if (create_policy) {
-    auto& child_policy = child_policy_ == nullptr ? child_policy_ : pending_child_policy_;
-    if (child_policy != nullptr) {
-      grpc_pollset_set_del_pollset_set(child_policy->interested_parties(), lb_policy_->interested_parties());
-    }
-    Args create_args;
-    create_args.combiner = lb_policy_->combiner();
-    ChildPolicyHelper* child_policy_helper = new ChildPolicyHelper(Ref());
-    create_args.channel_control_helper.reset(child_policy_helper);
-    create_args.args = channel_args;
-    child_policy = LoadBalancingPolicyRegistry::CreateLoadBalancingPolicy(
-        child_policy_name, std::move(create_args));
-    if (GRPC_TRACE_FLAG_ENABLED(grpc_lb_rls_trace)) {
-      gpr_log(GPR_DEBUG, "[RlsLb %p] ChildPolicyWrapper=%p: create child policy %p", lb_policy_.get(), this, child_policy.get());
-    }
-    child_policy_helper->set_child(child_policy.get());
-    grpc_pollset_set_add_pollset_set(child_policy->interested_parties(), lb_policy_->interested_parties());
+  Args create_args;
+  create_args.combiner = lb_policy_->combiner();
+  create_args.channel_control_helper.reset(new ChildPolicyHelper(Ref()));
+  create_args.args = channel_args;
 
-    update_args.addresses = std::move(addresses);
-    update_args.args = grpc_channel_args_copy(channel_args);
-    child_policy->UpdateLocked(std::move(update_args));
-  } else {
-    auto& child_policy = pending_child_policy_ != nullptr ? pending_child_policy_ : child_policy_;
-    if (GRPC_TRACE_FLAG_ENABLED(grpc_lb_rls_trace)) {
-      gpr_log(GPR_DEBUG, "[RlsLb %p] ChildPolicyWrapper=%p: update config for child policy %p", lb_policy_.get(), this, child_policy.get());
-    }
-    child_policy->UpdateLocked(std::move(update_args));
+  child_policy_.reset(new ChildPolicyHandler(std::move(create_args), &grpc_lb_rls_trace));
+  if (GRPC_TRACE_FLAG_ENABLED(grpc_lb_rls_trace)) {
+    gpr_log(GPR_INFO, "[RlsLb %p] ChildPolicyWrapper=%p, create new child policy handler %p", lb_policy_.get(), this, child_policy_.get());
   }
+  grpc_pollset_set_add_pollset_set(child_policy_->interested_parties(), lb_policy_->interested_parties());
+
+  update_args.addresses = std::move(addresses);
+  update_args.args = grpc_channel_args_copy(channel_args);
+  child_policy_->UpdateLocked(std::move(update_args));
 }
 
 void RlsLb::ChildPolicyWrapper::ExitIdleLocked() {
   if (child_policy_ != nullptr) {
     child_policy_->ExitIdleLocked();
-  }
-  if (pending_child_policy_ != nullptr) {
-    pending_child_policy_->ExitIdleLocked();
   }
 }
 
@@ -1093,9 +1034,16 @@ void RlsLb::ChildPolicyWrapper::ResetBackoffLocked() {
   if (child_policy_ != nullptr) {
     child_policy_->ResetBackoffLocked();
   }
-  if (pending_child_policy_ != nullptr) {
-    pending_child_policy_->ResetBackoffLocked();
+}
+
+void RlsLb::ChildPolicyWrapper::Orphan() {
+  is_shutdown_ = true;
+  if (child_policy_ != nullptr) {
+    grpc_pollset_set_del_pollset_set(child_policy_->interested_parties(), lb_policy_->interested_parties());
+    child_policy_.reset();
   }
+  picker_.reset();
+  lb_policy_->child_policy_map_.erase(target_);
 }
 
 // ChildPolicyHelper implementation
@@ -1105,8 +1053,7 @@ RefCountedPtr<SubchannelInterface> RlsLb::ChildPolicyWrapper::ChildPolicyHelper:
     gpr_log(GPR_DEBUG, "[RlsLb %p] ChildPolicyHelper=%p, ChildPolicyWrapper=%p: CreateSubchannel", wrapper_->lb_policy_.get(), this, wrapper_.get());
   }
   MutexLock lock(&wrapper_->lb_policy_->mu_);
-  if (wrapper_->lb_policy_->is_shutdown_) return nullptr;
-  if (wrapper_->lb_policy_->child_policy_map_.find(wrapper_->target_) == wrapper_->lb_policy_->child_policy_map_.end()) return nullptr;
+  if (wrapper_->is_shutdown_) return nullptr;
   return wrapper_->lb_policy_->channel_control_helper()->CreateSubchannel(args);
 }
 
@@ -1118,25 +1065,16 @@ void RlsLb::ChildPolicyWrapper::ChildPolicyHelper::UpdateState(grpc_connectivity
     gpr_log(GPR_DEBUG, "[RlsLb %p] ChildPolicyHelper=%p, ChildPolicyWrapper=%p: UpdateState(state=%d, picker=%p)", wrapper_->lb_policy_.get(), this, wrapper_.get(), state, picker.get());
   }
   MutexLock lock(&wrapper_->lb_policy_->mu_);
-  if (wrapper_->lb_policy_->is_shutdown_) return;
-  if (wrapper_->lb_policy_->child_policy_map_.find(wrapper_->target_) == wrapper_->lb_policy_->child_policy_map_.end()) return ;
+  if (wrapper_->is_shutdown_) return;
 
   wrapper_->connectivity_state_ = state;
   GPR_DEBUG_ASSERT(picker != nullptr);
   if (picker != nullptr) {
     wrapper_->picker_ = std::move(picker);
   }
-  if (!wrapper_->lb_policy_->is_shutdown_) {
-    if (wrapper_->lb_policy_->current_config_->request_processing_strategy() == RequestProcessingStrategy::SYNC_LOOKUP_DEFAULT_TARGET_ON_ERROR ||
-      wrapper_->lb_policy_->current_config_->request_processing_strategy() == RequestProcessingStrategy::SYNC_LOOKUP_CLIENT_SEES_ERROR) {
-      wrapper_->lb_policy_->UpdatePickerLocked();
-    }
-    if (child_ == wrapper_->pending_child_policy_.get() && state == GRPC_CHANNEL_READY) {
-      if (wrapper_->child_policy_ != nullptr) {
-        grpc_pollset_set_del_pollset_set(wrapper_->child_policy_->interested_parties(), wrapper_->lb_policy_->interested_parties());
-      }
-      wrapper_->child_policy_ = std::move(wrapper_->pending_child_policy_);
-    }
+  if (wrapper_->lb_policy_->current_config_->request_processing_strategy() == RequestProcessingStrategy::SYNC_LOOKUP_DEFAULT_TARGET_ON_ERROR ||
+    wrapper_->lb_policy_->current_config_->request_processing_strategy() == RequestProcessingStrategy::SYNC_LOOKUP_CLIENT_SEES_ERROR) {
+    wrapper_->lb_policy_->UpdatePickerLocked();
   }
 }
 
@@ -1146,8 +1084,7 @@ void RlsLb::ChildPolicyWrapper::ChildPolicyHelper::RequestReresolution() {
     gpr_log(GPR_DEBUG, "[RlsLb %p] ChildPolicyHelper=%p, ChildPolicyWrapper=%p: RequestReresolution", wrapper_->lb_policy_.get(), this, wrapper_.get());
   }
   MutexLock lock(&wrapper_->lb_policy_->mu_);
-  if (wrapper_->lb_policy_->is_shutdown_) return;
-  if (wrapper_->lb_policy_->child_policy_map_.find(wrapper_->target_) == wrapper_->lb_policy_->child_policy_map_.end()) return;
+  if (wrapper_->is_shutdown_) return;
 
   wrapper_->lb_policy_->channel_control_helper()->RequestReresolution();
 }
@@ -1155,8 +1092,7 @@ void RlsLb::ChildPolicyWrapper::ChildPolicyHelper::RequestReresolution() {
 // Forwarded directly to the channel.
 void RlsLb::ChildPolicyWrapper::ChildPolicyHelper::AddTraceEvent(TraceSeverity severity, StringView message) {
   MutexLock lock(&wrapper_->lb_policy_->mu_);
-  if (wrapper_->lb_policy_->is_shutdown_) return;
-  if (wrapper_->lb_policy_->child_policy_map_.find(wrapper_->target_) == wrapper_->lb_policy_->child_policy_map_.end()) return;
+  if (wrapper_->is_shutdown_) return;
 
   wrapper_->lb_policy_->channel_control_helper()->AddTraceEvent(severity, message);
 }
@@ -1223,9 +1159,9 @@ void RlsLb::UpdateLocked(UpdateArgs args) {
       Json copied_child_policy_config = current_config_->child_policy_config();
       grpc_error* error = InsertOrUpdateChildPolicyField(&copied_child_policy_config,
                                                     current_config_->child_policy_config_target_field_name(),
-                                                    child.second->target());
+                                                    child.second->child()->target());
       GPR_ASSERT(error == GRPC_ERROR_NONE);
-      child.second->UpdateLocked(copied_child_policy_config, current_addresses_, current_channel_args_);
+      child.second->child()->UpdateLocked(copied_child_policy_config, current_addresses_, current_channel_args_);
     }
   }
 
@@ -1237,7 +1173,7 @@ void RlsLb::UpdateLocked(UpdateArgs args) {
 void RlsLb::ExitIdleLocked() {
   MutexLock lock(&mu_);
   for (auto& child_entry : child_policy_map_) {
-    child_entry.second->ExitIdleLocked();
+    child_entry.second->child()->ExitIdleLocked();
   }
 }
 
@@ -1246,7 +1182,7 @@ void RlsLb::ResetBackoffLocked() {
   channel_->ResetBackoff();
   cache_.ResetAllBackoff();
   for (auto& child : child_policy_map_) {
-    child.second->ResetBackoffLocked();
+    child.second->child()->ResetBackoffLocked();
   }
 }
 
@@ -1309,10 +1245,7 @@ RlsLb::KeyMapBuilder::KeyMapBuilder(const Json* config_ptr, grpc_error** error) 
   int idx = 0;
   for (auto& name_matcher_json : headers) {
     if (name_matcher_json.type() != Json::Type::OBJECT) {
-      char* msg;
-      gpr_asprintf(&msg, "\"headers\" array element %d is not an object", idx);
-      error_list.push_back(GRPC_ERROR_CREATE_FROM_COPIED_STRING(msg));
-      gpr_free(msg);
+      error_list.push_back(GRPC_ERROR_CREATE_FROM_COPIED_STRING(absl::StrCat("\"headers\" array element ", idx, " is not an object").c_str()));
     }
     auto& name_matcher = name_matcher_json.object_value();
     auto required_match_json = name_matcher.find("required_match");
@@ -1325,10 +1258,7 @@ RlsLb::KeyMapBuilder::KeyMapBuilder(const Json* config_ptr, grpc_error** error) 
     } else {
       const std::string& key = *key_ptr;
       if (key_set.find(key) != key_set.end()) {
-        char* msg;
-        gpr_asprintf(&msg, "duplicate key \"%s\"", key.c_str());
-        error_list.push_back(GRPC_ERROR_CREATE_FROM_COPIED_STRING(msg));
-        gpr_free(msg);
+        error_list.push_back(GRPC_ERROR_CREATE_FROM_COPIED_STRING(absl::StrCat("duplicate key \"", key, "\"").c_str()));
       } else {
         key_set.insert(key);
         auto names_ptr = ParseArrayFieldFromJsonObject(name_matcher, "names", &internal_error, true);
@@ -1339,10 +1269,7 @@ RlsLb::KeyMapBuilder::KeyMapBuilder(const Json* config_ptr, grpc_error** error) 
           int idx2 = 0;
           for (auto& name_json : names) {
             if (name_json.type() != Json::Type::STRING) {
-              char* msg;
-              gpr_asprintf(&msg, "\"names\" array element %d is not a string", idx2);
-              error_list.push_back(GRPC_ERROR_CREATE_FROM_COPIED_STRING(msg));
-              gpr_free(msg);
+              error_list.push_back(GRPC_ERROR_CREATE_FROM_COPIED_STRING(absl::StrCat("\"names\" array element ,", idx2, " is not a string").c_str()));
             } else {
               auto& name = name_json.string_value();
               // Use the index of the element as the key's priority.
@@ -1551,10 +1478,7 @@ RefCountedPtr<LoadBalancingPolicy::Config> RlsLbFactory::ParseLoadBalancingConfi
           auto it = child_policy->begin();
           auto& child_policy_config_json = it->second;
           if (child_policy_config_json.type() != Json::Type::OBJECT) {
-            char* msg;
-            gpr_asprintf(&msg, "child policy configuration of \"%s\" is not object", it->first.c_str());
-            error_list.push_back(GRPC_ERROR_CREATE_FROM_COPIED_STRING(msg));
-            gpr_free(msg);
+            error_list.push_back(GRPC_ERROR_CREATE_FROM_COPIED_STRING(absl::StrCat("child policy configuration of \"", it->first, "\" is not object").c_str()));
             continue;
           }
           auto child_policy_config = child_policy_config_json.mutable_object();
@@ -1594,7 +1518,7 @@ RefCountedPtr<LoadBalancingPolicy::Config> RlsLbFactory::ParseLoadBalancingConfi
 void grpc_lb_policy_rls_init() {
   grpc_core::LoadBalancingPolicyRegistry::Builder::
       RegisterLoadBalancingPolicyFactory(
-          grpc_core::MakeUnique<grpc_core::RlsLbFactory>());
+          absl::make_unique<grpc_core::RlsLbFactory>());
 }
 
 void grpc_lb_policy_rls_shutdown() {}

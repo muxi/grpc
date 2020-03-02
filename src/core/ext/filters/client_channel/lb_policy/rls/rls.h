@@ -31,6 +31,7 @@
 #include "src/core/lib/gprpp/orphanable.h"
 #include "src/core/lib/backoff/backoff.h"
 #include "src/core/lib/iomgr/timer.h"
+#include "src/core/ext/filters/client_channel/lb_policy/child_policy_handler.h"
 
 namespace grpc_core {
 
@@ -96,7 +97,6 @@ class RlsLb : public LoadBalancingPolicy {
 
   using RequestMap =
     std::unordered_map<Key, OrphanablePtr<RequestMapEntry>, KeyHasher>;
-  using ChildPolicyMap = std::unordered_map<std::string, ChildPolicyWrapper*>;
 
   struct ResponseInfo {
     grpc_error* error;
@@ -112,6 +112,86 @@ class RlsLb : public LoadBalancingPolicy {
 
    private:
     RefCountedPtr<RlsLb> lb_policy_;
+  };
+
+  class ChildPolicyWrapper : public InternallyRefCounted<ChildPolicyWrapper> {
+   public:
+
+    class RefHandler : public RefCounted<RefHandler> {
+     public:
+      RefHandler(ChildPolicyWrapper* child) : child_(child) {}
+
+      ChildPolicyWrapper* child() const;
+
+     private:
+      OrphanablePtr<ChildPolicyWrapper> child_;
+    };
+
+    ChildPolicyWrapper(
+        RefCountedPtr<RlsLb> lb_policy, std::string target) :
+      lb_policy_(std::move(lb_policy)), target_(std::move(target)) { }
+
+    // Pick subchannel for request. If picker_ == nullptr, the pick result is
+    // PICK_QUEUE. Otherwise, the pick is delegated to picker_.
+    PickResult Pick(PickArgs args);
+
+    // Update configuration of the child policy. If the child policy name is not
+    // changed, the configuration is forwarded to the current child policy with its
+    // UpdateLocked() method. Otherwise, a new child policy object is constructed
+    // and replaces the current child policy. The current child policy is shut
+    // down; the current picker/connectivety_state are invalidated.
+    //
+    // args.config's extra field must be already written to value of target
+    //
+    // Does not transfer ownership of channel_args
+    void UpdateLocked(const Json& child_policy_config, ServerAddressList addresses, const grpc_channel_args* channel_args);
+
+    void ExitIdleLocked();
+
+    void ResetBackoffLocked();
+
+    void Orphan() override;
+
+    const std::string& target() const { return target_; }
+
+   private:
+
+    class ChildPolicyHelper : public LoadBalancingPolicy::ChannelControlHelper {
+     public:
+      explicit ChildPolicyHelper(RefCountedPtr<ChildPolicyWrapper> wrapper) :
+          wrapper_(wrapper) { }
+
+      // Implementation of ChannelControlHelper interface.
+
+      // Child policy requests creation of subchannel. Forwarded directly to the
+      // channel.
+      RefCountedPtr<SubchannelInterface> CreateSubchannel(
+          const grpc_channel_args& args) override;
+
+      // Child policy reports updated state. The picker and the state is stored in
+      // this helper, and a new RLS policy picker is reported to the channel.
+      void UpdateState(grpc_connectivity_state state,
+                       std::unique_ptr<SubchannelPicker> picker) override;
+
+      // Child policy requests re-resolution. Forwarded directly to the channel.
+      void RequestReresolution() override;
+
+      // Forwarded directly to the channel.
+      void AddTraceEvent(TraceSeverity severity, StringView message) override;
+
+     private:
+      RefCountedPtr<ChildPolicyWrapper> wrapper_;
+      LoadBalancingPolicy* child_;
+    };
+
+    RefCountedPtr<RlsLb> lb_policy_;
+    std::string target_;
+
+    bool is_shutdown_ = false;
+
+    OrphanablePtr<ChildPolicyHandler> child_policy_;
+    grpc_connectivity_state connectivity_state_;
+    std::unique_ptr<LoadBalancingPolicy::SubchannelPicker> picker_;
   };
 
   // Key to access entries in the cache and the request map.
@@ -182,7 +262,7 @@ class RlsLb : public LoadBalancingPolicy {
       grpc_millis backoff_time_ = GRPC_MILLIS_INF_PAST;
       grpc_millis backoff_expiration_time_ = GRPC_MILLIS_INF_PAST;
 
-      RefCountedPtr<ChildPolicyWrapper> child_policy_wrapper_ = nullptr;
+      RefCountedPtr<ChildPolicyWrapper::RefHandler> child_policy_wrapper_ = nullptr;
       std::string header_data_;
       grpc_millis data_expiration_time_ = GRPC_MILLIS_INF_PAST;
       grpc_millis stale_time_ = GRPC_MILLIS_INF_PAST;
@@ -341,75 +421,7 @@ class RlsLb : public LoadBalancingPolicy {
     grpc_slice status_details_recv_;
   };
 
-  class ChildPolicyWrapper : public RefCounted<ChildPolicyWrapper> {
-   public:
-
-    ChildPolicyWrapper(
-        RefCountedPtr<RlsLb> lb_policy, std::string target) :
-      lb_policy_(std::move(lb_policy)), target_(std::move(target)) { }
-    ~ChildPolicyWrapper();
-
-
-    // Pick subchannel for request. If picker_ == nullptr, the pick result is
-    // PICK_QUEUE. Otherwise, the pick is delegated to picker_.
-    PickResult Pick(PickArgs args);
-
-    // Update configuration of the child policy. If the child policy name is not
-    // changed, the configuration is forwarded to the current child policy with its
-    // UpdateLocked() method. Otherwise, a new child policy object is constructed
-    // and replaces the current child policy. The current child policy is shut
-    // down; the current picker/connectivety_state are invalidated.
-    //
-    // args.config's extra field must be already written to value of target
-    //
-    // Does not transfer ownership of channel_args 
-    void UpdateLocked(const Json& child_policy_config, ServerAddressList addresses, const grpc_channel_args* channel_args);
-
-    void ExitIdleLocked();
-
-    void ResetBackoffLocked();
-
-    const std::string& target() const { return target_; }
-
-   private:
-
-    class ChildPolicyHelper : public LoadBalancingPolicy::ChannelControlHelper {
-     public:
-      explicit ChildPolicyHelper(RefCountedPtr<ChildPolicyWrapper> wrapper) :
-          wrapper_(wrapper) { }
-
-      // Implementation of ChannelControlHelper interface.
-
-      // Child policy requests creation of subchannel. Forwarded directly to the
-      // channel.
-      RefCountedPtr<SubchannelInterface> CreateSubchannel(
-          const grpc_channel_args& args) override;
-
-      // Child policy reports updated state. The picker and the state is stored in
-      // this helper, and a new RLS policy picker is reported to the channel.
-      void UpdateState(grpc_connectivity_state state,
-                       std::unique_ptr<SubchannelPicker> picker) override;
-
-      // Child policy requests re-resolution. Forwarded directly to the channel.
-      void RequestReresolution() override;
-
-      // Forwarded directly to the channel.
-      void AddTraceEvent(TraceSeverity severity, StringView message) override;
-
-      void set_child(LoadBalancingPolicy* child) { child_ = child; }
-     private:
-      RefCountedPtr<ChildPolicyWrapper> wrapper_;
-      LoadBalancingPolicy* child_;
-    };
-
-    RefCountedPtr<RlsLb> lb_policy_;
-    std::string target_;
-
-    OrphanablePtr<LoadBalancingPolicy> child_policy_;
-    OrphanablePtr<LoadBalancingPolicy> pending_child_policy_;
-    grpc_connectivity_state connectivity_state_;
-    std::unique_ptr<LoadBalancingPolicy::SubchannelPicker> picker_;
-  };
+  using ChildPolicyMap = std::unordered_map<std::string, ChildPolicyWrapper::RefHandler*>;
 
   void ShutdownLocked() override;
 
