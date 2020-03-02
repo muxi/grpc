@@ -43,31 +43,9 @@ DARWIN_LIBUV_HEADERS = [
 
 WINDOWS_LIBUV_HEADERS = [
     "include/uv/win.h",
-    "src/win/atomicops-inl.h",
-    "src/win/handle-inl.h",
-    "src/win/internal.h",
-    "src/win/req-inl.h",
-    "src/win/stream-inl.h",
-    "src/win/winapi.h",
-    "src/win/winsock.h",
-]
+] + glob(["src/win/*.h"])
 
-COMMON_LIBUV_SOURCES = [
-    "src/fs-poll.c",
-    "src/heap-inl.h",
-    "src/idna.c",
-    "src/idna.h",
-    "src/inet.c",
-    "src/queue.h",
-    "src/strscpy.c",
-    "src/strscpy.h",
-    "src/threadpool.c",
-    "src/timer.c",
-    "src/uv-data-getter-setters.c",
-    "src/uv-common.c",
-    "src/uv-common.h",
-    "src/version.c",
-]
+COMMON_LIBUV_SOURCES = glob(["src/*.c"]) + glob(["src/*.h"])
 
 UNIX_LIBUV_SOURCES = [
     "src/unix/async.c",
@@ -116,39 +94,7 @@ DARWIN_LIBUV_SOURCES = [
     "src/unix/proctitle.c",
 ]
 
-WINDOWS_LIBUV_SOURCES = [
-    "src/win/async.c",
-    "src/win/atomicops-inl.h",
-    "src/win/core.c",
-    "src/win/detect-wakeup.c",
-    "src/win/dl.c",
-    "src/win/error.c",
-    "src/win/fs-event.c",
-    "src/win/fs.c",
-    "src/win/getaddrinfo.c",
-    "src/win/getnameinfo.c",
-    "src/win/handle.c",
-    "src/win/handle-inl.h",
-    "src/win/internal.h",
-    "src/win/loop-watcher.c",
-    "src/win/pipe.c",
-    "src/win/poll.c",
-    "src/win/process-stdio.c",
-    "src/win/process.c",
-    "src/win/req-inl.h",
-    "src/win/signal.c",
-    "src/win/stream.c",
-    "src/win/stream-inl.h",
-    "src/win/tcp.c",
-    "src/win/thread.c",
-    "src/win/tty.c",
-    "src/win/udp.c",
-    "src/win/util.c",
-    "src/win/winapi.c",
-    "src/win/winapi.h",
-    "src/win/winsock.c",
-    "src/win/winsock.h",
-]
+WINDOWS_LIBUV_SOURCES = glob(["src/win/*.c"]) + glob(["src/win/*.h"])
 
 cc_library(
     name = "libuv",

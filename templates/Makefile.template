@@ -1549,6 +1549,32 @@
   %>
   ${makelib(grpc_abseil_lib)}
 
+  # Add platform-agnostic LIBUV target.
+
+  ifeq ($(SYSTEM),Linux)
+  LIBUV_SRC = LIBUV_LINUX_SRC
+
+  LIBUV_OBJS = LIBUV_LINUX_OBJS
+
+  $(LIBDIR)/$(CONFIG)/libuv.a: $(LIBDIR)/$(CONFIG)/libuv_linux.a
+  endif
+
+  ifeq ($(SYSTEM),Darwin)
+  LIBUV_SRC = LIBUV_DARWIN_SRC
+
+  LIBUV_OBJS = LIBUV_DARWIN_OBJS
+
+  $(LIBDIR)/$(CONFIG)/libuv.a: $(LIBDIR)/$(CONFIG)/libuv_darwin.a
+  endif
+
+  ifeq ($(SYSTEM),MINGW32)
+  LIBUV_SRC = LIBUV_WIN_SRC
+
+  LIBUV_OBJS = LIBUV_WIN_OBJS
+
+  $(LIBDIR)/$(CONFIG)/libuv.a: $(LIBDIR)/$(CONFIG)/libuv_win.a
+  endif
+
   # All of the test targets, and protoc plugins
 
   % for tgt in targets:
@@ -1562,45 +1588,6 @@
       ${proto_to_cc(src)} \\
 
   % endfor
-
-  % if "win_src" in lib:
-  ifeq ($(SYSTEM),MINGW32)
-  LIB${lib.name.upper()}_SRC += \\
-
-  % for src in lib.win_src:
-      ${proto_to_cc(src)} \\
-
-  % endfor
-
-  endif
-
-  % endif
-
-  % if "linux_src" in lib:
-  ifeq ($(SYSTEM),Linux)
-  LIB${lib.name.upper()}_SRC += \\
-
-  % for src in lib.linux_src:
-      ${proto_to_cc(src)} \\
-
-  % endfor
-
-  endif
-
-  % endif
-
-  % if "darwin_src" in lib:
-  ifeq ($(SYSTEM),Darwin)
-  LIB${lib.name.upper()}_SRC += \\
-
-  % for src in lib.darwin_src:
-      ${proto_to_cc(src)} \\
-
-  % endfor
-
-  endif
-
-  % endif
 
   % if "public_headers" in lib:
   % if lib.language == "c++":
@@ -1670,7 +1657,7 @@
 
   % endif
   $(LIBDIR)/$(CONFIG)/lib${lib.name}.a: \
-  % if lib.name not in ['z', 'ares', 'address_sorting', 'upb', 'grpc_abseil', 'uv']:
+  % if lib.name not in ['z', 'ares', 'address_sorting', 'upb', 'grpc_abseil', 'uv_linux', 'uv_darwin', 'uv_win']:
   $(ZLIB_DEP) \
   $(CARES_DEP) \
   $(ADDRESS_SORTING_DEP) \

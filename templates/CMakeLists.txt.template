@@ -467,6 +467,53 @@
   %   endif
   % endfor
 
+  if(gRPC_BUILD_TESTS)
+  if(_gRPC_PLATFORM_LINUX)
+    add_library(uv ALIAS uv_linux)
+  elseif(_gRPC_PLATFORM_MAC)
+    add_library(uv ALIAS uv_darwin)
+  elseif(_gRPC_PLATFORM_WINDOWS)
+    add_library(uv ALIAS uv_win)
+  endif()
+
+  set_target_properties(uv PROPERTIES
+    VERSION <%text>${gRPC_CORE_VERSION}</%text>
+    SOVERSION <%text>${gRPC_CORE_SOVERSION}</%text>
+  )
+
+  if(WIN32 AND MSVC)
+    set_target_properties(uv PROPERTIES COMPILE_PDB_NAME "uv"
+      COMPILE_PDB_OUTPUT_DIRECTORY <%text>"${CMAKE_BINARY_DIR}</%text>"
+    )
+    if(gRPC_INSTALL)
+      install(FILES <%text>${CMAKE_CURRENT_BINARY_DIR}/</%text>uv_win.pdb
+        DESTINATION <%text>${gRPC_INSTALL_LIBDIR}</%text> OPTIONAL
+      )
+    endif()
+  endif()
+
+  target_include_directories(uv
+    PUBLIC <%text>$<INSTALL_INTERFACE:${gRPC_INSTALL_INCLUDEDIR}> $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include></%text>
+    PRIVATE
+      <%text>${CMAKE_CURRENT_SOURCE_DIR}</%text>
+      <%text>${_gRPC_ADDRESS_SORTING_INCLUDE_DIR}</%text>
+      <%text>${_gRPC_LIBUV_INCLUDE_DIR}</%text>
+      <%text>${_gRPC_SSL_INCLUDE_DIR}</%text>
+      <%text>${_gRPC_UPB_GENERATED_DIR}</%text>
+      <%text>${_gRPC_UPB_GRPC_GENERATED_DIR}</%text>
+      <%text>${_gRPC_UPB_INCLUDE_DIR}</%text>
+      <%text>${_gRPC_ZLIB_INCLUDE_DIR}</%text>
+  )
+  % if len(get_deps(lib)) > 0:
+  target_link_libraries(uv
+  % for dep in get_deps(lib):
+    ${dep}
+  % endfor
+  )
+  % endif
+  endif()
+
+
   % for tgt in targets:
   % if tgt.build in ["all", "protoc", "tool", "test", "private"] and not tgt.boringssl:
   % if tgt.build in ["test", "private"]:
