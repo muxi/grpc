@@ -280,13 +280,7 @@ class RlsPolicyEnd2endTest : public ::testing::Test {
             grpc_fake_transport_security_credentials_create())) {}
 
   static void SetUpTestCase() {
-    // Make the backup poller poll very frequently in order to pick up
-    // updates from all the subchannels's FDs.
     GPR_GLOBAL_CONFIG_SET(grpc_client_channel_backup_poll_interval_ms, 1);
-#if TARGET_OS_IPHONE
-    // Workaround Apple CFStream bug
-    gpr_setenv("grpc_cfstream", "0");
-#endif
   }
 
   void SetUp() override { grpc_init(); }
@@ -295,9 +289,6 @@ class RlsPolicyEnd2endTest : public ::testing::Test {
     for (size_t i = 0; i < servers_.size(); ++i) {
       servers_[i]->Shutdown();
     }
-    // Explicitly destroy all the members so that we can make sure grpc_shutdown
-    // has finished by the end of this function, and thus all the registered
-    // LB policy factories are removed.
     servers_.clear();
     creds_.reset();
     grpc_shutdown_blocking();
@@ -446,72 +437,6 @@ class RlsPolicyEnd2endTest : public ::testing::Test {
 
   void ResetCounters() {
     for (const auto& server : servers_) server->service_.ResetCounters();
-  }
-
-  void WaitForServer(
-      const std::unique_ptr<grpc::testing::EchoTestService::Stub>& stub,
-      size_t server_idx, const grpc_core::DebugLocation& location,
-      bool ignore_failure = false) {
-    do {
-      if (ignore_failure) {
-        SendRpc(stub);
-      } else {
-        CheckRpcSendOk(stub, location, true);
-      }
-    } while (servers_[server_idx]->service_.request_count() == 0);
-    ResetCounters();
-  }
-
-  bool WaitForChannelState(
-      Channel* channel, std::function<bool(grpc_connectivity_state)> predicate,
-      bool try_to_connect = false, int timeout_seconds = 5) {
-    const gpr_timespec deadline =
-        grpc_timeout_seconds_to_deadline(timeout_seconds);
-    while (true) {
-      grpc_connectivity_state state = channel->GetState(try_to_connect);
-      if (predicate(state)) break;
-      if (!channel->WaitForStateChange(state, deadline)) return false;
-    }
-    return true;
-  }
-
-  bool WaitForChannelNotReady(Channel* channel, int timeout_seconds = 5) {
-    auto predicate = [](grpc_connectivity_state state) {
-      return state != GRPC_CHANNEL_READY;
-    };
-    return WaitForChannelState(channel, predicate, false, timeout_seconds);
-  }
-
-  bool WaitForChannelReady(Channel* channel, int timeout_seconds = 5) {
-    auto predicate = [](grpc_connectivity_state state) {
-      return state == GRPC_CHANNEL_READY;
-    };
-    return WaitForChannelState(channel, predicate, true, timeout_seconds);
-  }
-
-  bool SeenAllServers() {
-    for (const auto& server : servers_) {
-      if (server->service_.request_count() == 0) return false;
-    }
-    return true;
-  }
-
-  // Updates \a connection_order by appending to it the index of the newly
-  // connected server. Must be called after every single Rpc.
-  void UpdateConnectionOrder(
-      const std::vector<std::unique_ptr<ServerData>>& servers,
-      std::vector<int>* connection_order) {
-    for (size_t i = 0; i < servers.size(); ++i) {
-      if (servers[i]->service_.request_count() == 1) {
-        // Was the server index known? If not, update connection_order.
-        const auto it =
-            std::find(connection_order->begin(), connection_order->end(), i);
-        if (it == connection_order->end()) {
-          connection_order->push_back(i);
-          return;
-        }
-      }
-    }
   }
 
   std::string BuildServiceConfig(int lookup_service_port,

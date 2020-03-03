@@ -124,9 +124,8 @@ constexpr char kGrpclb[] = "grpclb";
 
 class GrpcLbConfig : public LoadBalancingPolicy::Config {
  public:
-  GrpcLbConfig(const std::string& target_name_ptr,
-    RefCountedPtr<LoadBalancingPolicy::Config> child_policy)
-      : target_name_(target_name_ptr), child_policy_(std::move(child_policy)) {}
+  GrpcLbConfig(RefCountedPtr<LoadBalancingPolicy::Config> child_policy, const std::string& target_name_ptr)
+      : child_policy_(std::move(child_policy)), target_name_(target_name_ptr) {}
   const char* name() const override { return kGrpclb; }
 
   RefCountedPtr<LoadBalancingPolicy::Config> child_policy() const {
@@ -1377,7 +1376,7 @@ GrpcLb::GrpcLb(Args args)
 
 GrpcLb::~GrpcLb() {
   gpr_free((void*)server_name_);
-  if (target_name_ != nullptr) gpr_free(target_name_);
+  if (target_name_ != nullptr) gpr_free((void*)target_name_);
   grpc_channel_args_destroy(args_);
 }
 
@@ -1725,7 +1724,7 @@ class GrpcLbFactory : public LoadBalancingPolicyFactory {
       const Json& json, grpc_error** error) const override {
     GPR_DEBUG_ASSERT(error != nullptr && *error == GRPC_ERROR_NONE);
     if (json.type() == Json::Type::JSON_NULL) {
-      return MakeRefCounted<GrpcLbConfig>(nullptr);
+      return MakeRefCounted<GrpcLbConfig>(nullptr, nullptr);
     }
     std::vector<grpc_error*> error_list;
     Json child_policy_config_json_tmp;
@@ -1733,14 +1732,14 @@ class GrpcLbFactory : public LoadBalancingPolicyFactory {
     const std::string* target_name_ptr = nullptr;
     auto it = json.object_value().find("targetName");
     if (it != json.object_value().end()) {
-      Json& target_name_json = it->second;
+      const Json& target_name_json = it->second;
       if (target_name_json.type() != Json::Type::STRING) {
-        error_list.push_back(GRPC_ERROR_CREATE_FROM_STATIC_STRING("targetname filed is not string"))
+        error_list.push_back(GRPC_ERROR_CREATE_FROM_STATIC_STRING("targetname filed is not string"));
       } else {
         target_name_ptr = &target_name_json.string_value();
       }
     }
-    auto it = json.object_value().find("childPolicy");
+    it = json.object_value().find("childPolicy");
     if (it == json.object_value().end()) {
       child_policy_config_json_tmp = Json::Array{Json::Object{
           {"round_robin", Json::Object()},
@@ -1760,7 +1759,7 @@ class GrpcLbFactory : public LoadBalancingPolicyFactory {
           GRPC_ERROR_CREATE_FROM_VECTOR("field:childPolicy", &child_errors));
     }
     if (error_list.empty()) {
-      return MakeRefCounted<GrpcLbConfig>(target_name_ptr == nullptr ? *target_name_ptr : std::string(), std::move(child_policy_config));
+      return MakeRefCounted<GrpcLbConfig>(std::move(child_policy_config), target_name_ptr == nullptr ? *target_name_ptr : std::string());
     } else {
       *error = GRPC_ERROR_CREATE_FROM_VECTOR("GrpcLb Parser", &error_list);
       return nullptr;

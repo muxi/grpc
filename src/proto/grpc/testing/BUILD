@@ -67,15 +67,13 @@ grpc_proto_library(
 grpc_proto_library(
     name = "rls_config_proto",
     srcs = ["lookup/rls_config.proto"],
+    well_known_protos = True,
 )
 
 grpc_proto_library(
     name = "rls_proto",
     srcs = ["lookup/rls.proto"],
-    generate_mocks = True,
-    deps = [
-        "rls_config_proto",
-    ],
+    well_known_protos = True,
 )
 
 grpc_proto_library(
