@@ -68,6 +68,10 @@ UNIX_LIBUV_SOURCES = [
     "src/unix/thread.c",
     "src/unix/tty.c",
     "src/unix/udp.c",
+    "src/unix/random-devurandom.c",
+    "src/unix/random-getentropy.c",
+    "src/unix/random-getrandom.c",
+    "src/unix/random-sysctli-linux.c",
 ]
 
 LINUX_LIBUV_SOURCES = [
@@ -78,6 +82,7 @@ LINUX_LIBUV_SOURCES = [
     "src/unix/procfs-exepath.c",
     "src/unix/proctitle.c",
     "src/unix/sysinfo-loadavg.c",
+    "src/unix/sysinfo-memory.c",
 ]
 
 ANDROID_LIBUV_SOURCES = [

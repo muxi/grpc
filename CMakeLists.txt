@@ -3682,10 +3682,15 @@ add_library(uv_linux
   third_party/libuv/src/unix/process.c
   third_party/libuv/src/unix/procfs-exepath.c
   third_party/libuv/src/unix/proctitle.c
+  third_party/libuv/src/unix/random-devurandom.c
+  third_party/libuv/src/unix/random-getentropy.c
+  third_party/libuv/src/unix/random-getrandom.c
+  third_party/libuv/src/unix/random-sysctli-linux.c
   third_party/libuv/src/unix/signal.c
   third_party/libuv/src/unix/spinlock.h
   third_party/libuv/src/unix/stream.c
   third_party/libuv/src/unix/sysinfo-loadavg.c
+  third_party/libuv/src/unix/sysinfo-memory.c
   third_party/libuv/src/unix/tcp.c
   third_party/libuv/src/unix/thread.c
   third_party/libuv/src/unix/tty.c
@@ -3763,6 +3768,10 @@ add_library(uv_darwin
   third_party/libuv/src/unix/poll.c
   third_party/libuv/src/unix/process.c
   third_party/libuv/src/unix/proctitle.c
+  third_party/libuv/src/unix/random-devurandom.c
+  third_party/libuv/src/unix/random-getentropy.c
+  third_party/libuv/src/unix/random-getrandom.c
+  third_party/libuv/src/unix/random-sysctli-linux.c
   third_party/libuv/src/unix/signal.c
   third_party/libuv/src/unix/spinlock.h
   third_party/libuv/src/unix/stream.c

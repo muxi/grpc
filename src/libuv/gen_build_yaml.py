@@ -45,6 +45,10 @@ unix_uv_srcs = [
     "third_party/libuv/src/unix/thread.c",
     "third_party/libuv/src/unix/tty.c",
     "third_party/libuv/src/unix/udp.c",
+    "third_party/libuv/src/unix/random-devurandom.c",
+    "third_party/libuv/src/unix/random-getentropy.c",
+    "third_party/libuv/src/unix/random-getrandom.c",
+    "third_party/libuv/src/unix/random-sysctli-linux.c",
 ]
 
 linux_uv_srcs = [
@@ -55,6 +59,7 @@ linux_uv_srcs = [
     "third_party/libuv/src/unix/procfs-exepath.c",
     "third_party/libuv/src/unix/proctitle.c",
     "third_party/libuv/src/unix/sysinfo-loadavg.c",
+    "third_party/libuv/src/unix/sysinfo-memory.c",
 ]
 
 darwin_uv_srcs = [
@@ -99,52 +104,29 @@ win_uv_hdrs = [
 
 try:
     out['libs'] = [{
-        'name':
-            'uv_linux',
-        'defaults':
-            'uv_linux',
-        'build':
-            'private',
-        'language':
-            'c',
-        'secure':
-            False,
-        'src':
-            sorted(common_uv_srcs + unix_uv_srcs + linux_uv_srcs),
-        'headers':
-            sorted(common_uv_hdrs + unix_uv_hdrs + linux_uv_hdrs),
-    },
-    {
-        'name':
-            'uv_darwin',
-        'defaults':
-            'uv_darwin',
-        'build':
-            'private',
-        'language':
-            'c',
-        'secure':
-            False,
-        'src':
-            sorted(common_uv_srcs + unix_uv_srcs + darwin_uv_srcs),
-        'headers':
-            sorted(common_uv_hdrs + unix_uv_hdrs + darwin_uv_hdrs),
-    },
-    {
-        'name':
-            'uv_win',
-        'defaults':
-            'uv_win',
-        'build':
-            'private',
-        'language':
-            'c',
-        'secure':
-            False,
-        'src':
-            sorted(common_uv_srcs + win_uv_srcs),
-        'headers':
-            sorted(common_uv_hdrs + win_uv_hdrs),
+        'name': 'uv_linux',
+        'defaults': 'uv_linux',
+        'build': 'private',
+        'language': 'c',
+        'secure': False,
+        'src': sorted(common_uv_srcs + unix_uv_srcs + linux_uv_srcs),
+        'headers': sorted(common_uv_hdrs + unix_uv_hdrs + linux_uv_hdrs),
+    }, {
+        'name': 'uv_darwin',
+        'defaults': 'uv_darwin',
+        'build': 'private',
+        'language': 'c',
+        'secure': False,
+        'src': sorted(common_uv_srcs + unix_uv_srcs + darwin_uv_srcs),
+        'headers': sorted(common_uv_hdrs + unix_uv_hdrs + darwin_uv_hdrs),
+    }, {
+        'name': 'uv_win',
+        'defaults': 'uv_win',
+        'build': 'private',
+        'language': 'c',
+        'secure': False,
+        'src': sorted(common_uv_srcs + win_uv_srcs),
+        'headers': sorted(common_uv_hdrs + win_uv_hdrs),
     }]
 except:
     pass
