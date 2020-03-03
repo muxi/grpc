@@ -229,7 +229,7 @@ TEST_F(RlsKeyBuilderTest, WildcardMatch) {
   EXPECT_NE(builder, nullptr);
 
   TestMetadata metadata2;
-  metadata.Add(":path", "/test_service2/some_random_method");
+  metadata2.Add(":path", "/test_service2/some_random_method");
   path = RlsFindPathFromMetadata(&metadata2);
   builder = RlsFindKeyMapBuilder(key_builder_map, path);
   EXPECT_EQ(builder, nullptr);
@@ -256,10 +256,10 @@ TEST_F(RlsKeyBuilderTest, KeyExtraction) {
   EXPECT_EQ(key["key2"], "key2_val");
 
   TestMetadata metadata2;
-  metadata.Add("key1_field1", "key1_val");
-  metadata.Add("key2_field2", "key2_val");
-  metadata.Add("key3_field1", "key3_val");
-  metadata.Add(":path", "/test_service2/test_method2");
+  metadata2.Add("key1_field1", "key1_val");
+  metadata2.Add("key2_field2", "key2_val");
+  metadata2.Add("key3_field1", "key3_val");
+  metadata2.Add(":path", "/test_service2/test_method2");
   path = RlsFindPathFromMetadata(&metadata2);
   builder = RlsFindKeyMapBuilder(key_builder_map, path);
   ASSERT_NE(builder, nullptr);
@@ -269,10 +269,10 @@ TEST_F(RlsKeyBuilderTest, KeyExtraction) {
 
   // Test multiple identical fields.
   TestMetadata metadata3;
-  metadata.Add("key1_field1", "key1_val1");
-  metadata.Add("key2_field2", "key2_val");
-  metadata.Add("key1_field1", "key1_val2");
-  metadata.Add(":path", "/test_service1/test_method1");
+  metadata3.Add("key1_field1", "key1_val1");
+  metadata3.Add("key2_field2", "key2_val");
+  metadata3.Add("key1_field1", "key1_val2");
+  metadata3.Add(":path", "/test_service1/test_method1");
   path = RlsFindPathFromMetadata(&metadata3);
   builder = RlsFindKeyMapBuilder(key_builder_map, path);
   ASSERT_NE(builder, nullptr);

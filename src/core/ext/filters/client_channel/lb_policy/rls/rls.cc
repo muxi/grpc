@@ -1274,7 +1274,7 @@ RlsLb::KeyMapBuilder::KeyMapBuilder(const Json* config_ptr, grpc_error** error) 
         auto names_ptr = ParseArrayFieldFromJsonObject(name_matcher, "names", &internal_error, true);
         if (internal_error != GRPC_ERROR_NONE) {
           error_list.push_back(internal_error);
-        } else if (names_ptr == nullptr) {
+        } else if (names_ptr != nullptr) {
           auto& names = *names_ptr;
           int idx2 = 0;
           for (auto& name_json : names) {
