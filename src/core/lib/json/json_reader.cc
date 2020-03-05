@@ -272,6 +272,9 @@ JsonReader::Status JsonReader::Run() {
   /* This state-machine is a strict implementation of ECMA-404 */
   while (true) {
     c = ReadChar();
+    if (CurrentIndex() == 697) {
+      c = c;
+    }
     switch (c) {
       /* Let's process the error case first. */
       case GRPC_JSON_READ_CHAR_EOF:

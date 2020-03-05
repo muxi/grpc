@@ -34,6 +34,9 @@
 #include "src/proto/grpc/testing/echo.grpc.pb.h"
 #include "src/proto/grpc/testing/lookup/rls.pb.h"
 #include "src/proto/grpc/testing/lookup/rls.grpc.pb.h"
+#include "src/proto/grpc/lb/v1/load_balancer.pb.h"
+#include "src/proto/grpc/lb/v1/load_balancer.grpc.pb.h"
+#include "src/core/lib/channel/channel_args.h"
 #include "test/core/util/port.h"
 #include "test/core/util/test_config.h"
 #include "test/cpp/end2end/test_service_impl.h"
@@ -42,11 +45,14 @@
 #include <gtest/gtest.h>
 
 #include <thread>
+#include <map>
 
 #define SECONDS(x) (int(x))
 #define NANOSECONDS(x) (int(((x) - int(x)) * 1e9))
 
 const grpc::string test_key = "testKey";
+const intptr_t kWaitTag = 1;
+const intptr_t kFinishTag = 2;
 
 namespace grpc {
 namespace testing {
@@ -115,21 +121,12 @@ class FakeResolverResponseGeneratorWrapper {
     response_generator_ = std::move(other.response_generator_);
   }
 
-  void SetNextResolution(const std::vector<int>& ports,
+  void SetNextResolution(int balancer_port,
                          const char* service_config_json = nullptr) {
     grpc_core::ExecCtx exec_ctx;
+
     response_generator_->SetResponse(
-        BuildFakeResults(ports, service_config_json));
-  }
-
-  void SetNextResolutionUponError(const std::vector<int>& ports) {
-    grpc_core::ExecCtx exec_ctx;
-    response_generator_->SetReresolutionResponse(BuildFakeResults(ports));
-  }
-
-  void SetFailureOnReresolution() {
-    grpc_core::ExecCtx exec_ctx;
-    response_generator_->SetFailureOnReresolution();
+        BuildFakeResults(balancer_port, service_config_json));
   }
 
   grpc_core::FakeResolverResponseGenerator* Get() const {
@@ -138,24 +135,19 @@ class FakeResolverResponseGeneratorWrapper {
 
  private:
   static grpc_core::Resolver::Result BuildFakeResults(
-      const std::vector<int>& ports,
+      int balancer_port,
       const char* service_config_json = nullptr) {
     grpc_core::Resolver::Result result;
-    for (const int& port : ports) {
-      char* lb_uri_str;
-      gpr_asprintf(&lb_uri_str, "ipv4:127.0.0.1:%d", port);
-      grpc_uri* lb_uri = grpc_uri_parse(lb_uri_str, true);
-      GPR_ASSERT(lb_uri != nullptr);
-      grpc_resolved_address address;
-      GPR_ASSERT(grpc_parse_uri(lb_uri, &address));
-      result.addresses.emplace_back(address.addr, address.len,
-                                    nullptr /* args */);
-      grpc_uri_destroy(lb_uri);
-      gpr_free(lb_uri_str);
-    }
+    GPR_ASSERT(balancer_port != 0);
+
+    grpc_arg arg = grpc_channel_arg_integer_create(
+          const_cast<char*>(GRPC_ARG_ADDRESS_IS_BALANCER), 1);
+    result.addresses.emplace_back(absl::StrCat("localhost:", balancer_port), grpc_channel_args_copy_and_add(nullptr, &arg, 1));
     if (service_config_json != nullptr) {
+      result.service_config_error = GRPC_ERROR_NONE;
       result.service_config = grpc_core::ServiceConfig::Create(
           service_config_json, &result.service_config_error);
+      GPR_ASSERT(result.service_config_error == GRPC_ERROR_NONE);
       GPR_ASSERT(result.service_config != nullptr);
     }
     return result;
@@ -165,22 +157,24 @@ class FakeResolverResponseGeneratorWrapper {
       response_generator_;
 };
 
-class RlsServer {
+template<typename StubType, typename RequestType, typename ResponseType>
+class TestServer {
  public:
   struct Response {
     grpc_status_code status;
 
     /** Ignored if status is not GRPC_STATUS_OK. */
-    grpc::lookup::v1::RouteLookupResponse response;
+    ResponseType response;
   };
 
-  RlsServer() {
+  using Method = void (StubType::*)(::grpc::ServerContext* context, RequestType* request, ::grpc::ServerAsyncResponseWriter<ResponseType>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag);
+
+  explicit TestServer(Method method) : method_(method) {
     ServerBuilder builder;
 
     std::ostringstream server_address;
     port_ = grpc_pick_unused_port_or_die();
-    server_address << "localhost:" << port_;
-    builder.AddListeningPort(server_address.str(), std::shared_ptr<ServerCredentials>(new SecureServerCredentials(grpc_fake_transport_security_server_credentials_create())));
+    builder.AddListeningPort(absl::StrCat("localhost:", port_).c_str(), std::shared_ptr<ServerCredentials>(new SecureServerCredentials(grpc_fake_transport_security_server_credentials_create())));
 
     builder.RegisterService(&service_);
     cq_ = builder.AddCompletionQueue();
@@ -188,60 +182,55 @@ class RlsServer {
     cq_thread_ = std::thread(RunCompletionQueue, this);
   }
 
-  ~RlsServer() {
+  virtual ~TestServer() {
     server_->Shutdown();
+    server_.reset();
     cq_->Shutdown();
+    cq_.reset();
     cq_thread_.join();
   }
 
   void SetNextResponse(Response response) {
     grpc::internal::MutexLock lock(&mu_);
-    responses_.emplace_back(response);
+    responses_.emplace_back(std::move(response));
     if (responses_.size() == 1) {
       WaitForRpcLocked();
     }
   }
 
-  int lookup_count() {
-    grpc::internal::MutexLock lock(&mu_);
-    return lookup_count_;
-  }
-
-  std::list<grpc::string> keys() {
-    grpc::internal::MutexLock lock(&mu_);
-    return keys_;
-  }
-
   int port() const { return port_; }
 
+ protected:
+  void OnRequestLocked(RequestType request) {}
+
+  grpc::internal::Mutex mu_;
+
  private:
-  static void RunCompletionQueue(RlsServer *s) {
+  static void RunCompletionQueue(TestServer *s) {
     while (true) {
       void* got_tag;
       bool ok = false;
       s->cq_->Next(&got_tag, &ok);
-      if (ok && got_tag == reinterpret_cast<void*>(1)) {
+      if (ok && got_tag == reinterpret_cast<void*>(kWaitTag)) {
         grpc::internal::MutexLock lock(&s->mu_);
-        s->lookup_count_++;
-        auto item = s->request_.key_map().find(test_key);
-        if (item != s->request_.key_map().end()) {
-          s->keys_.push_back(item->second);
-        }
+        s->OnRequestLocked(std::move(s->request_));
+        GRP_ASSERT(s->responses_.size() > 0);
         Response response = std::move(s->responses_.front());
         s->responses_.pop_front();
 
         if (response.status == GRPC_STATUS_OK) {
-          s->responder_->Finish(response.response, Status(static_cast<StatusCode>(response.status), ""), reinterpret_cast<void*>(2));
+          s->responder_->Finish(response.response, Status(static_cast<StatusCode>(response.status), ""), reinterpret_cast<void*>(kFinishTag));
         } else {
-          s->responder_->Finish({}, Status(static_cast<StatusCode>(response.status), ""), reinterpret_cast<void*>(2));
+          s->responder_->Finish({}, Status(static_cast<StatusCode>(response.status), ""), reinterpret_cast<void*>(kFinishTag));
         }
-      } else if (ok && got_tag == reinterpret_cast<void*>(2)) {
+      } else if (ok && got_tag == reinterpret_cast<void*>(kFinishTag)) {
         grpc::internal::MutexLock lock(&s->mu_);
         delete s->responder_;
         if (s->responses_.size() > 0) {
           s->WaitForRpcLocked();
         }
       } else {
+        if (s->responder_ != nullptr) delete s->responder_;
         break;
       }
     }
@@ -250,25 +239,58 @@ class RlsServer {
   void WaitForRpcLocked() {
     GPR_ASSERT(responses_.size() > 0);
 
-    responder_ = new ServerAsyncResponseWriter<grpc::lookup::v1::RouteLookupResponse>(&context_);
-    service_.RequestRouteLookup(&context_, &request_, responder_, cq_.get(), cq_.get(), reinterpret_cast<void*>(1));
+    responder_ = new ServerAsyncResponseWriter<ResponseType>(&context_);
+    (service_.*method_)(&context_, &request_, responder_, cq_.get(), cq_.get(), reinterpret_cast<void*>(kWaitTag));
   }
 
-  grpc::internal::Mutex mu_;
   std::thread cq_thread_;
-
-  grpc::lookup::v1::RouteLookupService::AsyncService service_;
+  StubType service_;
   std::unique_ptr<ServerCompletionQueue> cq_;
   std::unique_ptr<grpc::Server> server_;
   ServerContext context_;
-  grpc::lookup::v1::RouteLookupRequest request_;
-  ServerAsyncResponseWriter<grpc::lookup::v1::RouteLookupResponse>* responder_;
-
+  RequestType request_;
+  ServerAsyncResponseWriter<ResponseType>* responder_;
   int port_;
-
   std::list<Response> responses_;
-  std::list<grpc::string> keys_;
+  Method method_;
+};
+
+class RlsServer : public TestServer<grpc::lookup::v1::RouteLookupService::AsyncService,
+                             grpc::lookup::v1::RouteLookupRequest,
+                             grpc::lookup::v1::RouteLookupResponse> {
+ public:
+  explicit RlsServer(Method method) : TestServer<grpc::lookup::v1::RouteLookupService::AsyncService,
+                             grpc::lookup::v1::RouteLookupRequest,
+                             grpc::lookup::v1::RouteLookupResponse>(method) {}
+
+  int lookup_count() {
+    grpc::internal::MutexLock lock(&mu_);
+    return lookup_count_;
+  }
+
+  const google::protobuf::Map<grpc::string, grpc::string>& last_request_key_map() {
+    grpc::internal::MutexLock lock(&mu_);
+    return last_request_key_map_;
+  }
+
+ protected:
+  void OnRequestLocked(grpc::lookup::v1::RouteLookupRequest request) {
+    last_request_key_map_ = request.key_map();
+    lookup_count_++;
+  }
+
+ private:
+  google::protobuf::Map<grpc::string, grpc::string> last_request_key_map_;
   int lookup_count_ = 0;
+};
+
+class Balancer : public TestServer<grpc::lb::v1::LoadBalancer::AsyncService,
+                                   grpc::lb::v1::LoadBalanceRequest,
+                                   grpc::lb::v1::LoadBalanceResponse> {
+ public:
+  explicit Balancer(Method method) : TestServer<grpc::lb::v1::LoadBalancer::AsyncService,
+                                   grpc::lb::v1::LoadBalanceRequest,
+                                   grpc::lb::v1::LoadBalanceResponse>(method) {}
 };
 
 class RlsPolicyEnd2endTest : public ::testing::Test {
@@ -283,14 +305,17 @@ class RlsPolicyEnd2endTest : public ::testing::Test {
     GPR_GLOBAL_CONFIG_SET(grpc_client_channel_backup_poll_interval_ms, 1);
   }
 
-  void SetUp() override { grpc_init(); }
+  void SetUp() override {
+    grpc_init();
+    rls_server_.reset(new RlsServer(&grpc::lookup::v1::RouteLookupService::AsyncService::RequestRouteLookup));
+    balancer_.reset(new Balancer(&grpc::lb::v1::LoadBalancer::AsyncService::RequestBalanceLoad));
+  }
 
   void TearDown() override {
     for (size_t i = 0; i < servers_.size(); ++i) {
       servers_[i]->Shutdown();
     }
     servers_.clear();
-    creds_.reset();
     grpc_shutdown_blocking();
   }
 
@@ -312,14 +337,6 @@ class RlsPolicyEnd2endTest : public ::testing::Test {
     for (size_t i = 0; i < num_servers; ++i) {
       StartServer(i);
     }
-  }
-
-  std::vector<int> GetServersPorts(size_t start_index = 0) {
-    std::vector<int> ports;
-    for (size_t i = start_index; i < servers_.size(); ++i) {
-      ports.push_back(servers_[i]->port_);
-    }
-    return ports;
   }
 
   FakeResolverResponseGeneratorWrapper BuildResolverResponseGenerator() {
@@ -383,7 +400,90 @@ class RlsPolicyEnd2endTest : public ::testing::Test {
     EXPECT_FALSE(success);
   }
 
-  struct ServerData {
+  std::string BuildServiceConfig(double max_age = 10,
+                                 double stale_age = 5,
+                                 int default_target_port = 0,
+                                 int request_processing_strategy = 0,
+                                 double lookup_service_timeout = 10) {
+    int lookup_service_port = rls_server_->port();
+    std::stringstream service_config;
+    service_config << "{";
+    service_config << "  \"loadBalancingConfig\":[{";
+    service_config << "    \"rls\":{";
+    service_config << "      \"routeLookupConfig\":{";
+    service_config << "        \"grpcKeybuilders\":[{";
+    service_config << "          \"names\":[{";
+    service_config << "            \"service\":\"grpc.testing.EchoTestService\",";
+    service_config << "            \"method\":\"Echo\"";
+    service_config << "          }],";
+    service_config << "          \"headers\":[";
+    service_config << "            {";
+    service_config << "              \"key\":\"" << test_key << "\",";
+    service_config << "              \"name\":[";
+    service_config << "                \"key1\",\"key2\",\"key3\"";
+    service_config << "              ]";
+    service_config << "            }";
+    service_config << "          ]";
+    service_config << "        }],";
+    service_config << "        \"lookupService\":\"localhost:" << lookup_service_port << "\",";
+    service_config << "        \"lookupServiceTimeout\":{";
+    service_config << "          \"seconds\":" << SECONDS(lookup_service_timeout) << ",";
+    service_config << "          \"nanoseconds\":" << NANOSECONDS(lookup_service_timeout);
+    service_config << "        },";
+    service_config << "        \"maxAge\":{";
+    service_config << "          \"seconds\":" << SECONDS(max_age) << ",";
+    service_config << "          \"nanoseconds\":" << NANOSECONDS(max_age);
+    service_config << "        },";
+    service_config << "        \"staleAge\":{";
+    service_config << "          \"seconds\":" << SECONDS(stale_age) << ",";
+    service_config << "          \"nanoseconds\":" << NANOSECONDS(stale_age);
+    service_config << "        },";
+    service_config << "        \"defaultTarget\":\"localhost:" << default_target_port << "\",";
+    service_config << "        \"requestProcessingStrategy\":" << request_processing_strategy;
+    service_config << "      },";
+    service_config << "      \"childPolicy\":[{";
+    service_config << "        \"grpclb\":{";
+    service_config << "        }"; 
+    service_config << "      }],";
+    service_config << "      \"childPolicyConfigTargetFieldName\":\"targetName\"";
+    service_config << "    }";
+    service_config << "  }]";
+    service_config << "}";
+
+    return service_config.str();
+  }
+
+  grpc::lookup::v1::RouteLookupResponse BuildLookupResponse(int port, grpc::string header_data = {}) {
+    grpc::lookup::v1::RouteLookupResponse response;
+
+    response.set_target(absl::StrCat("localhost:", port));
+    response.set_header_data(header_data);
+
+    return response;
+  }
+
+  void SetNextRlsResponse(RlsServer::Response response) {
+    rls_server_->SetNextResponse(std::move(response));
+  }
+
+  void SetNextLbResponse(int port, bool include_initial_response = false) {
+    grpc::lb::v1::LoadBalanceResponse response;
+    if (include_initial_response) {
+      auto initial_response = response.mutable_initial_response();
+      auto report_interval = initial_response->mutable_client_stats_report_interval();
+      report_interval->set_seconds(0);
+      report_interval->set_nanos(0);
+    }
+    auto server_list = response.mutable_server_list();
+    auto server = server_list->add_servers();
+    char localhost[] = {0x7F, 0x00, 0x00, 0x01};
+    server->set_ip_address(localhost, 4);
+    server->set_port(port);
+
+    balancer_->SetNextResponse(Balancer::Response{GRPC_STATUS_OK, std::move(response)});
+  }
+
+struct ServerData {
     int port_;
     std::unique_ptr<Server> server_;
     MyTestServiceImpl service_;
@@ -435,107 +535,47 @@ class RlsPolicyEnd2endTest : public ::testing::Test {
     }
   };
 
-  void ResetCounters() {
-    for (const auto& server : servers_) server->service_.ResetCounters();
-  }
-
-  std::string BuildServiceConfig(int lookup_service_port,
-                                 double max_age = 10,
-                                 double stale_age = 5,
-                                 int default_target_port = 0,
-                                 int request_processing_strategy = 0,
-                                 std::string child_policy = "pick_first",
-                                 double lookup_service_timeout = 10) {
-    std::stringstream service_config;
-    service_config << "\"loadBalancingConfig\":{";
-    service_config << "  \"rls\":{";
-    service_config << "    \"route_lookup_config\":{";
-    service_config << "      \"grpcKeybuilders\":[{";
-    service_config << "        \"names\":[{";
-    service_config << "          \"service\":\"grpc.testing.EchoTestService\",";
-    service_config << "          \"method\":\"Echo\"";
-    service_config << "        }],";
-    service_config << "        \"headers\":[";
-    service_config << "          {";
-    service_config << "            \"key\":\"" << test_key << "\",";
-    service_config << "            \"name\":[";
-    service_config << "              \"key1\",\"key2\",\"key3\"";
-    service_config << "            ]";
-    service_config << "          }";
-    service_config << "        ]";
-    service_config << "      }],";
-    service_config << "      \"lookup_service\":\"localhost:" << lookup_service_port << "\",";
-    service_config << "      \"lookup_service_timeout\":{";
-    service_config << "        \"seconds\":" << SECONDS(lookup_service_timeout) << ",";
-    service_config << "        \"nanoseconds\":" << NANOSECONDS(lookup_service_timeout);
-    service_config << "      },";
-    service_config << "      \"max_age\":{";
-    service_config << "        \"seconds\":" << SECONDS(max_age) << ",";
-    service_config << "        \"nanoseconds\":" << NANOSECONDS(max_age);
-    service_config << "      },";
-    service_config << "      \"stale_age\":{";
-    service_config << "        \"seconds\":" << SECONDS(stale_age) << ",";
-    service_config << "        \"nanoseconds\":" << NANOSECONDS(stale_age);
-    service_config << "      },";
-    service_config << "      \"default_target\":\"localhost:" << default_target_port << "\",";
-    service_config << "      \"request_processing_strategy\":" << request_processing_strategy;
-    service_config << "    },";
-    service_config << "    \"child_policy\":[{" << child_policy << ":{}}]";  // TODO
-    service_config << "  }";
-    service_config << "}";
-
-    return service_config.str();
-  }
-
-  grpc::lookup::v1::RouteLookupResponse BuildLookupResponse(int port, grpc::string header_data = {}) {
-    grpc::lookup::v1::RouteLookupResponse response;
-
-    grpc_core::UniquePtr<char> addr;
-    grpc_core::JoinHostPort(&addr, "localhost", port);
-    response.set_target(std::string(addr.get()));
-    response.set_header_data(header_data);
-
-    return response;
-  }
-
   const grpc::string server_host_;
   std::vector<std::unique_ptr<ServerData>> servers_;
   const grpc::string kRequestMessage_;
   std::shared_ptr<ChannelCredentials> creds_;
+  std::unique_ptr<RlsServer> rls_server_;
+  std::unique_ptr<Balancer> balancer_;
 };
 
-TEST_F(RlsPolicyEnd2endTest, RlsResolvingLb) {
+TEST_F(RlsPolicyEnd2endTest, RlsGrpcLb) {
   StartServers(1);
   auto resolver_response_generator = BuildResolverResponseGenerator();
   auto channel = BuildChannel(resolver_response_generator);
-  auto stub = BuildStub(channel);
-  RlsServer rls_server;
-  rls_server.SetNextResponse({GRPC_STATUS_OK, BuildLookupResponse(servers_[0]->port_, "FakeHeader")});
+  auto service_config = BuildServiceConfig();
+  resolver_response_generator.SetNextResolution(balancer_->port(), service_config.c_str());
 
-  auto service_config = BuildServiceConfig(rls_server.port(), 10, 5, 0, 0, "resolving_lb");
-  resolver_response_generator.SetNextResolution({}, service_config.c_str());
+  SetNextRlsResponse({GRPC_STATUS_OK, BuildLookupResponse(servers_[0]->port_, "FakeHeader")});
+  SetNextLbResponse(servers_[0]->port_);
+
+  auto stub = BuildStub(channel);
   CheckRpcSendOk(stub, DEBUG_LOCATION, false);
   EXPECT_EQ(servers_[0]->service_.request_count(), 1);
   auto rls_data = servers_[0]->service_.rls_data();
   EXPECT_NE(rls_data.find("FakeHeader"), rls_data.end());
-  EXPECT_EQ(rls_server.keys().empty(), true);
+  EXPECT_EQ(RlsKeys().empty(), true);
 }
 
-TEST_F(RlsPolicyEnd2endTest, RlsResolvingLbWithKeys) {
-  StartServers(1);
-  auto resolver_response_generator = BuildResolverResponseGenerator();
-  auto channel = BuildChannel(resolver_response_generator);
-  auto stub = BuildStub(channel);
-  RlsServer rls_server;
-  rls_server.SetNextResponse({GRPC_STATUS_OK, BuildLookupResponse(servers_[0]->port_, "FakeHeader")});
+// TEST_F(RlsPolicyEnd2endTest, RlsGrpcLbWithKeys) {
+//   StartServers(1);
+//   auto resolver_response_generator = BuildResolverResponseGenerator();
+//   auto channel = BuildChannel(resolver_response_generator);
+//   auto stub = BuildStub(channel);
+//   RlsServer rls_server;
+//   rls_server.SetNextResponse({GRPC_STATUS_OK, BuildLookupResponse(servers_[0]->port_, "FakeHeader")});
 
-  auto service_config = BuildServiceConfig(rls_server.port(), 10, 5, 0, 0, "resolving_lb");
-  resolver_response_generator.SetNextResolution({}, service_config.c_str());
-  CheckRpcSendOk(stub, DEBUG_LOCATION, false, {{"key2", "test_val"}});
-  auto keys = rls_server.keys();
-  EXPECT_EQ(rls_server.keys().size(), 1);
-  EXPECT_EQ(rls_server.keys().front(), "test_val");
-}
+//   auto service_config = BuildServiceConfig(rls_server.port(), 10, 5, 0, 0, "resolving_lb");
+//   resolver_response_generator.SetNextResolution({}, service_config.c_str());
+//   CheckRpcSendOk(stub, DEBUG_LOCATION, false, {{"key2", "test_val"}});
+//   auto keys = rls_server.keys();
+//   EXPECT_EQ(rls_server.keys().size(), 1);
+//   EXPECT_EQ(rls_server.keys().front(), "test_val");
+// }
 
 /* TODO: how to force re-resolution */
 /*
@@ -567,200 +607,200 @@ TEST_F(RlsPolicyEnd2endTest, UpdateConfiguration) {
 }
 */
 
-TEST_F(RlsPolicyEnd2endTest, FailedRlsRequestFallback) {
-  StartServers(1);
-  auto resolver_response_generator = BuildResolverResponseGenerator();
-  auto channel = BuildChannel(resolver_response_generator);
-  auto stub = BuildStub(channel);
-  RlsServer rls_server;
-  rls_server.SetNextResponse({GRPC_STATUS_INTERNAL, grpc::lookup::v1::RouteLookupResponse()});
+// TEST_F(RlsPolicyEnd2endTest, FailedRlsRequestFallback) {
+//   StartServers(1);
+//   auto resolver_response_generator = BuildResolverResponseGenerator();
+//   auto channel = BuildChannel(resolver_response_generator);
+//   auto stub = BuildStub(channel);
+//   RlsServer rls_server;
+//   rls_server.SetNextResponse({GRPC_STATUS_INTERNAL, grpc::lookup::v1::RouteLookupResponse()});
 
-  auto service_config = BuildServiceConfig(rls_server.port(), 10, 5, servers_[0]->port_, 0, "resolving_lb");
-  resolver_response_generator.SetNextResolution({}, service_config.c_str());
+//   auto service_config = BuildServiceConfig(rls_server.port(), 10, 5, servers_[0]->port_, 0, "resolving_lb");
+//   resolver_response_generator.SetNextResolution({}, service_config.c_str());
 
-  CheckRpcSendOk(stub, DEBUG_LOCATION, false);
-  EXPECT_EQ(servers_[0]->service_.request_count(), 1);
-}
+//   CheckRpcSendOk(stub, DEBUG_LOCATION, false);
+//   EXPECT_EQ(servers_[0]->service_.request_count(), 1);
+// }
 
-TEST_F(RlsPolicyEnd2endTest, FailedRlsRequestError) {
-  StartServers(1);
-  auto resolver_response_generator = BuildResolverResponseGenerator();
-  auto channel = BuildChannel(resolver_response_generator);
-  auto stub = BuildStub(channel);
-  RlsServer rls_server;
-  rls_server.SetNextResponse({GRPC_STATUS_INTERNAL, grpc::lookup::v1::RouteLookupResponse()});
+// TEST_F(RlsPolicyEnd2endTest, FailedRlsRequestError) {
+//   StartServers(1);
+//   auto resolver_response_generator = BuildResolverResponseGenerator();
+//   auto channel = BuildChannel(resolver_response_generator);
+//   auto stub = BuildStub(channel);
+//   RlsServer rls_server;
+//   rls_server.SetNextResponse({GRPC_STATUS_INTERNAL, grpc::lookup::v1::RouteLookupResponse()});
 
-  auto service_config = BuildServiceConfig(rls_server.port(), 10, 5, servers_[0]->port_, 1, "resolving_lb");
-  resolver_response_generator.SetNextResolution({}, service_config.c_str());
+//   auto service_config = BuildServiceConfig(rls_server.port(), 10, 5, servers_[0]->port_, 1, "resolving_lb");
+//   resolver_response_generator.SetNextResolution({}, service_config.c_str());
 
-  CheckRpcSendFailure(stub);
-  EXPECT_EQ(servers_[0]->service_.request_count(), 0);
-}
+//   CheckRpcSendFailure(stub);
+//   EXPECT_EQ(servers_[0]->service_.request_count(), 0);
+// }
 
-TEST_F(RlsPolicyEnd2endTest, RlsServerFailure) {
-  StartServers(1);
-  auto resolver_response_generator = BuildResolverResponseGenerator();
-  auto channel = BuildChannel(resolver_response_generator);
-  auto stub = BuildStub(channel);
+// TEST_F(RlsPolicyEnd2endTest, RlsServerFailure) {
+//   StartServers(1);
+//   auto resolver_response_generator = BuildResolverResponseGenerator();
+//   auto channel = BuildChannel(resolver_response_generator);
+//   auto stub = BuildStub(channel);
 
-  auto service_config = BuildServiceConfig(grpc_pick_unused_port_or_die(), 10, 5, servers_[0]->port_, 1, "resolving_lb");
-  resolver_response_generator.SetNextResolution({}, service_config.c_str());
+//   auto service_config = BuildServiceConfig(grpc_pick_unused_port_or_die(), 10, 5, servers_[0]->port_, 1, "resolving_lb");
+//   resolver_response_generator.SetNextResolution({}, service_config.c_str());
 
-  CheckRpcSendFailure(stub);
-  EXPECT_EQ(servers_[0]->service_.request_count(), 0);
-}
+//   CheckRpcSendFailure(stub);
+//   EXPECT_EQ(servers_[0]->service_.request_count(), 0);
+// }
 
-TEST_F(RlsPolicyEnd2endTest, RlsRequestTimeout) {
-  StartServers(1);
-  auto resolver_response_generator = BuildResolverResponseGenerator();
-  auto channel = BuildChannel(resolver_response_generator);
-  auto stub = BuildStub(channel);
-  RlsServer rls_server;
+// TEST_F(RlsPolicyEnd2endTest, RlsRequestTimeout) {
+//   StartServers(1);
+//   auto resolver_response_generator = BuildResolverResponseGenerator();
+//   auto channel = BuildChannel(resolver_response_generator);
+//   auto stub = BuildStub(channel);
+//   RlsServer rls_server;
 
-  auto service_config = BuildServiceConfig(rls_server.port(), 10, 5, servers_[0]->port_, 1, "resolving_lb", 1);
-  resolver_response_generator.SetNextResolution({}, service_config.c_str());
+//   auto service_config = BuildServiceConfig(rls_server.port(), 10, 5, servers_[0]->port_, 1, "resolving_lb", 1);
+//   resolver_response_generator.SetNextResolution({}, service_config.c_str());
 
-  time_t start = time(nullptr);
-  CheckRpcSendFailure(stub);
-  time_t end = time(nullptr);
-  EXPECT_EQ(servers_[0]->service_.request_count(), 0);
-  EXPECT_GT(difftime(end, start), 1);
-  EXPECT_LT(difftime(end, start), 2);
-}
+//   time_t start = time(nullptr);
+//   CheckRpcSendFailure(stub);
+//   time_t end = time(nullptr);
+//   EXPECT_EQ(servers_[0]->service_.request_count(), 0);
+//   EXPECT_GT(difftime(end, start), 1);
+//   EXPECT_LT(difftime(end, start), 2);
+// }
 
-TEST_F(RlsPolicyEnd2endTest, FailedAsyncRlsRequest) {
-  StartServers(1);
-  auto resolver_response_generator = BuildResolverResponseGenerator();
-  auto channel = BuildChannel(resolver_response_generator);
-  auto stub = BuildStub(channel);
-  RlsServer rls_server;
-  rls_server.SetNextResponse({GRPC_STATUS_INTERNAL, grpc::lookup::v1::RouteLookupResponse()});
+// TEST_F(RlsPolicyEnd2endTest, FailedAsyncRlsRequest) {
+//   StartServers(1);
+//   auto resolver_response_generator = BuildResolverResponseGenerator();
+//   auto channel = BuildChannel(resolver_response_generator);
+//   auto stub = BuildStub(channel);
+//   RlsServer rls_server;
+//   rls_server.SetNextResponse({GRPC_STATUS_INTERNAL, grpc::lookup::v1::RouteLookupResponse()});
 
-  auto service_config = BuildServiceConfig(rls_server.port(), 10, 5, servers_[0]->port_, 2, "resolving_lb");
-  resolver_response_generator.SetNextResolution({}, service_config.c_str());
+//   auto service_config = BuildServiceConfig(rls_server.port(), 10, 5, servers_[0]->port_, 2, "resolving_lb");
+//   resolver_response_generator.SetNextResolution({}, service_config.c_str());
 
-  CheckRpcSendOk(stub, DEBUG_LOCATION, false);
-  EXPECT_EQ(servers_[0]->service_.request_count(), 1);
-}
+//   CheckRpcSendOk(stub, DEBUG_LOCATION, false);
+//   EXPECT_EQ(servers_[0]->service_.request_count(), 1);
+// }
 
-TEST_F(RlsPolicyEnd2endTest, QueuedRlsRequest) {
-  StartServers(1);
-  auto resolver_response_generator = BuildResolverResponseGenerator();
-  auto channel = BuildChannel(resolver_response_generator);
-  auto stub = BuildStub(channel);
-  RlsServer rls_server;
-  auto service_config = BuildServiceConfig(rls_server.port(), 10, 5, 0, 2, "resolving_lb");
-  // Set resolution result twice since we have two requests in this test case.
-  resolver_response_generator.SetNextResolution({}, service_config.c_str());
-  resolver_response_generator.SetNextResolution({}, service_config.c_str());
+// TEST_F(RlsPolicyEnd2endTest, QueuedRlsRequest) {
+//   StartServers(1);
+//   auto resolver_response_generator = BuildResolverResponseGenerator();
+//   auto channel = BuildChannel(resolver_response_generator);
+//   auto stub = BuildStub(channel);
+//   RlsServer rls_server;
+//   auto service_config = BuildServiceConfig(rls_server.port(), 10, 5, 0, 2, "resolving_lb");
+//   // Set resolution result twice since we have two requests in this test case.
+//   resolver_response_generator.SetNextResolution({}, service_config.c_str());
+//   resolver_response_generator.SetNextResolution({}, service_config.c_str());
 
-  // Multiple calls pending on the same Rls request
-  std::mutex mu;
-  std::unique_lock<std::mutex> lock(mu);
-  std::condition_variable cv;
-  std::condition_variable cv2;
-  bool complete = false;
-  bool complete2 = false;
-  std::thread([&](){
-    std::unique_lock<std::mutex> lock(mu);
-    SendRpc(stub);
-    cv.notify_all();
-    complete = true;
-  }).detach();
-  std::thread([&](){
-    std::unique_lock<std::mutex> lock(mu);
-    SendRpc(stub);
-    cv2.notify_all();
-    complete2 = true;
-  }).detach();
-  cv.wait_for(lock, std::chrono::seconds(1), [&complete](){ return !complete; });
-  EXPECT_EQ(complete, false);
-  EXPECT_EQ(complete2, false);
+//   // Multiple calls pending on the same Rls request
+//   std::mutex mu;
+//   std::unique_lock<std::mutex> lock(mu);
+//   std::condition_variable cv;
+//   std::condition_variable cv2;
+//   bool complete = false;
+//   bool complete2 = false;
+//   std::thread([&](){
+//     std::unique_lock<std::mutex> lock(mu);
+//     SendRpc(stub);
+//     cv.notify_all();
+//     complete = true;
+//   }).detach();
+//   std::thread([&](){
+//     std::unique_lock<std::mutex> lock(mu);
+//     SendRpc(stub);
+//     cv2.notify_all();
+//     complete2 = true;
+//   }).detach();
+//   cv.wait_for(lock, std::chrono::seconds(1), [&complete](){ return !complete; });
+//   EXPECT_EQ(complete, false);
+//   EXPECT_EQ(complete2, false);
 
-  rls_server.SetNextResponse({GRPC_STATUS_OK, BuildLookupResponse(servers_[0]->port_, "FakeHeader")});
+//   rls_server.SetNextResponse({GRPC_STATUS_OK, BuildLookupResponse(servers_[0]->port_, "FakeHeader")});
 
-  cv.wait_for(lock, std::chrono::seconds(1), [&complete](){ return !complete; });
-  cv2.wait_for(lock, std::chrono::seconds(0), [&complete](){ return !complete; });
-  EXPECT_EQ(complete, true);
-  EXPECT_EQ(complete2, true);
+//   cv.wait_for(lock, std::chrono::seconds(1), [&complete](){ return !complete; });
+//   cv2.wait_for(lock, std::chrono::seconds(0), [&complete](){ return !complete; });
+//   EXPECT_EQ(complete, true);
+//   EXPECT_EQ(complete2, true);
 
-  EXPECT_EQ(servers_[0]->service_.request_count(), 2);
-  EXPECT_EQ(rls_server.lookup_count(), 1);
-}
+//   EXPECT_EQ(servers_[0]->service_.request_count(), 2);
+//   EXPECT_EQ(rls_server.lookup_count(), 1);
+// }
 
-TEST_F(RlsPolicyEnd2endTest, CachedRlsRequest) {
-  StartServers(1);
+// TEST_F(RlsPolicyEnd2endTest, CachedRlsRequest) {
+//   StartServers(1);
 
-  auto resolver_response_generator = BuildResolverResponseGenerator();
-  auto channel = BuildChannel(resolver_response_generator);
-  auto stub = BuildStub(channel);
+//   auto resolver_response_generator = BuildResolverResponseGenerator();
+//   auto channel = BuildChannel(resolver_response_generator);
+//   auto stub = BuildStub(channel);
 
-  RlsServer rls_server;
-  rls_server.SetNextResponse({GRPC_STATUS_OK, BuildLookupResponse(servers_[0]->port_, "FakeHeader")});
+//   RlsServer rls_server;
+//   rls_server.SetNextResponse({GRPC_STATUS_OK, BuildLookupResponse(servers_[0]->port_, "FakeHeader")});
 
-  auto service_config = BuildServiceConfig(rls_server.port(), 10, 5, 0, 0, "resolving_lb");
-  resolver_response_generator.SetNextResolution({}, service_config.c_str());
-  // Send rpc
-  CheckRpcSendOk(stub, DEBUG_LOCATION, false);
-  CheckRpcSendOk(stub, DEBUG_LOCATION, false);
-  EXPECT_EQ(servers_[0]->service_.request_count(), 2);
-  EXPECT_EQ(rls_server.lookup_count(), 1);
-}
+//   auto service_config = BuildServiceConfig(rls_server.port(), 10, 5, 0, 0, "resolving_lb");
+//   resolver_response_generator.SetNextResolution({}, service_config.c_str());
+//   // Send rpc
+//   CheckRpcSendOk(stub, DEBUG_LOCATION, false);
+//   CheckRpcSendOk(stub, DEBUG_LOCATION, false);
+//   EXPECT_EQ(servers_[0]->service_.request_count(), 2);
+//   EXPECT_EQ(rls_server.lookup_count(), 1);
+// }
 
-TEST_F(RlsPolicyEnd2endTest, StaleRlsRequest) {
-  StartServers(2);
+// TEST_F(RlsPolicyEnd2endTest, StaleRlsRequest) {
+//   StartServers(2);
 
-  auto resolver_response_generator = BuildResolverResponseGenerator();
-  auto channel = BuildChannel(resolver_response_generator);
-  auto stub = BuildStub(channel);
+//   auto resolver_response_generator = BuildResolverResponseGenerator();
+//   auto channel = BuildChannel(resolver_response_generator);
+//   auto stub = BuildStub(channel);
 
-  RlsServer rls_server;
-  rls_server.SetNextResponse({GRPC_STATUS_OK, BuildLookupResponse(servers_[0]->port_, "FakeHeader")});
-  rls_server.SetNextResponse({GRPC_STATUS_OK, BuildLookupResponse(servers_[1]->port_, "FakeHeader")});
+//   RlsServer rls_server;
+//   rls_server.SetNextResponse({GRPC_STATUS_OK, BuildLookupResponse(servers_[0]->port_, "FakeHeader")});
+//   rls_server.SetNextResponse({GRPC_STATUS_OK, BuildLookupResponse(servers_[1]->port_, "FakeHeader")});
 
-  auto service_config = BuildServiceConfig(rls_server.port(), 10, 2, 0, 0, "resolving_lb");
-  resolver_response_generator.SetNextResolution({}, service_config.c_str());
-  // Send rpc
-  CheckRpcSendOk(stub, DEBUG_LOCATION, false);
-  sleep(3);
-  CheckRpcSendOk(stub, DEBUG_LOCATION, false);
-  EXPECT_EQ(servers_[0]->service_.request_count(), 2);
-  EXPECT_EQ(servers_[1]->service_.request_count(), 0);
-  EXPECT_EQ(rls_server.lookup_count(), 2);
-}
+//   auto service_config = BuildServiceConfig(rls_server.port(), 10, 2, 0, 0, "resolving_lb");
+//   resolver_response_generator.SetNextResolution({}, service_config.c_str());
+//   // Send rpc
+//   CheckRpcSendOk(stub, DEBUG_LOCATION, false);
+//   sleep(3);
+//   CheckRpcSendOk(stub, DEBUG_LOCATION, false);
+//   EXPECT_EQ(servers_[0]->service_.request_count(), 2);
+//   EXPECT_EQ(servers_[1]->service_.request_count(), 0);
+//   EXPECT_EQ(rls_server.lookup_count(), 2);
+// }
 
-TEST_F(RlsPolicyEnd2endTest, ExpiredRlsRequest) {
-  StartServers(2);
+// TEST_F(RlsPolicyEnd2endTest, ExpiredRlsRequest) {
+//   StartServers(2);
 
-  auto resolver_response_generator = BuildResolverResponseGenerator();
-  auto channel = BuildChannel(resolver_response_generator);
-  auto stub = BuildStub(channel);
+//   auto resolver_response_generator = BuildResolverResponseGenerator();
+//   auto channel = BuildChannel(resolver_response_generator);
+//   auto stub = BuildStub(channel);
 
-  RlsServer rls_server;
-  rls_server.SetNextResponse({GRPC_STATUS_OK, BuildLookupResponse(servers_[0]->port_, "FakeHeader")});
-  rls_server.SetNextResponse({GRPC_STATUS_OK, BuildLookupResponse(servers_[1]->port_, "FakeHeader")});
+//   RlsServer rls_server;
+//   rls_server.SetNextResponse({GRPC_STATUS_OK, BuildLookupResponse(servers_[0]->port_, "FakeHeader")});
+//   rls_server.SetNextResponse({GRPC_STATUS_OK, BuildLookupResponse(servers_[1]->port_, "FakeHeader")});
 
-  auto service_config = BuildServiceConfig(rls_server.port(), 2, 1, 0, 0, "resolving_lb");
-  resolver_response_generator.SetNextResolution({}, service_config.c_str());
-  // Send rpc
-  CheckRpcSendOk(stub, DEBUG_LOCATION, false);
-  sleep(3);
-  CheckRpcSendOk(stub, DEBUG_LOCATION, false);
-  EXPECT_EQ(servers_[0]->service_.request_count(), 1);
-  EXPECT_EQ(servers_[1]->service_.request_count(), 1);
-  EXPECT_EQ(rls_server.lookup_count(), 2);
-}
+//   auto service_config = BuildServiceConfig(rls_server.port(), 2, 1, 0, 0, "resolving_lb");
+//   resolver_response_generator.SetNextResolution({}, service_config.c_str());
+//   // Send rpc
+//   CheckRpcSendOk(stub, DEBUG_LOCATION, false);
+//   sleep(3);
+//   CheckRpcSendOk(stub, DEBUG_LOCATION, false);
+//   EXPECT_EQ(servers_[0]->service_.request_count(), 1);
+//   EXPECT_EQ(servers_[1]->service_.request_count(), 1);
+//   EXPECT_EQ(rls_server.lookup_count(), 2);
+// }
 
-TEST_F(RlsPolicyEnd2endTest, RlsConfigParseFailure) {
-}
+// TEST_F(RlsPolicyEnd2endTest, RlsConfigParseFailure) {
+// }
 
-}  // namespace
-}  // namespace testing
-}  // namespace grpc
+// }  // namespace
+// }  // namespace testing
+// }  // namespace grpc
 
-int main(int argc, char** argv) {
-  ::testing::InitGoogleTest(&argc, argv);
-  grpc::testing::TestEnvironment env(argc, argv);
-  const auto result = RUN_ALL_TESTS();
-  return result;
-}
+// int main(int argc, char** argv) {
+//   ::testing::InitGoogleTest(&argc, argv);
+//   grpc::testing::TestEnvironment env(argc, argv);
+//   const auto result = RUN_ALL_TESTS();
+//   return result;
+// }
