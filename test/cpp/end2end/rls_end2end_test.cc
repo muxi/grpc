@@ -157,19 +157,16 @@ class FakeResolverResponseGeneratorWrapper {
       response_generator_;
 };
 
-template<typename StubType, typename RequestType, typename ResponseType>
-class TestServer {
+class RlsServer {
  public:
   struct Response {
     grpc_status_code status;
 
     /** Ignored if status is not GRPC_STATUS_OK. */
-    ResponseType response;
+    grpc::lookup::v1::RouteLookupResponse response;
   };
 
-  using Method = void (StubType::*)(::grpc::ServerContext* context, RequestType* request, ::grpc::ServerAsyncResponseWriter<ResponseType>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag);
-
-  explicit TestServer(Method method) : method_(method) {
+  explicit RlsServer() {
     ServerBuilder builder;
 
     std::ostringstream server_address;
@@ -182,7 +179,7 @@ class TestServer {
     cq_thread_ = std::thread(RunCompletionQueue, this);
   }
 
-  virtual ~TestServer() {
+  virtual ~RlsServer() {
     server_->Shutdown();
     server_.reset();
     cq_->Shutdown();
@@ -200,13 +197,112 @@ class TestServer {
 
   int port() const { return port_; }
 
- protected:
-  void OnRequestLocked(RequestType request) {}
+  int lookup_count() {
+    grpc::internal::MutexLock lock(&mu_);
+    return lookup_count_;
+  }
 
-  grpc::internal::Mutex mu_;
+  const google::protobuf::Map<grpc::string, grpc::string>& last_request_key_map() {
+    grpc::internal::MutexLock lock(&mu_);
+    return last_request_key_map_;
+  }
 
  private:
-  static void RunCompletionQueue(TestServer *s) {
+  static void RunCompletionQueue(RlsServer *s) {
+    while (true) {
+      void* got_tag;
+      bool ok = false;
+      s->cq_->Next(&got_tag, &ok);
+      if (ok && got_tag == reinterpret_cast<void*>(kWaitTag)) {
+        grpc::internal::MutexLock lock(&s->mu_);
+        last_request_key_map_ = request_.key_map();
+        lookup_count_++;
+        GPR_ASSERT(s->responses_.size() > 0);
+        Response response = std::move(s->responses_.front());
+        s->responses_.pop_front();
+
+        if (response.status == GRPC_STATUS_OK) {
+          s->responder_->Finish(response.response, Status(static_cast<StatusCode>(response.status), ""), reinterpret_cast<void*>(kFinishTag));
+        } else {
+          s->responder_->Finish({}, Status(static_cast<StatusCode>(response.status), ""), reinterpret_cast<void*>(kFinishTag));
+        }
+      } else if (ok && got_tag == reinterpret_cast<void*>(kFinishTag)) {
+        grpc::internal::MutexLock lock(&s->mu_);
+        if (s->responses_.size() > 0) {
+          s->WaitForRpcLocked();
+        }
+      } else {
+        if (s->responder_ != nullptr) delete s->responder_;
+        break;
+      }
+    }
+  }
+
+  void WaitForRpcLocked() {
+    GPR_ASSERT(responses_.size() > 0);
+
+    responder_.reset(new ServerAsyncResponseWriter<grpc::lookup::v1::RouteLookupResponse>(&context_));
+    service_.RequestRouteLookup(&context_, &request_, responder_.get(), cq_.get(), cq_.get(), reinterpret_cast<void*>(kWaitTag));
+  }
+
+  grpc::internal::Mutex mu_;
+  std::thread cq_thread_;
+  grpc::lookup::v1::RouteLookupService::AsyncService service_;
+  std::unique_ptr<ServerCompletionQueue> cq_;
+  std::unique_ptr<grpc::Server> server_;
+  ServerContext context_;
+  grpc::lookup::v1::RouteLookupRequest request_;
+  std::unique_ptr<ServerAsyncResponseWriter<grpc::lookup::v1::RouteLookupResponse>> responder_;
+  int port_;
+  std::list<Response> responses_;
+  google::protobuf::Map<grpc::string, grpc::string> last_request_key_map_;
+  int lookup_count_ = 0;
+};
+
+class Balancer {
+ public:
+  struct Response {
+    grpc_status_code status;
+
+    /** Ignored if status is not GRPC_STATUS_OK. */
+    grpc::lb::v1::LoadBalanceResponse response;
+  };
+
+  explicit Balancer() {
+    ServerBuilder builder;
+
+    std::ostringstream server_address;
+    port_ = grpc_pick_unused_port_or_die();
+    builder.AddListeningPort(absl::StrCat("localhost:", port_).c_str(), std::shared_ptr<ServerCredentials>(new SecureServerCredentials(grpc_fake_transport_security_server_credentials_create())));
+
+    builder.RegisterService(&service_);
+    cq_ = builder.AddCompletionQueue();
+    server_ = builder.BuildAndStart();
+    cq_thread_ = std::thread(RunCompletionQueue, this);
+
+    stream_.reset(new ServerAsyncReaderWriter<grpc::lookup::v1::RouteLookupRequest, grpc::lookup::v1::RouteLookupResponse>(&context_));
+  }
+
+  virtual ~Balancer() {
+    server_->Shutdown();
+    server_.reset();
+    cq_->Shutdown();
+    cq_.reset();
+    cq_thread_.join();
+  }
+
+  void SetNextResponse(Response response) {
+    grpc::internal::MutexLock lock(&mu_);
+    responses_.emplace_back(std::move(response));
+    if (responses_.size() == 1) {
+      WaitForRpcLocked();
+    }
+  }
+
+  int port() const { return port_; }
+
+ private:
+  static void RunCompletionQueue(RlsServer *s) {
     while (true) {
       void* got_tag;
       bool ok = false;
@@ -214,7 +310,7 @@ class TestServer {
       if (ok && got_tag == reinterpret_cast<void*>(kWaitTag)) {
         grpc::internal::MutexLock lock(&s->mu_);
         s->OnRequestLocked(std::move(s->request_));
-        GRP_ASSERT(s->responses_.size() > 0);
+        GPR_ASSERT(s->responses_.size() > 0);
         Response response = std::move(s->responses_.front());
         s->responses_.pop_front();
 
@@ -239,58 +335,21 @@ class TestServer {
   void WaitForRpcLocked() {
     GPR_ASSERT(responses_.size() > 0);
 
-    responder_ = new ServerAsyncResponseWriter<ResponseType>(&context_);
-    (service_.*method_)(&context_, &request_, responder_, cq_.get(), cq_.get(), reinterpret_cast<void*>(kWaitTag));
+     = new ServerAsyncResponseWriter<grpc::lookup::v1::RouteLookupResponse>(&context_);
+    service_.RequestRouteLookup(&context_, &request_, responder_, cq_.get(), cq_.get(), reinterpret_cast<void*>(kWaitTag));
   }
 
+  grpc::internal::Mutex mu_;
   std::thread cq_thread_;
-  StubType service_;
+  grpc::lookup::v1::RouteLookupService::AsyncService service_;
   std::unique_ptr<ServerCompletionQueue> cq_;
   std::unique_ptr<grpc::Server> server_;
   ServerContext context_;
-  RequestType request_;
-  ServerAsyncResponseWriter<ResponseType>* responder_;
+  grpc::lookup::v1::RouteLookupRequest request_;
+  std::unique_ptr<ServerAsyncReaderWriter<grpc::lookup::v1::RouteLookupRequest, grpc::lookup::v1::RouteLookupResponse>> stream_;
   int port_;
   std::list<Response> responses_;
   Method method_;
-};
-
-class RlsServer : public TestServer<grpc::lookup::v1::RouteLookupService::AsyncService,
-                             grpc::lookup::v1::RouteLookupRequest,
-                             grpc::lookup::v1::RouteLookupResponse> {
- public:
-  explicit RlsServer(Method method) : TestServer<grpc::lookup::v1::RouteLookupService::AsyncService,
-                             grpc::lookup::v1::RouteLookupRequest,
-                             grpc::lookup::v1::RouteLookupResponse>(method) {}
-
-  int lookup_count() {
-    grpc::internal::MutexLock lock(&mu_);
-    return lookup_count_;
-  }
-
-  const google::protobuf::Map<grpc::string, grpc::string>& last_request_key_map() {
-    grpc::internal::MutexLock lock(&mu_);
-    return last_request_key_map_;
-  }
-
- protected:
-  void OnRequestLocked(grpc::lookup::v1::RouteLookupRequest request) {
-    last_request_key_map_ = request.key_map();
-    lookup_count_++;
-  }
-
- private:
-  google::protobuf::Map<grpc::string, grpc::string> last_request_key_map_;
-  int lookup_count_ = 0;
-};
-
-class Balancer : public TestServer<grpc::lb::v1::LoadBalancer::AsyncService,
-                                   grpc::lb::v1::LoadBalanceRequest,
-                                   grpc::lb::v1::LoadBalanceResponse> {
- public:
-  explicit Balancer(Method method) : TestServer<grpc::lb::v1::LoadBalancer::AsyncService,
-                                   grpc::lb::v1::LoadBalanceRequest,
-                                   grpc::lb::v1::LoadBalanceResponse>(method) {}
 };
 
 class RlsPolicyEnd2endTest : public ::testing::Test {
