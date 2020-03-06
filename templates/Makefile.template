@@ -1603,7 +1603,13 @@
   % endfor
   % endif
 
+  % if lib.name not in ['uv_linux', 'uv_darwin', 'uv_win']:
   LIB${lib.name.upper()}_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(LIB${lib.name.upper()}_SRC))))
+  % else:
+  LIB${lib.name.upper()}_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, ${lib.name}))
+
+  $(LIB${lib.name.upper()}_OBJS): $(LIB${lib.name.upper()}_SRC)
+  % endif
 
   % if lib.get('defaults', None):
   %  for name, value in defaults.get(lib.defaults).iteritems():
