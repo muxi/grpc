@@ -71,7 +71,7 @@ UNIX_LIBUV_SOURCES = [
     "src/unix/random-devurandom.c",
     "src/unix/random-getentropy.c",
     "src/unix/random-getrandom.c",
-    "src/unix/random-sysctli-linux.c",
+    "src/unix/random-sysctl-linux.c",
 ]
 
 LINUX_LIBUV_SOURCES = [
