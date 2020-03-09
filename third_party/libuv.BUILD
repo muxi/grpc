@@ -82,7 +82,6 @@ LINUX_LIBUV_SOURCES = [
     "src/unix/procfs-exepath.c",
     "src/unix/proctitle.c",
     "src/unix/sysinfo-loadavg.c",
-    "src/unix/sysinfo-memory.c",
 ]
 
 ANDROID_LIBUV_SOURCES = [

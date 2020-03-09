@@ -3689,12 +3689,11 @@ add_library(uv_linux
   third_party/libuv/src/unix/random-devurandom.c
   third_party/libuv/src/unix/random-getentropy.c
   third_party/libuv/src/unix/random-getrandom.c
-  third_party/libuv/src/unix/random-sysctli-linux.c
+  third_party/libuv/src/unix/random-sysctl-linux.c
   third_party/libuv/src/unix/signal.c
   third_party/libuv/src/unix/spinlock.h
   third_party/libuv/src/unix/stream.c
   third_party/libuv/src/unix/sysinfo-loadavg.c
-  third_party/libuv/src/unix/sysinfo-memory.c
   third_party/libuv/src/unix/tcp.c
   third_party/libuv/src/unix/thread.c
   third_party/libuv/src/unix/tty.c
@@ -3775,7 +3774,7 @@ add_library(uv_darwin
   third_party/libuv/src/unix/random-devurandom.c
   third_party/libuv/src/unix/random-getentropy.c
   third_party/libuv/src/unix/random-getrandom.c
-  third_party/libuv/src/unix/random-sysctli-linux.c
+  third_party/libuv/src/unix/random-sysctl-linux.c
   third_party/libuv/src/unix/signal.c
   third_party/libuv/src/unix/spinlock.h
   third_party/libuv/src/unix/stream.c
@@ -15149,6 +15148,7 @@ target_include_directories(xds_interop_client
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${_gRPC_ADDRESS_SORTING_INCLUDE_DIR}
+    ${_gRPC_LIBUV_INCLUDE_DIR}
     ${_gRPC_SSL_INCLUDE_DIR}
     ${_gRPC_UPB_GENERATED_DIR}
     ${_gRPC_UPB_GRPC_GENERATED_DIR}
@@ -15201,6 +15201,7 @@ target_include_directories(xds_interop_server
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${_gRPC_ADDRESS_SORTING_INCLUDE_DIR}
+    ${_gRPC_LIBUV_INCLUDE_DIR}
     ${_gRPC_SSL_INCLUDE_DIR}
     ${_gRPC_UPB_GENERATED_DIR}
     ${_gRPC_UPB_GRPC_GENERATED_DIR}

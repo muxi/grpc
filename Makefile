@@ -6473,12 +6473,11 @@ LIBUV_LINUX_SRC = \
     third_party/libuv/src/unix/random-devurandom.c \
     third_party/libuv/src/unix/random-getentropy.c \
     third_party/libuv/src/unix/random-getrandom.c \
-    third_party/libuv/src/unix/random-sysctli-linux.c \
+    third_party/libuv/src/unix/random-sysctl-linux.c \
     third_party/libuv/src/unix/signal.c \
     third_party/libuv/src/unix/spinlock.h \
     third_party/libuv/src/unix/stream.c \
     third_party/libuv/src/unix/sysinfo-loadavg.c \
-    third_party/libuv/src/unix/sysinfo-memory.c \
     third_party/libuv/src/unix/tcp.c \
     third_party/libuv/src/unix/thread.c \
     third_party/libuv/src/unix/tty.c \
@@ -6548,7 +6547,7 @@ LIBUV_DARWIN_SRC = \
     third_party/libuv/src/unix/random-devurandom.c \
     third_party/libuv/src/unix/random-getentropy.c \
     third_party/libuv/src/unix/random-getrandom.c \
-    third_party/libuv/src/unix/random-sysctli-linux.c \
+    third_party/libuv/src/unix/random-sysctl-linux.c \
     third_party/libuv/src/unix/signal.c \
     third_party/libuv/src/unix/spinlock.h \
     third_party/libuv/src/unix/stream.c \

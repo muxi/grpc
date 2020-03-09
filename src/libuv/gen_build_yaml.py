@@ -59,7 +59,6 @@ linux_uv_srcs = [
     "third_party/libuv/src/unix/procfs-exepath.c",
     "third_party/libuv/src/unix/proctitle.c",
     "third_party/libuv/src/unix/sysinfo-loadavg.c",
-    "third_party/libuv/src/unix/sysinfo-memory.c",
 ]
 
 darwin_uv_srcs = [
