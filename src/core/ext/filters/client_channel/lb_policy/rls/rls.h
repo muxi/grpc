@@ -441,7 +441,7 @@ class RlsLb : public LoadBalancingPolicy {
 
   RefCountedPtr<RlsLbConfig> current_config_;
   ServerAddressList current_addresses_;
-  grpc_channel_args* current_channel_args_;
+  grpc_channel_args* current_channel_args_ = nullptr;
   Cache cache_;
   RequestMap request_map_;
   RefCountedPtr<ControlChannel> channel_;

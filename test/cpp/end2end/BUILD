@@ -459,6 +459,7 @@ grpc_cc_test(
     srcs = ["rls_end2end_test.cc"],
     external_deps = [
         "gtest",
+        "absl/types:optional",
     ],
     tags = ["no_windows"],
     deps = [

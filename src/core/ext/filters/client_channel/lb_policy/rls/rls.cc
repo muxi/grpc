@@ -1007,7 +1007,7 @@ LoadBalancingPolicy::PickResult RlsLb::ChildPolicyWrapper::Pick(PickArgs args) {
 void RlsLb::ChildPolicyWrapper::UpdateLocked(const Json& child_policy_config, ServerAddressList addresses,
                                              const grpc_channel_args* channel_args) {
   UpdateArgs update_args;
-  grpc_error *error;
+  grpc_error *error = GRPC_ERROR_NONE;
   update_args.config = LoadBalancingPolicyRegistry::ParseLoadBalancingConfig(child_policy_config, &error);
   GPR_DEBUG_ASSERT(error == GRPC_ERROR_NONE);
   // returned RLS target fails the validation
@@ -1092,17 +1092,11 @@ void RlsLb::ChildPolicyWrapper::ChildPolicyHelper::RequestReresolution() {
   if (GRPC_TRACE_FLAG_ENABLED(grpc_lb_rls_trace)) {
     gpr_log(GPR_DEBUG, "[RlsLb %p] ChildPolicyHelper=%p, ChildPolicyWrapper=%p: RequestReresolution", wrapper_->lb_policy_.get(), this, wrapper_.get());
   }
-  MutexLock lock(&wrapper_->lb_policy_->mu_);
-  if (wrapper_->is_shutdown_) return;
-
   wrapper_->lb_policy_->channel_control_helper()->RequestReresolution();
 }
 
 // Forwarded directly to the channel.
 void RlsLb::ChildPolicyWrapper::ChildPolicyHelper::AddTraceEvent(TraceSeverity severity, StringView message) {
-  MutexLock lock(&wrapper_->lb_policy_->mu_);
-  if (wrapper_->is_shutdown_) return;
-
   wrapper_->lb_policy_->channel_control_helper()->AddTraceEvent(severity, message);
 }
 
@@ -1147,7 +1141,11 @@ void RlsLb::UpdateLocked(UpdateArgs args) {
   }
 
   if (old_config == nullptr || current_config_->cache_size_bytes() != old_config->cache_size_bytes()) {
-    cache_.Resize(current_config_->cache_size_bytes());
+    if (current_config_->cache_size_bytes() != 0) {
+      cache_.Resize(current_config_->cache_size_bytes());
+    } else {
+      cache_.Resize(kDefaultCacheSizeBytes);
+    }
   }
 
   bool default_child_policy_updated = false;
@@ -1457,18 +1455,18 @@ RefCountedPtr<LoadBalancingPolicy::Config> RlsLbFactory::ParseLoadBalancingConfi
   }
 
   // child_policy_config_target_field_name
-  auto child_policy_config_target_field_name_ptr = ParseStringFieldFromJsonObject(config, "child_policy_config_target_field_name", &internal_error);
+  auto child_policy_config_target_field_name_ptr = ParseStringFieldFromJsonObject(config, "childPolicyConfigTargetFieldName", &internal_error);
   if (internal_error != GRPC_ERROR_NONE) {
     error_list.push_back(internal_error);
   } else if (child_policy_config_target_field_name_ptr->length() == 0) {
     error_list.push_back(GRPC_ERROR_CREATE_FROM_STATIC_STRING("child policy config target field name is empty"));
   } else {
     result->child_policy_config_target_field_name_ = *child_policy_config_target_field_name_ptr;
-    auto child_policy_array_json_ptr = ParseFieldJsonFromJsonObject(config, "child_policy", &internal_error);
+    auto child_policy_array_json_ptr = ParseFieldJsonFromJsonObject(config, "childPolicy", &internal_error);
     if (internal_error != GRPC_ERROR_NONE) {
       error_list.push_back(internal_error);
     } else if (child_policy_array_json_ptr->type() != Json::Type::ARRAY) {
-      error_list.push_back(GRPC_ERROR_CREATE_FROM_STATIC_STRING("\"child_policy\" field is not an array"));
+      error_list.push_back(GRPC_ERROR_CREATE_FROM_STATIC_STRING("\"childPolicy\" field is not an array"));
     } else {
       // Fill in the child_policy_config_target_field_name field with default
       // target for all the child policy config and validate them
@@ -1476,7 +1474,7 @@ RefCountedPtr<LoadBalancingPolicy::Config> RlsLbFactory::ParseLoadBalancingConfi
       auto new_child_policy_array = new_child_policy_array_json.mutable_array();
       for (auto& child_policy_json : *new_child_policy_array) {
         if (child_policy_json.type() != Json::Type::OBJECT) {
-          error_list.push_back(GRPC_ERROR_CREATE_FROM_STATIC_STRING("array element of \"child_policy\" is not object"));
+          error_list.push_back(GRPC_ERROR_CREATE_FROM_STATIC_STRING("array element of \"childPolicy\" is not object"));
           continue;
         } else if (child_policy_json.object_value().empty()) {
           error_list.push_back(GRPC_ERROR_CREATE_FROM_STATIC_STRING("no policy found in child entry"));
