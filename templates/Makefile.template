@@ -730,11 +730,18 @@
   LIBUV_MERGE_LIBS = $(LIBDIR)/$(CONFIG)/libuv.a
   LIBUV_MERGE_OBJS = $(LIBUV_OBJS)
   CPPFLAGS += -Ithird_party/libuv/include -Ithird_party/libuv/src
-  ifeq ($(SYSTEM), LINUX)
+  ifeq ($(SYSTEM), Linux)
   CPPFLAGS += -Ithird_party/libuv/src/unix
+  LDFLAGS += -ldl
+  else
+  ifeq ($(SYSTEM),Darwin)
+  CPPFLAGS += -Ithird_party/libuv/src/unix
+  LDFLAGS += -ldl
   else
   ifeq ($(SYSTEM),MINGW32)
   CPPFLAGS += -Ithird_party/libuv/src/win -DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0600
+  LDFLAGS += -ldl -Xcrosstool-compilation-mode=$(COMPILATION_MODE) -Wl,Iphlpapi.lib -Wl,Psapi.lib -Wl,User32.lib -Wl,Userenv.lib
+  endif
   endif
   endif
   else
@@ -1607,14 +1614,17 @@
   LIB${lib.name.upper()}_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(LIB${lib.name.upper()}_SRC))))
   % else:
   LIB${lib.name.upper()}_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, ${lib.name}))
-
-  $(LIB${lib.name.upper()}_OBJS): $(LIB${lib.name.upper()}_SRC)
   % endif
 
   % if lib.get('defaults', None):
   %  for name, value in defaults.get(lib.defaults).iteritems():
   $(LIB${lib.name.upper()}_OBJS): ${name} += ${value}
   %  endfor
+  % endif
+
+  % if lib.name in ['uv_linux', 'uv_darwin', 'uv_win']:
+  $(LIB${lib.name.upper()}_OBJS): $(LIB${lib.name.upper()}_SRC)
+  	$(CC) $(CPPFLAGS) $(CFLAGS) -c $(LIB${lib.name.upper()}_SRC) -o $(LIB${lib.name.upper()}_OBJS)
   % endif
 
   ## If the library requires OpenSSL, let's add some restrictions.

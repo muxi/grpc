@@ -836,11 +836,18 @@ LIBUV_DEP = $(LIBDIR)/$(CONFIG)/libuv.a
 LIBUV_MERGE_LIBS = $(LIBDIR)/$(CONFIG)/libuv.a
 LIBUV_MERGE_OBJS = $(LIBUV_OBJS)
 CPPFLAGS += -Ithird_party/libuv/include -Ithird_party/libuv/src
-ifeq ($(SYSTEM), LINUX)
+ifeq ($(SYSTEM), Linux)
 CPPFLAGS += -Ithird_party/libuv/src/unix
+LDFLAGS += -ldl
+else
+ifeq ($(SYSTEM),Darwin)
+CPPFLAGS += -Ithird_party/libuv/src/unix
+LDFLAGS += -ldl
 else
 ifeq ($(SYSTEM),MINGW32)
 CPPFLAGS += -Ithird_party/libuv/src/win -DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0600
+LDFLAGS += -ldl -Xcrosstool-compilation-mode=$(COMPILATION_MODE) -Wl,Iphlpapi.lib -Wl,Psapi.lib -Wl,User32.lib -Wl,Userenv.lib
+endif
 endif
 endif
 else
@@ -3305,6 +3312,7 @@ PUBLIC_HEADERS_C += \
 LIBADDRESS_SORTING_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(LIBADDRESS_SORTING_SRC))))
 
 
+
 $(LIBDIR)/$(CONFIG)/libaddress_sorting.a:  $(LIBADDRESS_SORTING_OBJS) 
 	$(E) "[AR]      Creating $@"
 	$(Q) mkdir -p `dirname $@`
@@ -3433,6 +3441,7 @@ PUBLIC_HEADERS_C += \
 LIBEND2END_NOSEC_TESTS_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(LIBEND2END_NOSEC_TESTS_SRC))))
 
 
+
 $(LIBDIR)/$(CONFIG)/libend2end_nosec_tests.a: $(ZLIB_DEP) $(CARES_DEP) $(ADDRESS_SORTING_DEP) $(UPB_DEP) $(GRPC_ABSEIL_DEP) $(LIBUV_DEP)  $(LIBEND2END_NOSEC_TESTS_OBJS) 
 	$(E) "[AR]      Creating $@"
 	$(Q) mkdir -p `dirname $@`
@@ -3543,6 +3552,7 @@ LIBEND2END_TESTS_SRC = \
 PUBLIC_HEADERS_C += \
 
 LIBEND2END_TESTS_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(LIBEND2END_TESTS_SRC))))
+
 
 
 ifeq ($(NO_SECURE),true)
@@ -3663,6 +3673,7 @@ PUBLIC_HEADERS_C += \
     include/grpc/support/time.h \
 
 LIBGPR_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(LIBGPR_SRC))))
+
 
 
 $(LIBDIR)/$(CONFIG)/libgpr.a: $(ZLIB_DEP) $(CARES_DEP) $(ADDRESS_SORTING_DEP) $(UPB_DEP) $(GRPC_ABSEIL_DEP) $(LIBUV_DEP)  $(LIBGPR_OBJS) 
@@ -4119,6 +4130,7 @@ PUBLIC_HEADERS_C += \
 LIBGRPC_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(LIBGRPC_SRC))))
 
 
+
 ifeq ($(NO_SECURE),true)
 
 # You can't build secure libraries if you don't have OpenSSL.
@@ -4174,6 +4186,7 @@ LIBGRPC_CSHARP_EXT_SRC = \
 PUBLIC_HEADERS_C += \
 
 LIBGRPC_CSHARP_EXT_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(LIBGRPC_CSHARP_EXT_SRC))))
+
 
 
 ifeq ($(NO_SECURE),true)
@@ -4252,6 +4265,7 @@ PUBLIC_HEADERS_C += \
 LIBGRPC_TEST_UTIL_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(LIBGRPC_TEST_UTIL_SRC))))
 
 
+
 ifeq ($(NO_SECURE),true)
 
 # You can't build secure libraries if you don't have OpenSSL.
@@ -4308,6 +4322,7 @@ LIBGRPC_TEST_UTIL_UNSECURE_SRC = \
 PUBLIC_HEADERS_C += \
 
 LIBGRPC_TEST_UTIL_UNSECURE_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(LIBGRPC_TEST_UTIL_UNSECURE_SRC))))
+
 
 
 $(LIBDIR)/$(CONFIG)/libgrpc_test_util_unsecure.a: $(ZLIB_DEP) $(CARES_DEP) $(ADDRESS_SORTING_DEP) $(UPB_DEP) $(GRPC_ABSEIL_DEP) $(LIBUV_DEP)  $(LIBGRPC_TEST_UTIL_UNSECURE_OBJS) 
@@ -4671,6 +4686,7 @@ PUBLIC_HEADERS_C += \
 LIBGRPC_UNSECURE_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(LIBGRPC_UNSECURE_SRC))))
 
 
+
 $(LIBDIR)/$(CONFIG)/libgrpc_unsecure.a: $(ZLIB_DEP) $(CARES_DEP) $(ADDRESS_SORTING_DEP) $(UPB_DEP) $(GRPC_ABSEIL_DEP) $(LIBUV_DEP)  $(LIBGRPC_UNSECURE_OBJS)  $(LIBGPR_OBJS)  $(LIBGRPC_ABSEIL_OBJS)  $(ZLIB_MERGE_OBJS)  $(CARES_MERGE_OBJS)  $(ADDRESS_SORTING_MERGE_OBJS)  $(UPB_MERGE_OBJS)  $(LIBUV_MERGE_OBJS) 
 	$(E) "[AR]      Creating $@"
 	$(Q) mkdir -p `dirname $@`
@@ -4716,6 +4732,7 @@ PUBLIC_HEADERS_CXX += \
 LIBBENCHMARK_HELPERS_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(LIBBENCHMARK_HELPERS_SRC))))
 
 $(LIBBENCHMARK_HELPERS_OBJS): CPPFLAGS += -Ithird_party/benchmark/include -DHAVE_POSIX_REGEX
+
 
 ifeq ($(NO_SECURE),true)
 
@@ -5025,6 +5042,7 @@ PUBLIC_HEADERS_CXX += \
 LIBGRPC++_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(LIBGRPC++_SRC))))
 
 
+
 ifeq ($(NO_SECURE),true)
 
 # You can't build secure libraries if you don't have OpenSSL.
@@ -5094,6 +5112,7 @@ PUBLIC_HEADERS_CXX += \
     include/grpcpp/security/alts_util.h \
 
 LIBGRPC++_ALTS_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(LIBGRPC++_ALTS_SRC))))
+
 
 
 ifeq ($(NO_SECURE),true)
@@ -5168,6 +5187,7 @@ PUBLIC_HEADERS_CXX += \
 LIBGRPC++_ERROR_DETAILS_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(LIBGRPC++_ERROR_DETAILS_SRC))))
 
 
+
 ifeq ($(NO_SECURE),true)
 
 # You can't build secure libraries if you don't have OpenSSL.
@@ -5240,6 +5260,7 @@ PUBLIC_HEADERS_CXX += \
     include/grpcpp/ext/proto_server_reflection_plugin_impl.h \
 
 LIBGRPC++_REFLECTION_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(LIBGRPC++_REFLECTION_SRC))))
+
 
 
 ifeq ($(NO_SECURE),true)
@@ -5318,6 +5339,7 @@ PUBLIC_HEADERS_CXX += \
 LIBGRPC++_TEST_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(LIBGRPC++_TEST_SRC))))
 
 
+
 ifeq ($(NO_SECURE),true)
 
 # You can't build secure libraries if you don't have OpenSSL.
@@ -5365,6 +5387,7 @@ LIBGRPC++_TEST_CONFIG_SRC = \
 PUBLIC_HEADERS_CXX += \
 
 LIBGRPC++_TEST_CONFIG_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(LIBGRPC++_TEST_CONFIG_SRC))))
+
 
 
 ifeq ($(NO_SECURE),true)
@@ -5422,6 +5445,7 @@ LIBGRPC++_TEST_UTIL_SRC = \
 PUBLIC_HEADERS_CXX += \
 
 LIBGRPC++_TEST_UTIL_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(LIBGRPC++_TEST_UTIL_SRC))))
+
 
 
 ifeq ($(NO_SECURE),true)
@@ -5724,6 +5748,7 @@ PUBLIC_HEADERS_CXX += \
 LIBGRPC++_UNSECURE_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(LIBGRPC++_UNSECURE_SRC))))
 
 
+
 ifeq ($(NO_PROTOBUF),true)
 
 # You can't build a C++ library if you don't have protobuf - a bit overreached, but still okay.
@@ -5786,6 +5811,7 @@ PUBLIC_HEADERS_CXX += \
 LIBGRPC_PLUGIN_SUPPORT_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(LIBGRPC_PLUGIN_SUPPORT_SRC))))
 
 
+
 ifeq ($(NO_PROTOBUF),true)
 
 # You can't build a C++ library if you don't have protobuf - a bit overreached, but still okay.
@@ -5824,6 +5850,7 @@ PUBLIC_HEADERS_CXX += \
     include/grpcpp/ext/channelz_service_plugin_impl.h \
 
 LIBGRPCPP_CHANNELZ_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(LIBGRPCPP_CHANNELZ_SRC))))
+
 
 
 ifeq ($(NO_SECURE),true)
@@ -6162,6 +6189,7 @@ $(LIBBORINGSSL_OBJS): CPPFLAGS += -Ithird_party/boringssl-with-bazel/src/include
 $(LIBBORINGSSL_OBJS): CXXFLAGS += -fno-exceptions
 $(LIBBORINGSSL_OBJS): CFLAGS += -g
 
+
 $(LIBDIR)/$(CONFIG)/libboringssl.a: $(ZLIB_DEP) $(CARES_DEP) $(ADDRESS_SORTING_DEP) $(UPB_DEP) $(GRPC_ABSEIL_DEP) $(LIBUV_DEP)  $(LIBBORINGSSL_OBJS) 
 	$(E) "[AR]      Creating $@"
 	$(Q) mkdir -p `dirname $@`
@@ -6192,6 +6220,7 @@ LIBBORINGSSL_TEST_UTIL_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, 
 $(LIBBORINGSSL_TEST_UTIL_OBJS): CPPFLAGS += -Ithird_party/boringssl-with-bazel/src/include -fvisibility=hidden -DOPENSSL_NO_ASM -D_GNU_SOURCE -DWIN32_LEAN_AND_MEAN -D_HAS_EXCEPTIONS=0 -DNOMINMAX
 $(LIBBORINGSSL_TEST_UTIL_OBJS): CXXFLAGS += -fno-exceptions
 $(LIBBORINGSSL_TEST_UTIL_OBJS): CFLAGS += -g
+
 
 ifeq ($(NO_PROTOBUF),true)
 
@@ -6248,6 +6277,7 @@ LIBBENCHMARK_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename
 
 $(LIBBENCHMARK_OBJS): CPPFLAGS += -Ithird_party/benchmark/include -DHAVE_POSIX_REGEX
 
+
 ifeq ($(NO_PROTOBUF),true)
 
 # You can't build a C++ library if you don't have protobuf - a bit overreached, but still okay.
@@ -6287,6 +6317,7 @@ LIBUPB_SRC = \
 PUBLIC_HEADERS_C += \
 
 LIBUPB_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(LIBUPB_SRC))))
+
 
 
 $(LIBDIR)/$(CONFIG)/libupb.a:  $(LIBUPB_OBJS) 
@@ -6345,6 +6376,7 @@ PUBLIC_HEADERS_C += \
 LIBZ_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(LIBZ_SRC))))
 
 $(LIBZ_OBJS): CFLAGS += -fvisibility=hidden
+
 
 $(LIBDIR)/$(CONFIG)/libz.a:  $(LIBZ_OBJS) 
 	$(E) "[AR]      Creating $@"
@@ -6422,6 +6454,7 @@ LIBARES_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(LI
 $(LIBARES_OBJS): CPPFLAGS += -Ithird_party/cares -Ithird_party/cares/cares -fvisibility=hidden -D_GNU_SOURCE $(if $(subst Darwin,,$(SYSTEM)),,-Ithird_party/cares/config_darwin) $(if $(subst FreeBSD,,$(SYSTEM)),,-Ithird_party/cares/config_freebsd) $(if $(subst Linux,,$(SYSTEM)),,-Ithird_party/cares/config_linux) $(if $(subst OpenBSD,,$(SYSTEM)),,-Ithird_party/cares/config_openbsd) -DWIN32_LEAN_AND_MEAN -D_HAS_EXCEPTIONS=0 -DNOMINMAX $(if $(subst MINGW32,,$(SYSTEM)),-DHAVE_CONFIG_H,)
 $(LIBARES_OBJS): CFLAGS += -g
 
+
 $(LIBDIR)/$(CONFIG)/libares.a:  $(LIBARES_OBJS) 
 	$(E) "[AR]      Creating $@"
 	$(Q) mkdir -p `dirname $@`
@@ -6491,10 +6524,10 @@ PUBLIC_HEADERS_C += \
 
 LIBUV_LINUX_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, uv_linux))
 
-$(LIBUV_LINUX_OBJS): $(LIBUV_LINUX_SRC)
-
 $(LIBUV_LINUX_OBJS): CPPFLAGS += -g -Ithird_party/libuv/include -Ithird_party/libuv/src -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -pthread --std=gnu89 -pedantic -Wno-error -Wno-strict-aliasing -Wstrict-aliasing -O2 -Wno-implicit-function-declaration -Wno-unused-function -Wno-unused-variable -Ithird_party/libuv/src/unix -Wno-tree-vrp -Wno-omit-frame-pointer -D_DARWIN_USE_64_BIT_INODE=1 -D_DARWIN_UNLIMITED_SELECT=1
-$(LIBUV_LINUX_OBJS): LDFLAGS += -g -ldl
+
+$(LIBUV_LINUX_OBJS): $(LIBUV_LINUX_SRC)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $(LIBUV_LINUX_SRC) -o $(LIBUV_LINUX_OBJS)
 
 $(LIBDIR)/$(CONFIG)/libuv_linux.a:  $(LIBUV_LINUX_OBJS) 
 	$(E) "[AR]      Creating $@"
@@ -6564,10 +6597,10 @@ PUBLIC_HEADERS_C += \
 
 LIBUV_DARWIN_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, uv_darwin))
 
-$(LIBUV_DARWIN_OBJS): $(LIBUV_DARWIN_SRC)
-
 $(LIBUV_DARWIN_OBJS): CPPFLAGS += -g -Ithird_party/libuv/include -Ithird_party/libuv/src -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -pthread --std=gnu89 -pedantic -Wno-error -Wno-strict-aliasing -Wstrict-aliasing -O2 -Wno-implicit-function-declaration -Wno-unused-function -Wno-unused-variable
-$(LIBUV_DARWIN_OBJS): LDFLAGS += -g -ldl
+
+$(LIBUV_DARWIN_OBJS): $(LIBUV_DARWIN_SRC)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $(LIBUV_DARWIN_SRC) -o $(LIBUV_DARWIN_OBJS)
 
 $(LIBDIR)/$(CONFIG)/libuv_darwin.a:  $(LIBUV_DARWIN_OBJS) 
 	$(E) "[AR]      Creating $@"
@@ -6640,10 +6673,10 @@ PUBLIC_HEADERS_C += \
 
 LIBUV_WIN_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, uv_win))
 
-$(LIBUV_WIN_OBJS): $(LIBUV_WIN_SRC)
+$(LIBUV_WIN_OBJS): CPPFLAGS += -g -Ithird_party/libuv/include -Ithird_party/libuv/src -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -pthread --std=gnu89 -pedantic -Wno-error -Wno-strict-aliasing -Wstrict-aliasing -O2 -Wno-implicit-function-declaration -Wno-unused-function -Wno-unused-variable -Ithird_party/libuv/src/win -DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0600 -Wl,Psapi.lib -Wl,User32.lib -Wl,Userenv.lib
 
-$(LIBUV_WIN_OBJS): CPPFLAGS += -g -Ithird_party/libuv/include -Ithird_party/libuv/src -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -pthread --std=gnu89 -pedantic -Wno-error -Wno-strict-aliasing -Wstrict-aliasing -O2 -Wno-implicit-function-declaration -Wno-unused-function -Wno-unused-variable -Ithird_party/libuv/src/win -DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0600
-$(LIBUV_WIN_OBJS): LDFLAGS += -g -ldl -Xcrosstool-compilation-mode=$(COMPILATION_MODE) -Wl,Iphlpapi.lib -Wl,Psapi.lib -Wl,User32.lib -Wl,Userenv.lib
+$(LIBUV_WIN_OBJS): $(LIBUV_WIN_SRC)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $(LIBUV_WIN_SRC) -o $(LIBUV_WIN_OBJS)
 
 $(LIBDIR)/$(CONFIG)/libuv_win.a:  $(LIBUV_WIN_OBJS) 
 	$(E) "[AR]      Creating $@"
@@ -6718,6 +6751,7 @@ LIBGRPC_ABSEIL_SRC = \
 
 
 LIBGRPC_ABSEIL_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(LIBGRPC_ABSEIL_SRC))))
+
 
 
 $(LIBDIR)/$(CONFIG)/libgrpc_abseil.a:  $(LIBGRPC_ABSEIL_OBJS) 
