@@ -24,6 +24,7 @@
 #include <unordered_map>
 #include <list>
 #include <deque>
+#include <mutex>
 
 #include "src/core/ext/filters/client_channel/lb_policy.h"
 #include "src/core/ext/filters/client_channel/lb_policy_factory.h"
@@ -119,7 +120,7 @@ class RlsLb : public LoadBalancingPolicy {
 
     class RefHandler : public RefCounted<RefHandler> {
      public:
-      RefHandler(ChildPolicyWrapper* child) : child_(child) {}
+      RefHandler(ChildPolicyWrapper* child);
 
       ChildPolicyWrapper* child() const;
 
@@ -436,7 +437,7 @@ class RlsLb : public LoadBalancingPolicy {
 
   std::string server_uri_;
 
-  Mutex mu_;
+  std::recursive_mutex mu_;
   bool is_shutdown_ = false;
 
   RefCountedPtr<RlsLbConfig> current_config_;
@@ -446,7 +447,7 @@ class RlsLb : public LoadBalancingPolicy {
   RequestMap request_map_;
   RefCountedPtr<ControlChannel> channel_;
   ChildPolicyMap child_policy_map_;
-  RefCountedPtr<ChildPolicyWrapper> default_child_policy_;
+  RefCountedPtr<ChildPolicyWrapper::RefHandler> default_child_policy_;
 };
 
 class RlsLbConfig : public LoadBalancingPolicy::Config {

@@ -124,8 +124,8 @@ constexpr char kGrpclb[] = "grpclb";
 
 class GrpcLbConfig : public LoadBalancingPolicy::Config {
  public:
-  GrpcLbConfig(RefCountedPtr<LoadBalancingPolicy::Config> child_policy, const std::string& target_name_ptr)
-      : child_policy_(std::move(child_policy)), target_name_(target_name_ptr) {}
+  GrpcLbConfig(RefCountedPtr<LoadBalancingPolicy::Config> child_policy, const std::string& target_name)
+      : child_policy_(std::move(child_policy)), target_name_(target_name) {}
   const char* name() const override { return kGrpclb; }
 
   RefCountedPtr<LoadBalancingPolicy::Config> child_policy() const {
@@ -1759,7 +1759,7 @@ class GrpcLbFactory : public LoadBalancingPolicyFactory {
           GRPC_ERROR_CREATE_FROM_VECTOR("field:childPolicy", &child_errors));
     }
     if (error_list.empty()) {
-      return MakeRefCounted<GrpcLbConfig>(std::move(child_policy_config), target_name_ptr == nullptr ? *target_name_ptr : std::string());
+      return MakeRefCounted<GrpcLbConfig>(std::move(child_policy_config), target_name_ptr == nullptr ? std::string() : *target_name_ptr);
     } else {
       *error = GRPC_ERROR_CREATE_FROM_VECTOR("GrpcLb Parser", &error_list);
       return nullptr;
