@@ -50,14 +50,16 @@
 #include <map>
 #include <deque>
 
+namespace grpc {
+namespace testing {
+namespace {
+
 #define SECONDS(x) (int(x))
 #define NANOSECONDS(x) (int(((x) - int(x)) * 1e9))
 
 const grpc::string test_key = "testKey";
-
-namespace grpc {
-namespace testing {
-namespace {
+const char* kTestUrl = "test.google.fr";
+const char* kRlsRequestPath = "/grpc.lookup.v1.RouteLookupService/RouteLookup";
 
 template <typename ServiceType>
 class CountedService : public ServiceType {
@@ -490,7 +492,7 @@ class RlsPolicyEnd2endTest : public ::testing::Test {
     ChannelArguments args;
     args.SetPointer(GRPC_ARG_FAKE_RESOLVER_RESPONSE_GENERATOR,
                     resolver_response_generator_->Get());
-    channel_ = ::grpc::CreateCustomChannel("fake:///test.google.fr", creds_, args);
+    channel_ = ::grpc::CreateCustomChannel(absl::StrCat("fake:///", kTestUrl).c_str(), creds_, args);
   }
 
   void TearDown() override {
@@ -732,7 +734,7 @@ class RlsPolicyEnd2endTest : public ::testing::Test {
   const grpc::string server_host_ = "localhost";
   const grpc::string kRequestMessage_ = "Live long and prosper.";
   const grpc::string kTarget_ = "test_target";
-  const grpc::string kDefaultTarget_ = "dummy_target_field_value";
+  const grpc::string kDefaultTarget_ = "test_default_target";
   std::shared_ptr<ChannelCredentials> creds_;
   std::vector<std::unique_ptr<ServerThread<MyTestServiceImpl>>> backends_;
   std::unique_ptr<ServerThread<RlsServiceImpl>> rls_server_;
@@ -742,50 +744,33 @@ class RlsPolicyEnd2endTest : public ::testing::Test {
 };
 
 TEST_F(RlsPolicyEnd2endTest, RlsGrpcLb) {
-  StartBackends(1);
+  StartBackends(2);
   auto service_config = BuildServiceConfig();
   SetNextResolution(service_config.c_str());
   SetNextRlsResponse(GRPC_STATUS_OK, "TestHeaderData");
-  SetNextLbResponse({{kTarget_, 0}});
+  SetNextLbResponse({{kTarget_, 0}, {kDefaultTarget_, 1}});
 
   auto stub = BuildStub();
   CheckRpcSendOk(stub, DEBUG_LOCATION, false);
   EXPECT_EQ(backends_[0]->service_.request_count(), 1);
+  EXPECT_EQ(backends_[1]->service_.request_count(), 0);
   auto rls_data = backends_[0]->service_.rls_data();
   EXPECT_EQ(rls_data.size(), 1);
   EXPECT_NE(rls_data.find("TestHeaderData"), rls_data.end());
 }
 
-/*
 TEST_F(RlsPolicyEnd2endTest, RlsGrpcLbWithKeyMap) {
-  StartBackends(1);
+  StartBackends(2);
   auto service_config = BuildServiceConfig();
   SetNextResolution(service_config.c_str());
-  SetNextRlsResponse(GRPC_STATUS_OK, "FakeHeaderData", 0, RlsServiceImpl::Request{"test.google.fr", "/grpc.lookup.v1.RouteLookupService/RouteLookup", {{"testKey", "testValue"}}});
-  SetNextLbResponse(0);
+  SetNextRlsResponse(GRPC_STATUS_OK, "TestHeaderData", 0, RlsServiceImpl::Request{kTestUrl, kRlsRequestPath, {{"testKey", "testValue"}}});
+  SetNextLbResponse({{kTarget_, 0}, {kDefaultTarget_, 1}});
 
   auto stub = BuildStub();
-  CheckRpcSendOk(stub, DEBUG_LOCATION, false, {{"key2", "testValue"}});
-  EXPECT_EQ(backends_[0]->service_.request_count(), 1);
-  auto rls_data = backends_[0]->service_.rls_data();
-  EXPECT_EQ(rls_data.size(), 1);
-  EXPECT_NE(rls_data.find("FakeHeader"), rls_data.end());
-  // DEBUG
-  std::cout << "\n**TEST** test done\n";
-  auto resolver_response_generator = BuildResolverResponseGenerator();
-  auto channel = BuildChannel(resolver_response_generator);
-  auto stub = BuildStub(channel);
-  RlsServer rls_server;
-  rls_server.SetNextResponse({GRPC_STATUS_OK, BuildLookupResponse(servers_[0]->port_, "FakeHeader")});
-  */
-
-//   auto service_config = BuildServiceConfig(rls_server.port(), 10, 5, 0, 0, "resolving_lb");
-//   resolver_response_generator.SetNextResolution({}, service_config.c_str());
-//   CheckRpcSendOk(stub, DEBUG_LOCATION, false, {{"key2", "test_val"}});
-//   auto keys = rls_server.keys();
-//   EXPECT_EQ(rls_server.keys().size(), 1);
-//   EXPECT_EQ(rls_server.keys().front(), "test_val");
-// }
+  CheckRpcSendOk(stub, DEBUG_LOCATION, false);
+  EXPECT_EQ(backends_[0]->service_.request_count(), 0);
+  EXPECT_EQ(backends_[1]->service_.request_count(), 1);
+}
 
 /* TODO: how to force re-resolution */
 /*

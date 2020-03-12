@@ -136,6 +136,8 @@ class RlsLb : public LoadBalancingPolicy {
     // PICK_QUEUE. Otherwise, the pick is delegated to picker_.
     PickResult Pick(PickArgs args);
 
+    bool IsReady() const;
+
     // Update configuration of the child policy. If the child policy name is not
     // changed, the configuration is forwarded to the current child policy with its
     // UpdateLocked() method. Otherwise, a new child policy object is constructed

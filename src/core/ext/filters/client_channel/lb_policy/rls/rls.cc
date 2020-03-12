@@ -395,6 +395,23 @@ LoadBalancingPolicy::PickResult RlsLb::Cache::Entry::Pick(PickArgs args) {
       }
       result.type = PickResult::PICK_FAILED;
       result.error = GRPC_ERROR_CREATE_FROM_STATIC_STRING("child policy does not exist");
+    } else if (!child_policy_wrapper_->child()->IsReady()) {
+      switch (lb_policy_->current_config_->request_processing_strategy()) {
+        case RequestProcessingStrategy::SYNC_LOOKUP_CLIENT_SEES_ERROR:
+        case RequestProcessingStrategy::SYNC_LOOKUP_DEFAULT_TARGET_ON_ERROR:
+          if (GRPC_TRACE_FLAG_ENABLED(grpc_lb_rls_trace)) {
+            gpr_log(GPR_DEBUG, "[rlslb %p] cache entry=%p: pick queued as child policy is not ready", lb_policy_.get(), this);
+          }
+          result.type = PickResult::PICK_QUEUE;
+          break;
+        case RequestProcessingStrategy::ASYNC_LOOKUP_DEFAULT_TARGET_ON_MISS:
+          if (GRPC_TRACE_FLAG_ENABLED(grpc_lb_rls_trace)) {
+            gpr_log(GPR_DEBUG, "[rlslb %p] cache entry=%p: pick forwarded to the default child policy as child policy is not ready", lb_policy_.get(), this);
+          }
+          return lb_policy_->default_child_policy_->child()->Pick(args);
+        default:
+          abort();
+      }
     } else {
       if (GRPC_TRACE_FLAG_ENABLED(grpc_lb_rls_trace)) {
         gpr_log(GPR_DEBUG, "[rlslb %p] cache entry=%p: pick forwarded to child policy %p", lb_policy_.get(), this, child_policy_wrapper_->child());
@@ -410,7 +427,11 @@ LoadBalancingPolicy::PickResult RlsLb::Cache::Entry::Pick(PickArgs args) {
             break;
           }
         }
+      }
+      if (result.type == PickResult::PICK_FAILED) {
         return lb_policy_->default_child_policy_->child()->Pick(args);
+      } else {
+        return result;
       }
     }
   } else if (now <= backoff_time_) {
@@ -1020,6 +1041,10 @@ LoadBalancingPolicy::PickResult RlsLb::ChildPolicyWrapper::Pick(PickArgs args) {
   } else {
     return picker_->Pick(args);
   }
+}
+
+bool RlsLb::ChildPolicyWrapper::IsReady() const {
+  return (picker_ != nullptr);
 }
 
 void RlsLb::ChildPolicyWrapper::UpdateLocked(const Json& child_policy_config, ServerAddressList addresses,
