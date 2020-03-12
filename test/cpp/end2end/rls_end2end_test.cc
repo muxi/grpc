@@ -55,11 +55,15 @@ namespace testing {
 namespace {
 
 #define SECONDS(x) (int(x))
-#define NANOSECONDS(x) (int(((x) - int(x)) * 1e9))
+#define NANOSECONDS(x) (int(((x) - SECONDS(x)) * 1e9))
 
-const grpc::string test_key = "testKey";
+const grpc::string kTestKey = "testKey";
 const char* kTestUrl = "test.google.fr";
-const char* kRlsRequestPath = "/grpc.lookup.v1.RouteLookupService/RouteLookup";
+const char* kTestRequestPath = "/grpc.testing.EchoTestService/Echo";
+const grpc::string kServerHost = "localhost";
+const grpc::string kRequestMessage = "Live long and prosper.";
+const grpc::string kTarget = "test_target";
+const grpc::string kDefaultTarget = "test_default_target";
 
 template <typename ServiceType>
 class CountedService : public ServiceType {
@@ -338,7 +342,7 @@ class RlsServiceImpl : public RlsService {
       }
     }
     if (res.response_delay > 0) {
-      sleep(res.response_delay / GPR_MS_PER_SEC);
+      gpr_sleep_until(grpc_timeout_milliseconds_to_deadline(res.response_delay));
     }
     bool make_response = true;
     if (res.request_match.has_value()) {
@@ -485,9 +489,9 @@ class RlsPolicyEnd2endTest : public ::testing::Test {
 
   void SetUp() override {
     rls_server_.reset(new ServerThread<RlsServiceImpl>("rls"));
-    rls_server_->Start(server_host_);
+    rls_server_->Start(kServerHost);
     balancer_.reset(new ServerThread<BalancerServiceImpl>("balancer", 0));
-    balancer_->Start(server_host_);
+    balancer_->Start(kServerHost);
     resolver_response_generator_.reset(new FakeResolverResponseGeneratorWrapper());
     ChannelArguments args;
     args.SetPointer(GRPC_ARG_FAKE_RESOLVER_RESPONSE_GENERATOR,
@@ -514,7 +518,7 @@ class RlsPolicyEnd2endTest : public ::testing::Test {
     backends_.clear();
     for (size_t i = 0; i < num_servers; ++i) {
       backends_.emplace_back(new ServerThread<MyTestServiceImpl>("backend"));
-      backends_.back()->Start(server_host_);
+      backends_.back()->Start(kServerHost);
     }
   }
 
@@ -541,7 +545,7 @@ class RlsPolicyEnd2endTest : public ::testing::Test {
     const bool local_response = (response == nullptr);
     if (local_response) response = new EchoResponse;
     EchoRequest request;
-    request.set_message(kRequestMessage_);
+    request.set_message(kRequestMessage);
     ClientContext context;
     for (auto& item : initial_metadata) {
       context.AddMetadata(item.first, item.second);
@@ -556,16 +560,16 @@ class RlsPolicyEnd2endTest : public ::testing::Test {
 
   void CheckRpcSendOk(
       const std::unique_ptr<grpc::testing::EchoTestService::Stub>& stub,
-      const grpc_core::DebugLocation& location, bool wait_for_ready = false, const std::map<grpc::string, grpc::string>& initial_metadata = {}) {
+      const grpc_core::DebugLocation& location, bool wait_for_ready = false, int timeout_ms = 2000, const std::map<grpc::string, grpc::string>& initial_metadata = {}) {
     EchoResponse response;
     Status status;
     const bool success =
-        SendRpc(stub, &response, 2000, &status, wait_for_ready, initial_metadata);
+        SendRpc(stub, &response, timeout_ms, &status, wait_for_ready, initial_metadata);
     ASSERT_TRUE(success) << "From " << location.file() << ":" << location.line()
                          << "\n"
                          << "Error: " << status.error_message() << " "
                          << status.error_details();
-    ASSERT_EQ(response.message(), kRequestMessage_)
+    ASSERT_EQ(response.message(), kRequestMessage)
         << "From " << location.file() << ":" << location.line();
     if (!success) abort();
   }
@@ -578,7 +582,7 @@ class RlsPolicyEnd2endTest : public ::testing::Test {
 
   std::string BuildServiceConfig(double max_age = 10,
                                  double stale_age = 5,
-                                 int default_target_port = 0,
+                                 const std::string& default_target = kDefaultTarget,
                                  int request_processing_strategy = 0,
                                  double lookup_service_timeout = 10) {
     int lookup_service_port = rls_server_->port_;
@@ -594,8 +598,8 @@ class RlsPolicyEnd2endTest : public ::testing::Test {
     service_config << "          }],";
     service_config << "          \"headers\":[";
     service_config << "            {";
-    service_config << "              \"key\":\"" << test_key << "\",";
-    service_config << "              \"name\":[";
+    service_config << "              \"key\":\"" << kTestKey << "\",";
+    service_config << "              \"names\":[";
     service_config << "                \"key1\",\"key2\",\"key3\"";
     service_config << "              ]";
     service_config << "            }";
@@ -614,7 +618,7 @@ class RlsPolicyEnd2endTest : public ::testing::Test {
     service_config << "          \"seconds\":" << SECONDS(stale_age) << ",";
     service_config << "          \"nanoseconds\":" << NANOSECONDS(stale_age);
     service_config << "        },";
-    service_config << "        \"defaultTarget\":\"test_default_target\",";
+    service_config << "        \"defaultTarget\":\"" << default_target << "\",";
     service_config << "        \"requestProcessingStrategy\":" << request_processing_strategy;
     service_config << "      },";
     service_config << "      \"childPolicy\":[{";
@@ -634,7 +638,7 @@ class RlsPolicyEnd2endTest : public ::testing::Test {
   grpc::lookup::v1::RouteLookupResponse BuildLookupResponse(int port, grpc::string header_data = {}) {
     grpc::lookup::v1::RouteLookupResponse response;
 
-    response.set_target(absl::StrCat(server_host_, port));
+    response.set_target(absl::StrCat(kServerHost, port));
     response.set_header_data(header_data);
 
     return response;
@@ -645,11 +649,11 @@ class RlsPolicyEnd2endTest : public ::testing::Test {
   }
 
   void SetNextRlsResponse(grpc_status_code status, const char* header_data = nullptr, grpc_millis response_delay = 0,
-                          absl::optional<RlsServiceImpl::Request> request_match = {}) {
+                          absl::optional<RlsServiceImpl::Request> request_match = {}, const std::string& target = kTarget) {
     RlsServiceImpl::Response response;
     response.status = status;
     response.response_delay = response_delay;
-    response.response.set_target(kTarget_);
+    response.response.set_target(target);
     if (header_data != nullptr) response.response.set_header_data(header_data);
     if (request_match.has_value()) {
       response.request_match = std::move(request_match);
@@ -731,10 +735,6 @@ class RlsPolicyEnd2endTest : public ::testing::Test {
     bool running_ = false;
   };
 
-  const grpc::string server_host_ = "localhost";
-  const grpc::string kRequestMessage_ = "Live long and prosper.";
-  const grpc::string kTarget_ = "test_target";
-  const grpc::string kDefaultTarget_ = "test_default_target";
   std::shared_ptr<ChannelCredentials> creds_;
   std::vector<std::unique_ptr<ServerThread<MyTestServiceImpl>>> backends_;
   std::unique_ptr<ServerThread<RlsServiceImpl>> rls_server_;
@@ -748,10 +748,10 @@ TEST_F(RlsPolicyEnd2endTest, RlsGrpcLb) {
   auto service_config = BuildServiceConfig();
   SetNextResolution(service_config.c_str());
   SetNextRlsResponse(GRPC_STATUS_OK, "TestHeaderData");
-  SetNextLbResponse({{kTarget_, 0}, {kDefaultTarget_, 1}});
+  SetNextLbResponse({{kTarget, 0}, {kDefaultTarget, 1}});
 
   auto stub = BuildStub();
-  CheckRpcSendOk(stub, DEBUG_LOCATION, false);
+  CheckRpcSendOk(stub, DEBUG_LOCATION);
   EXPECT_EQ(backends_[0]->service_.request_count(), 1);
   EXPECT_EQ(backends_[1]->service_.request_count(), 0);
   auto rls_data = backends_[0]->service_.rls_data();
@@ -759,235 +759,165 @@ TEST_F(RlsPolicyEnd2endTest, RlsGrpcLb) {
   EXPECT_NE(rls_data.find("TestHeaderData"), rls_data.end());
 }
 
-TEST_F(RlsPolicyEnd2endTest, RlsGrpcLbWithKeyMap) {
+TEST_F(RlsPolicyEnd2endTest, FailedRlsRequestFallback) {
   StartBackends(2);
   auto service_config = BuildServiceConfig();
   SetNextResolution(service_config.c_str());
-  SetNextRlsResponse(GRPC_STATUS_OK, "TestHeaderData", 0, RlsServiceImpl::Request{kTestUrl, kRlsRequestPath, {{"testKey", "testValue"}}});
-  SetNextLbResponse({{kTarget_, 0}, {kDefaultTarget_, 1}});
+  SetNextRlsResponse(GRPC_STATUS_INTERNAL);
+  SetNextLbResponse({{kTarget, 0}, {kDefaultTarget, 1}});
 
   auto stub = BuildStub();
-  CheckRpcSendOk(stub, DEBUG_LOCATION, false);
+  CheckRpcSendOk(stub, DEBUG_LOCATION);
   EXPECT_EQ(backends_[0]->service_.request_count(), 0);
   EXPECT_EQ(backends_[1]->service_.request_count(), 1);
 }
 
-/* TODO: how to force re-resolution */
-/*
-TEST_F(RlsPolicyEnd2endTest, UpdateConfiguration) {
-  StartBackends(1);
-  // Set resolver response
-  auto resolver_response_generator = FakeResponseGeneratorWrapper();
-  // Create channel
-  auto channel = BuildChannel(resolver_response_generator);
-  // Send rpc
-  SendRpc(channel);
-  resolver_response_generator.SetNextResponse();
-  rls_response_generator.SetNextResponse();
-  EXPECT_EQ(rls_response_generator.LastRequest.path, "https://lookup.test.google.fr");
-  // Assert server 1 receives the response
-  EXPECT_EQ(servers_[0].service_.request_count(), 1);
-  EXPECT_EQ(servers_[1].service_.request_count(), 0);
+TEST_F(RlsPolicyEnd2endTest, RlsGrpcLbWithoutKeyMapMatch) {
+  StartBackends(2);
+  auto service_config = BuildServiceConfig();
+  SetNextResolution(service_config.c_str());
+  SetNextRlsResponse(GRPC_STATUS_OK, "", 0, RlsServiceImpl::Request{kTestUrl, kTestRequestPath, {{"testKey", "testValue"}}});
+  SetNextLbResponse({{kTarget, 0}, {kDefaultTarget, 1}});
 
-  //TODO: How to force a re-resolution?
-  resolver_response_generator.SetNextResponse();
-  rls_response_generator.SetNextResponse();
-  EXPECT_EQ(rls_response_generator.LastRequest.path, "https://lookup2.test.google.fr");
-  // Send rpc
-  SendRpc(channel);
-  resolver_response_generator.SetNextResponse();
-  // Assert server 2 receives the response
-  EXPECT_EQ(servers_[0].service_.request_count(), 1);
-  EXPECT_EQ(servers_[1].service_.request_count(), 1);
+  auto stub = BuildStub();
+  CheckRpcSendOk(stub, DEBUG_LOCATION);
+  EXPECT_EQ(backends_[0]->service_.request_count(), 0);
+  EXPECT_EQ(backends_[1]->service_.request_count(), 1);
 }
-*/
 
-// TEST_F(RlsPolicyEnd2endTest, FailedRlsRequestFallback) {
-//   StartBackends(1);
-//   auto resolver_response_generator = BuildResolverResponseGenerator();
-//   auto channel = BuildChannel(resolver_response_generator);
-//   auto stub = BuildStub(channel);
-//   RlsServer rls_server;
-//   rls_server.SetNextResponse({GRPC_STATUS_INTERNAL, grpc::lookup::v1::RouteLookupResponse()});
+TEST_F(RlsPolicyEnd2endTest, RlsGrpcLbWithKeyMapMatch) {
+  StartBackends(2);
+  auto service_config = BuildServiceConfig();
+  SetNextResolution(service_config.c_str());
+  SetNextRlsResponse(GRPC_STATUS_OK, "", 0, RlsServiceImpl::Request{kTestUrl, kTestRequestPath, {{kTestKey, "testValue"}}});
+  SetNextLbResponse({{kTarget, 0}, {kDefaultTarget, 1}});
 
-//   auto service_config = BuildServiceConfig(rls_server.port(), 10, 5, servers_[0]->port_, 0, "resolving_lb");
-//   resolver_response_generator.SetNextResolution({}, service_config.c_str());
+  auto stub = BuildStub();
+  CheckRpcSendOk(stub, DEBUG_LOCATION, false, 2000, {{"key2", "testValue"}});
+  EXPECT_EQ(backends_[0]->service_.request_count(), 1);
+  EXPECT_EQ(backends_[1]->service_.request_count(), 0);
+}
 
-//   CheckRpcSendOk(stub, DEBUG_LOCATION, false);
-//   EXPECT_EQ(servers_[0]->service_.request_count(), 1);
-// }
+TEST_F(RlsPolicyEnd2endTest, UpdateRlsConfig) {
+  const std::string kAlternativeDefaultTarget = "test_default_target_2";
+  StartBackends(2);
+  auto service_config = BuildServiceConfig();
+  SetNextResolution(service_config.c_str());
+  SetNextRlsResponse(GRPC_STATUS_INTERNAL);
+  SetNextLbResponse({{kDefaultTarget, 0}, {kAlternativeDefaultTarget, 1}});
 
-// TEST_F(RlsPolicyEnd2endTest, FailedRlsRequestError) {
-//   StartBackends(1);
-//   auto resolver_response_generator = BuildResolverResponseGenerator();
-//   auto channel = BuildChannel(resolver_response_generator);
-//   auto stub = BuildStub(channel);
-//   RlsServer rls_server;
-//   rls_server.SetNextResponse({GRPC_STATUS_INTERNAL, grpc::lookup::v1::RouteLookupResponse()});
+  auto stub = BuildStub();
+  CheckRpcSendOk(stub, DEBUG_LOCATION);
+  EXPECT_EQ(backends_[0]->service_.request_count(), 1);
+  EXPECT_EQ(backends_[1]->service_.request_count(), 0);
 
-//   auto service_config = BuildServiceConfig(rls_server.port(), 10, 5, servers_[0]->port_, 1, "resolving_lb");
-//   resolver_response_generator.SetNextResolution({}, service_config.c_str());
+  service_config = BuildServiceConfig(10, 5, kAlternativeDefaultTarget);
+  SetNextResolution(service_config.c_str());
+  SetNextRlsResponse(GRPC_STATUS_INTERNAL);
+  CheckRpcSendOk(stub, DEBUG_LOCATION);
+  EXPECT_EQ(backends_[0]->service_.request_count(), 1);
+  EXPECT_EQ(backends_[1]->service_.request_count(), 1);
+}
 
-//   CheckRpcSendFailure(stub);
-//   EXPECT_EQ(servers_[0]->service_.request_count(), 0);
-// }
+TEST_F(RlsPolicyEnd2endTest, FailedRlsRequestError) {
+  StartBackends(2);
+  auto service_config = BuildServiceConfig(10,5, kDefaultTarget, 1);
+  SetNextResolution(service_config.c_str());
+  SetNextRlsResponse(GRPC_STATUS_INTERNAL);
+  SetNextLbResponse({{kTarget, 0}, {kDefaultTarget, 1}});
 
-// TEST_F(RlsPolicyEnd2endTest, RlsServerFailure) {
-//   StartBackends(1);
-//   auto resolver_response_generator = BuildResolverResponseGenerator();
-//   auto channel = BuildChannel(resolver_response_generator);
-//   auto stub = BuildStub(channel);
+  auto stub = BuildStub();
+  CheckRpcSendFailure(stub);
+  EXPECT_EQ(backends_[0]->service_.request_count(), 0);
+  EXPECT_EQ(backends_[1]->service_.request_count(), 0);
+}
 
-//   auto service_config = BuildServiceConfig(grpc_pick_unused_port_or_die(), 10, 5, servers_[0]->port_, 1, "resolving_lb");
-//   resolver_response_generator.SetNextResolution({}, service_config.c_str());
+TEST_F(RlsPolicyEnd2endTest, RlsRequestTimeout) {
+  StartBackends(2);
+  auto service_config = BuildServiceConfig(10, 5, kDefaultTarget, 0, 2);
+  SetNextResolution(service_config.c_str());
+  SetNextRlsResponse(GRPC_STATUS_OK, nullptr, 4000);
+  SetNextLbResponse({{kTarget, 0}, {kDefaultTarget, 1}});
 
-//   CheckRpcSendFailure(stub);
-//   EXPECT_EQ(servers_[0]->service_.request_count(), 0);
-// }
+  auto stub = BuildStub();
+  CheckRpcSendOk(stub, DEBUG_LOCATION, false, 4000);
+  EXPECT_EQ(backends_[0]->service_.request_count(), 0);
+  EXPECT_EQ(backends_[1]->service_.request_count(), 1);
+}
 
-// TEST_F(RlsPolicyEnd2endTest, RlsRequestTimeout) {
-//   StartBackends(1);
-//   auto resolver_response_generator = BuildResolverResponseGenerator();
-//   auto channel = BuildChannel(resolver_response_generator);
-//   auto stub = BuildStub(channel);
-//   RlsServer rls_server;
+TEST_F(RlsPolicyEnd2endTest, AsyncRlsRequest) {
+  StartBackends(2);
+  auto service_config = BuildServiceConfig(10, 5, kDefaultTarget, 2);
+  SetNextResolution(service_config.c_str());
+  SetNextRlsResponse(GRPC_STATUS_OK, nullptr, 1000);
+  SetNextLbResponse({{kTarget, 0}, {kDefaultTarget, 1}});
 
-//   auto service_config = BuildServiceConfig(rls_server.port(), 10, 5, servers_[0]->port_, 1, "resolving_lb", 1);
-//   resolver_response_generator.SetNextResolution({}, service_config.c_str());
+  auto stub = BuildStub();
+  CheckRpcSendOk(stub, DEBUG_LOCATION);
+  EXPECT_EQ(backends_[0]->service_.request_count(), 0);
+  EXPECT_EQ(backends_[1]->service_.request_count(), 1);
 
-//   time_t start = time(nullptr);
-//   CheckRpcSendFailure(stub);
-//   time_t end = time(nullptr);
-//   EXPECT_EQ(servers_[0]->service_.request_count(), 0);
-//   EXPECT_GT(difftime(end, start), 1);
-//   EXPECT_LT(difftime(end, start), 2);
-// }
+  // wait for RLS response to reach RLS lb policy
+  gpr_sleep_until(grpc_timeout_seconds_to_deadline(2));
+  CheckRpcSendOk(stub, DEBUG_LOCATION);
+  EXPECT_EQ(backends_[0]->service_.request_count(), 1);
+  EXPECT_EQ(backends_[1]->service_.request_count(), 1);
+}
 
-// TEST_F(RlsPolicyEnd2endTest, FailedAsyncRlsRequest) {
-//   StartBackends(1);
-//   auto resolver_response_generator = BuildResolverResponseGenerator();
-//   auto channel = BuildChannel(resolver_response_generator);
-//   auto stub = BuildStub(channel);
-//   RlsServer rls_server;
-//   rls_server.SetNextResponse({GRPC_STATUS_INTERNAL, grpc::lookup::v1::RouteLookupResponse()});
+TEST_F(RlsPolicyEnd2endTest, CachedRlsResponse) {
+  StartBackends(2);
+  auto service_config = BuildServiceConfig();
+  SetNextResolution(service_config.c_str());
+  SetNextRlsResponse(GRPC_STATUS_OK);
+  SetNextLbResponse({{kTarget, 0}, {kDefaultTarget, 1}});
 
-//   auto service_config = BuildServiceConfig(rls_server.port(), 10, 5, servers_[0]->port_, 2, "resolving_lb");
-//   resolver_response_generator.SetNextResolution({}, service_config.c_str());
+  auto stub = BuildStub();
+  CheckRpcSendOk(stub, DEBUG_LOCATION);
+  CheckRpcSendOk(stub, DEBUG_LOCATION);
+  EXPECT_EQ(backends_[0]->service_.request_count(), 2);
+  EXPECT_EQ(backends_[1]->service_.request_count(), 0);
+  EXPECT_EQ(rls_server_->service_.request_count(), 1);
+}
 
-//   CheckRpcSendOk(stub, DEBUG_LOCATION, false);
-//   EXPECT_EQ(servers_[0]->service_.request_count(), 1);
-// }
+TEST_F(RlsPolicyEnd2endTest, StaleRlsResponse) {
+  const std::string kAlternativeTarget = "test_target_2";
+  StartBackends(3);
+  auto service_config = BuildServiceConfig(10, 1);
+  SetNextResolution(service_config.c_str());
+  SetNextRlsResponse(GRPC_STATUS_OK);
+  SetNextLbResponse({{kTarget, 0}, {kAlternativeTarget, 1}, {kDefaultTarget, 2}});
 
-// TEST_F(RlsPolicyEnd2endTest, QueuedRlsRequest) {
-//   StartBackends(1);
-//   auto resolver_response_generator = BuildResolverResponseGenerator();
-//   auto channel = BuildChannel(resolver_response_generator);
-//   auto stub = BuildStub(channel);
-//   RlsServer rls_server;
-//   auto service_config = BuildServiceConfig(rls_server.port(), 10, 5, 0, 2, "resolving_lb");
-//   // Set resolution result twice since we have two requests in this test case.
-//   resolver_response_generator.SetNextResolution({}, service_config.c_str());
-//   resolver_response_generator.SetNextResolution({}, service_config.c_str());
+  auto stub = BuildStub();
+  CheckRpcSendOk(stub, DEBUG_LOCATION);
+  gpr_sleep_until(grpc_timeout_seconds_to_deadline(2));
+  SetNextRlsResponse(GRPC_STATUS_OK, nullptr, 0, {}, kAlternativeTarget);
+  CheckRpcSendOk(stub, DEBUG_LOCATION);
+  EXPECT_EQ(backends_[0]->service_.request_count(), 2);
+  EXPECT_EQ(backends_[1]->service_.request_count(), 0);
+  EXPECT_EQ(backends_[2]->service_.request_count(), 0);
+  // wait for rls server to receive the second request
+  gpr_sleep_until(grpc_timeout_seconds_to_deadline(1));
+  EXPECT_EQ(rls_server_->service_.request_count(), 2);
+}
 
-//   // Multiple calls pending on the same Rls request
-//   std::mutex mu;
-//   std::unique_lock<std::mutex> lock(mu);
-//   std::condition_variable cv;
-//   std::condition_variable cv2;
-//   bool complete = false;
-//   bool complete2 = false;
-//   std::thread([&](){
-//     std::unique_lock<std::mutex> lock(mu);
-//     SendRpc(stub);
-//     cv.notify_all();
-//     complete = true;
-//   }).detach();
-//   std::thread([&](){
-//     std::unique_lock<std::mutex> lock(mu);
-//     SendRpc(stub);
-//     cv2.notify_all();
-//     complete2 = true;
-//   }).detach();
-//   cv.wait_for(lock, std::chrono::seconds(1), [&complete](){ return !complete; });
-//   EXPECT_EQ(complete, false);
-//   EXPECT_EQ(complete2, false);
+TEST_F(RlsPolicyEnd2endTest, ExpiredRlsResponse) {
+  const std::string kAlternativeTarget = "test_target_2";
+  StartBackends(3);
+  auto service_config = BuildServiceConfig(1, 1);
+  SetNextResolution(service_config.c_str());
+  SetNextRlsResponse(GRPC_STATUS_OK);
+  SetNextLbResponse({{kTarget, 0}, {kAlternativeTarget, 1}, {kDefaultTarget, 2}});
 
-//   rls_server.SetNextResponse({GRPC_STATUS_OK, BuildLookupResponse(servers_[0]->port_, "FakeHeader")});
-
-//   cv.wait_for(lock, std::chrono::seconds(1), [&complete](){ return !complete; });
-//   cv2.wait_for(lock, std::chrono::seconds(0), [&complete](){ return !complete; });
-//   EXPECT_EQ(complete, true);
-//   EXPECT_EQ(complete2, true);
-
-//   EXPECT_EQ(servers_[0]->service_.request_count(), 2);
-//   EXPECT_EQ(rls_server.lookup_count(), 1);
-// }
-
-// TEST_F(RlsPolicyEnd2endTest, CachedRlsRequest) {
-//   StartBackends(1);
-
-//   auto resolver_response_generator = BuildResolverResponseGenerator();
-//   auto channel = BuildChannel(resolver_response_generator);
-//   auto stub = BuildStub(channel);
-
-//   RlsServer rls_server;
-//   rls_server.SetNextResponse({GRPC_STATUS_OK, BuildLookupResponse(servers_[0]->port_, "FakeHeader")});
-
-//   auto service_config = BuildServiceConfig(rls_server.port(), 10, 5, 0, 0, "resolving_lb");
-//   resolver_response_generator.SetNextResolution({}, service_config.c_str());
-//   // Send rpc
-//   CheckRpcSendOk(stub, DEBUG_LOCATION, false);
-//   CheckRpcSendOk(stub, DEBUG_LOCATION, false);
-//   EXPECT_EQ(servers_[0]->service_.request_count(), 2);
-//   EXPECT_EQ(rls_server.lookup_count(), 1);
-// }
-
-// TEST_F(RlsPolicyEnd2endTest, StaleRlsRequest) {
-//   StartBackends(2);
-
-//   auto resolver_response_generator = BuildResolverResponseGenerator();
-//   auto channel = BuildChannel(resolver_response_generator);
-//   auto stub = BuildStub(channel);
-
-//   RlsServer rls_server;
-//   rls_server.SetNextResponse({GRPC_STATUS_OK, BuildLookupResponse(servers_[0]->port_, "FakeHeader")});
-//   rls_server.SetNextResponse({GRPC_STATUS_OK, BuildLookupResponse(servers_[1]->port_, "FakeHeader")});
-
-//   auto service_config = BuildServiceConfig(rls_server.port(), 10, 2, 0, 0, "resolving_lb");
-//   resolver_response_generator.SetNextResolution({}, service_config.c_str());
-//   // Send rpc
-//   CheckRpcSendOk(stub, DEBUG_LOCATION, false);
-//   sleep(3);
-//   CheckRpcSendOk(stub, DEBUG_LOCATION, false);
-//   EXPECT_EQ(servers_[0]->service_.request_count(), 2);
-//   EXPECT_EQ(servers_[1]->service_.request_count(), 0);
-//   EXPECT_EQ(rls_server.lookup_count(), 2);
-// }
-
-// TEST_F(RlsPolicyEnd2endTest, ExpiredRlsRequest) {
-//   StartBackends(2);
-
-//   auto resolver_response_generator = BuildResolverResponseGenerator();
-//   auto channel = BuildChannel(resolver_response_generator);
-//   auto stub = BuildStub(channel);
-
-//   RlsServer rls_server;
-//   rls_server.SetNextResponse({GRPC_STATUS_OK, BuildLookupResponse(servers_[0]->port_, "FakeHeader")});
-//   rls_server.SetNextResponse({GRPC_STATUS_OK, BuildLookupResponse(servers_[1]->port_, "FakeHeader")});
-
-//   auto service_config = BuildServiceConfig(rls_server.port(), 2, 1, 0, 0, "resolving_lb");
-//   resolver_response_generator.SetNextResolution({}, service_config.c_str());
-//   // Send rpc
-//   CheckRpcSendOk(stub, DEBUG_LOCATION, false);
-//   sleep(3);
-//   CheckRpcSendOk(stub, DEBUG_LOCATION, false);
-//   EXPECT_EQ(servers_[0]->service_.request_count(), 1);
-//   EXPECT_EQ(servers_[1]->service_.request_count(), 1);
-//   EXPECT_EQ(rls_server.lookup_count(), 2);
-// }
-
-// TEST_F(RlsPolicyEnd2endTest, RlsConfigParseFailure) {
-// }
+  auto stub = BuildStub();
+  CheckRpcSendOk(stub, DEBUG_LOCATION);
+  gpr_sleep_until(grpc_timeout_seconds_to_deadline(2));
+  SetNextRlsResponse(GRPC_STATUS_OK, nullptr, 0, {}, kAlternativeTarget);
+  CheckRpcSendOk(stub, DEBUG_LOCATION);
+  EXPECT_EQ(backends_[0]->service_.request_count(), 1);
+  EXPECT_EQ(backends_[1]->service_.request_count(), 1);
+  EXPECT_EQ(backends_[2]->service_.request_count(), 0);
+  EXPECT_EQ(rls_server_->service_.request_count(), 2);
+}
 
 }  // namespace
 }  // namespace testing

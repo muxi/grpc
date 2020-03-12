@@ -120,7 +120,7 @@ class RlsLb : public LoadBalancingPolicy {
 
     class RefHandler : public RefCounted<RefHandler> {
      public:
-      RefHandler(ChildPolicyWrapper* child);
+      RefHandler(ChildPolicyWrapper* child) : child_(child) {}
 
       ChildPolicyWrapper* child() const;
 
@@ -232,6 +232,7 @@ class RlsLb : public LoadBalancingPolicy {
       // Updates the entry with a new RLS response.
       void OnRlsResponseLocked(ResponseInfo response,
                                std::unique_ptr<BackOff> backoff_state);
+
 
       // Set the iterator to the lru_list element corresponding to this entry.
       void set_iterator(Cache::Iterator iterator);

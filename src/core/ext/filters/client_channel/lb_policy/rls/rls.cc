@@ -54,6 +54,7 @@
 #include "src/core/lib/gpr/random.h"
 #include "src/core/ext/filters/client_channel/client_channel.h"
 #include "src/core/ext/upb-generated/src/proto/grpc/lookup/rls.upb.h"
+#include "src/core/lib/uri/uri_parser.h"
 
 namespace grpc_core {
 
@@ -338,26 +339,69 @@ LoadBalancingPolicy::PickResult RlsLb::Picker::Pick(PickArgs args) {
   }
   auto entry = lb_policy_->cache_.Find(key);
   if (entry == nullptr) {
-    if (!lb_policy_->MaybeMakeRlsCall(key)) {
-      if (GRPC_TRACE_FLAG_ENABLED(grpc_lb_rls_trace)) {
-        gpr_log(GPR_DEBUG, "[rlslb %p] picker=%p: pick failed due to throttled RLS call", lb_policy_.get(), this);
+    bool call_throttled = !lb_policy_->MaybeMakeRlsCall(key);
+    if (call_throttled) {
+      switch (lb_policy_->current_config_->request_processing_strategy()) {
+        case RequestProcessingStrategy::SYNC_LOOKUP_DEFAULT_TARGET_ON_ERROR:
+        case RequestProcessingStrategy::ASYNC_LOOKUP_DEFAULT_TARGET_ON_MISS:
+          if (lb_policy_->default_child_policy_->child()->IsReady()) {
+            if (GRPC_TRACE_FLAG_ENABLED(grpc_lb_rls_trace)) {
+              gpr_log(GPR_DEBUG, "[rlslb %p] picker=%p: pick forwarded to default target as the RLS call is throttled", lb_policy_.get(), this);
+            }
+            return lb_policy_->default_child_policy_->child()->Pick(std::move(args));
+          } else {
+            if (GRPC_TRACE_FLAG_ENABLED(grpc_lb_rls_trace)) {
+              gpr_log(GPR_DEBUG, "[rlslb %p] picker=%p: pick queued as the RLS call is throttled but the default target is not ready", lb_policy_.get(), this);
+            }
+            PickResult result;
+            result.type = PickResult::PICK_QUEUE;
+            return result;
+          }
+          break;
+        case RequestProcessingStrategy::SYNC_LOOKUP_CLIENT_SEES_ERROR:
+          {
+            if (GRPC_TRACE_FLAG_ENABLED(grpc_lb_rls_trace)) {
+              gpr_log(GPR_DEBUG, "[rlslb %p] picker=%p: pick failed as the RLS call is throttled", lb_policy_.get(), this);
+            }
+            PickResult result;
+            result.type = PickResult::PICK_FAILED;
+            result.error = grpc_error_set_int(GRPC_ERROR_CREATE_FROM_STATIC_STRING("RLS request throttled"),
+                                              GRPC_ERROR_INT_GRPC_STATUS,
+                                              GRPC_STATUS_UNAVAILABLE);
+            return result;
+          }
+        default:
+          abort();
       }
-      PickResult result;
-      result.type = PickResult::PICK_FAILED;
-      result.error = GRPC_ERROR_CREATE_FROM_STATIC_STRING("RLS request throttled");
-      return result;
-    } else if (lb_policy_->current_config_->request_processing_strategy() == RequestProcessingStrategy::ASYNC_LOOKUP_DEFAULT_TARGET_ON_MISS) {
-      if (GRPC_TRACE_FLAG_ENABLED(grpc_lb_rls_trace)) {
-        gpr_log(GPR_DEBUG, "[rlslb %p] picker=%p: pick forwarded to the default child policy", lb_policy_.get(), this);
-      }
-      return lb_policy_->default_child_policy_->child()->Pick(args);
     } else {
-      if (GRPC_TRACE_FLAG_ENABLED(grpc_lb_rls_trace)) {
-        gpr_log(GPR_DEBUG, "[rlslb %p] picker=%p: pick queued", lb_policy_.get(), this);
+      switch (lb_policy_->current_config_->request_processing_strategy()) {
+        case RequestProcessingStrategy::SYNC_LOOKUP_DEFAULT_TARGET_ON_ERROR:
+        case RequestProcessingStrategy::SYNC_LOOKUP_CLIENT_SEES_ERROR:
+          {
+            if (GRPC_TRACE_FLAG_ENABLED(grpc_lb_rls_trace)) {
+              gpr_log(GPR_DEBUG, "[rlslb %p] picker=%p: pick queued as the RLS call is made", lb_policy_.get(), this);
+            }
+            PickResult result;
+            result.type = PickResult::PICK_QUEUE;
+            return result;
+          }
+        case RequestProcessingStrategy::ASYNC_LOOKUP_DEFAULT_TARGET_ON_MISS:
+          if (lb_policy_->default_child_policy_->child()->IsReady()) {
+            if (GRPC_TRACE_FLAG_ENABLED(grpc_lb_rls_trace)) {
+              gpr_log(GPR_DEBUG, "[rlslb %p] picker=%p: pick forwarded to default target; RLS call is made", lb_policy_.get(), this);
+            }
+            return lb_policy_->default_child_policy_->child()->Pick(std::move(args));
+          } else {
+            if (GRPC_TRACE_FLAG_ENABLED(grpc_lb_rls_trace)) {
+              gpr_log(GPR_DEBUG, "[rlslb %p] picker=%p: pick queued as the RLS call is made but the default target is not ready", lb_policy_.get(), this);
+            }
+            PickResult result;
+            result.type = PickResult::PICK_QUEUE;
+            return result;
+          }
+        default:
+          abort();
       }
-      PickResult result;
-      result.type = PickResult::PICK_QUEUE;
-      return result;
     }
   } else {
     if (GRPC_TRACE_FLAG_ENABLED(grpc_lb_rls_trace)) {
@@ -385,7 +429,36 @@ LoadBalancingPolicy::PickResult RlsLb::Cache::Entry::Pick(PickArgs args) {
 
   grpc_millis now = ExecCtx::Get()->Now();
   if (stale_time_ < now && backoff_time_ < now) {
-    lb_policy_->MaybeMakeRlsCall(*lru_iterator_, std::move(backoff_state_));
+    bool call_throttled = !lb_policy_->MaybeMakeRlsCall(*lru_iterator_, std::move(backoff_state_));
+    if (call_throttled && data_expiration_time_ < now) {
+      switch (lb_policy_->current_config_->request_processing_strategy()) {
+        case RequestProcessingStrategy::SYNC_LOOKUP_DEFAULT_TARGET_ON_ERROR:
+        case RequestProcessingStrategy::ASYNC_LOOKUP_DEFAULT_TARGET_ON_MISS:
+          if (lb_policy_->default_child_policy_->child()->IsReady()) {
+            if (GRPC_TRACE_FLAG_ENABLED(grpc_lb_rls_trace)) {
+              gpr_log(GPR_DEBUG, "[rlslb %p] picker=%p: pick forwarded to default target as the RLS call is throttled", lb_policy_.get(), this);
+            }
+            return lb_policy_->default_child_policy_->child()->Pick(std::move(args));
+          } else {
+            if (GRPC_TRACE_FLAG_ENABLED(grpc_lb_rls_trace)) {
+              gpr_log(GPR_DEBUG, "[rlslb %p] picker=%p: pick queued as the RLS call is throttled but the default target is not ready", lb_policy_.get(), this);
+            }
+            result.type = PickResult::PICK_QUEUE;
+            return result;
+          }
+        case RequestProcessingStrategy::SYNC_LOOKUP_CLIENT_SEES_ERROR:
+          if (GRPC_TRACE_FLAG_ENABLED(grpc_lb_rls_trace)) {
+            gpr_log(GPR_DEBUG, "[rlslb %p] picker=%p: pick failed as the RLS call is throttled", lb_policy_.get(), this);
+          }
+          result.type = PickResult::PICK_FAILED;
+          result.error = grpc_error_set_int(GRPC_ERROR_CREATE_FROM_STATIC_STRING("RLS request throttled"),
+                                            GRPC_ERROR_INT_GRPC_STATUS,
+                                            GRPC_STATUS_UNAVAILABLE);
+          return result;
+       default:
+          abort();
+      }
+    }
   }
   if (now <= data_expiration_time_) {
     GPR_DEBUG_ASSERT(child_policy_wrapper_ != nullptr);
@@ -417,7 +490,9 @@ LoadBalancingPolicy::PickResult RlsLb::Cache::Entry::Pick(PickArgs args) {
         gpr_log(GPR_DEBUG, "[rlslb %p] cache entry=%p: pick forwarded to child policy %p", lb_policy_.get(), this, child_policy_wrapper_->child());
       }
       if (!header_data_.empty()) {
-        args.initial_metadata->Add(kRlsHeaderKey, header_data_);
+        char* copied_header_data = static_cast<char*>(args.call_state->Alloc(header_data_.length() + 1));
+        strcpy(copied_header_data, header_data_.c_str());
+        args.initial_metadata->Add(kRlsHeaderKey, copied_header_data);
       }
       result = child_policy_wrapper_->child()->Pick(args);
       if (result.type != PickResult::PICK_COMPLETE) {
@@ -863,12 +938,11 @@ void RlsLb::RequestMapEntry::MakeRequestProto() {
   grpc_lookup_v1_RouteLookupRequest_set_path(req, upb_strview_make(key_.path.c_str(), key_.path.length()));
   grpc_lookup_v1_RouteLookupRequest_set_target_type(req, upb_strview_make(kGrpc, strlen(kGrpc)));
   // req.key_map
-  grpc_lookup_v1_RouteLookupRequest_KeyMapEntry** key_map =
-      grpc_lookup_v1_RouteLookupRequest_resize_key_map(req, key_.key_map.size(), arena.ptr());
   for (auto& kv : key_.key_map) {
-    grpc_lookup_v1_RouteLookupRequest_KeyMapEntry_set_key(*key_map, upb_strview_make(kv.first.c_str(), kv.first.length()));
-    grpc_lookup_v1_RouteLookupRequest_KeyMapEntry_set_value(*key_map, upb_strview_make(kv.second.c_str(), kv.second.length()));
-    key_map++;
+    grpc_lookup_v1_RouteLookupRequest_KeyMapEntry* key_map =
+        grpc_lookup_v1_RouteLookupRequest_add_key_map(req, arena.ptr());
+    grpc_lookup_v1_RouteLookupRequest_KeyMapEntry_set_key(key_map, upb_strview_make(kv.first.c_str(), kv.first.length()));
+    grpc_lookup_v1_RouteLookupRequest_KeyMapEntry_set_value(key_map, upb_strview_make(kv.second.c_str(), kv.second.length()));
   }
   size_t len;
   char* buf = grpc_lookup_v1_RouteLookupRequest_serialize(req, arena.ptr(), &len);
@@ -1003,8 +1077,6 @@ void RlsLb::ControlChannel::StateWatcher::OnReadyLocked(void* arg, grpc_error* e
   }
 }
 
-RlsLb::ChildPolicyWrapper::RefHandler::RefHandler(ChildPolicyWrapper* child) : RefCounted<RefHandler>(&grpc_lb_rls_trace), child_(child) {}
-
 RlsLb::ChildPolicyWrapper* RlsLb::ChildPolicyWrapper::RefHandler::child() const {
   return child_.get();
 }
@@ -1127,10 +1199,10 @@ void RlsLb::ChildPolicyWrapper::ChildPolicyHelper::UpdateState(grpc_connectivity
   if (picker != nullptr) {
     wrapper_->picker_ = std::move(picker);
   }
-  if (wrapper_->lb_policy_->current_config_->request_processing_strategy() == RequestProcessingStrategy::SYNC_LOOKUP_DEFAULT_TARGET_ON_ERROR ||
-    wrapper_->lb_policy_->current_config_->request_processing_strategy() == RequestProcessingStrategy::SYNC_LOOKUP_CLIENT_SEES_ERROR) {
-    wrapper_->lb_policy_->UpdatePickerLocked();
-  }
+  // even if the request processing strategy is async, we still need to update
+  // the picker since it's possible that a pick was queued because the default
+  // target was not ready
+  wrapper_->lb_policy_->UpdatePickerLocked();
 }
 
 // Child policy requests re-resolution. Forwarded directly to the channel.
@@ -1186,7 +1258,10 @@ void RlsLb::UpdateLocked(UpdateArgs args) {
   const grpc_arg* arg = grpc_channel_args_find(args.args, GRPC_ARG_SERVER_URI);
   const char* server_uri_str = grpc_channel_arg_get_string(arg);
   GPR_ASSERT(server_uri_str != nullptr);
-  server_uri_ = server_uri_str;
+  grpc_uri* uri = grpc_uri_parse(server_uri_str, true);
+  GPR_ASSERT(uri->path[0] != '\0');
+  server_uri_ = std::string(uri->path[0] == '/' ? uri->path + 1 : uri->path);
+  grpc_uri_destroy(uri);
 
   if (old_config == nullptr || current_config_->lookup_service() != old_config->lookup_service()) {
     channel_ = RefCountedPtr<ControlChannel>(new ControlChannel(Ref(), current_config_->lookup_service(), current_channel_args_));
@@ -1411,7 +1486,7 @@ RefCountedPtr<LoadBalancingPolicy::Config> RlsLbFactory::ParseLoadBalancingConfi
     error_list.push_back(internal_error);
   } else {
     // key_map_builder_map_
-    auto grpc_key_builders_json_ptr = ParseFieldJsonFromJsonObject(config, "grpcKeybuilders", &internal_error, true);
+    auto grpc_key_builders_json_ptr = ParseFieldJsonFromJsonObject(*route_lookup_config_ptr, "grpcKeybuilders", &internal_error, true);
     if (internal_error != GRPC_ERROR_NONE) {
       error_list.push_back(internal_error);
     } else if (grpc_key_builders_json_ptr != nullptr) {
@@ -1571,8 +1646,6 @@ RefCountedPtr<LoadBalancingPolicy::Config> RlsLbFactory::ParseLoadBalancingConfi
   *error = GRPC_ERROR_CREATE_FROM_VECTOR("errors parsing RLS config", &error_list);
   return result;
 }
-
-// TODO: add debug information
 
 }  // namespace grpc_core
 
