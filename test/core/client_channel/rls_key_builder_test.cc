@@ -2,9 +2,9 @@
 #include <gtest/gtest.h>
 
 #include <iostream>
+#include <list>
 #include <string>
 #include <utility>
-#include <list>
 
 #include "src/core/ext/filters/client_channel/lb_policy.h"
 #include "src/core/ext/filters/client_channel/lb_policy/rls/rls.h"
@@ -35,57 +35,57 @@ class RlsKeyBuilderTest : public ::testing::Test {
 };
 
 const char* default_build_map_config =
-  "["
-  "  {"
-  "    \"names\":["
-  "      {"
-  "        \"service\":\"test_service1\","
-  "        \"method\":\"test_method1\""
-  "      },"
-  "      {"
-  "        \"service\":\"test_service1\","
-  "        \"method\":\"test_method2\""
-  "      },"
-  "      {"
-  "        \"service\":\"test_service2\","
-  "        \"method\":\"test_method1\""
-  "      }"
-  "    ],"
-  "    \"headers\":["
-  "      {"
-  "        \"key\":\"key1\","
-  "        \"names\":["
-  "          \"key1_field1\","
-  "          \"key1_field2\""
-  "        ]"
-  "      },"
-  "      {"
-  "        \"key\":\"key2\","
-  "        \"names\":["
-  "          \"key2_field1\","
-  "          \"key2_field2\""
-  "        ]"
-  "      }"
-  "    ]"
-  "  },"
-  "  {"
-  "    \"names\":["
-  "      {"
-  "        \"service\":\"test_service2\","
-  "        \"method\":\"test_method2\""
-  "      }"
-  "    ],"
-  "    \"headers\":["
-  "      {"
-  "        \"key\":\"key3\","
-  "        \"names\":["
-  "          \"key3_field1\","
-  "          \"key3_field2\""
-  "        ]"
-  "      }"
-  "    ]"
-  "  }"
-  "]";
+    "["
+    "  {"
+    "    \"names\":["
+    "      {"
+    "        \"service\":\"test_service1\","
+    "        \"method\":\"test_method1\""
+    "      },"
+    "      {"
+    "        \"service\":\"test_service1\","
+    "        \"method\":\"test_method2\""
+    "      },"
+    "      {"
+    "        \"service\":\"test_service2\","
+    "        \"method\":\"test_method1\""
+    "      }"
+    "    ],"
+    "    \"headers\":["
+    "      {"
+    "        \"key\":\"key1\","
+    "        \"names\":["
+    "          \"key1_field1\","
+    "          \"key1_field2\""
+    "        ]"
+    "      },"
+    "      {"
+    "        \"key\":\"key2\","
+    "        \"names\":["
+    "          \"key2_field1\","
+    "          \"key2_field2\""
+    "        ]"
+    "      }"
+    "    ]"
+    "  },"
+    "  {"
+    "    \"names\":["
+    "      {"
+    "        \"service\":\"test_service2\","
+    "        \"method\":\"test_method2\""
+    "      }"
+    "    ],"
+    "    \"headers\":["
+    "      {"
+    "        \"key\":\"key3\","
+    "        \"names\":["
+    "          \"key3_field1\","
+    "          \"key3_field2\""
+    "        ]"
+    "      }"
+    "    ]"
+    "  }"
+    "]";
 
 class TestMetadata : public LoadBalancingPolicy::MetadataInterface {
  public:
@@ -93,12 +93,8 @@ class TestMetadata : public LoadBalancingPolicy::MetadataInterface {
     metadata_.push_back({std::string(key), std::string(value)});
   }
 
-  iterator begin() const override {
-    return iterator(this, 0);
-  }
-  iterator end() const override {
-    return iterator(this, metadata_.size());
-  }
+  iterator begin() const override { return iterator(this, 0); }
+  iterator end() const override { return iterator(this, metadata_.size()); }
 
   iterator erase(iterator it) override {
     int index = GetIteratorHandle(it);
@@ -111,7 +107,8 @@ class TestMetadata : public LoadBalancingPolicy::MetadataInterface {
     return handle + 1;
   }
 
-  std::pair<StringView,StringView> IteratorHandleGet(intptr_t handle) const override {
+  std::pair<StringView, StringView> IteratorHandleGet(
+      intptr_t handle) const override {
     return metadata_[handle];
   }
 
@@ -120,103 +117,113 @@ class TestMetadata : public LoadBalancingPolicy::MetadataInterface {
 
 TEST_F(RlsKeyBuilderTest, ParseConfig) {
   Json config_json;
-  grpc_error *error;
+  grpc_error* error;
 
   BuildJson(default_build_map_config, &config_json);
 
   auto key_builder_map = RlsCreateKeyMapBuilderMap(config_json, &error);
   CheckNoError(error);
   EXPECT_EQ(key_builder_map.size(), 4);
-  EXPECT_NE(key_builder_map.find("/test_service1/test_method1"), key_builder_map.end());
-  EXPECT_NE(key_builder_map.find("/test_service1/test_method2"), key_builder_map.end());
-  EXPECT_NE(key_builder_map.find("/test_service2/test_method1"), key_builder_map.end());
-  EXPECT_NE(key_builder_map.find("/test_service2/test_method2"), key_builder_map.end());
+  EXPECT_NE(key_builder_map.find("/test_service1/test_method1"),
+            key_builder_map.end());
+  EXPECT_NE(key_builder_map.find("/test_service1/test_method2"),
+            key_builder_map.end());
+  EXPECT_NE(key_builder_map.find("/test_service2/test_method1"),
+            key_builder_map.end());
+  EXPECT_NE(key_builder_map.find("/test_service2/test_method2"),
+            key_builder_map.end());
 
   // Configs with conflicting service/method names.
-  BuildJson("["
-            "  {"
-            "    \"names\":["
-            "      {"
-            "        \"service\":\"test_service1\","
-            "        \"method\":\"test_method1\""
-            "      }"
-            "    ],"
-            "    \"headers\":["
-            "      {"
-            "        \"key\":\"key1\","
-            "        \"names\":["
-            "          \"key1_field1\","
-            "          \"key1_field2\""
-            "        ]"
-            "      }"
-            "    ]"
-            "  },"
-            "  {"
-            "    \"names\":["
-            "      {"
-            "        \"service\":\"test_service1\","
-            "        \"method\":\"test_method1\""
-            "      }"
-            "    ],"
-            "    \"headers\":["
-            "      {"
-            "        \"key\":\"key3\","
-            "        \"names\":["
-            "          \"key3_field1\","
-            "          \"key3_field2\""
-            "        ]"
-            "      }"
-            "    ]"
-            "  }"
-            "]", &config_json);
+  BuildJson(
+      "["
+      "  {"
+      "    \"names\":["
+      "      {"
+      "        \"service\":\"test_service1\","
+      "        \"method\":\"test_method1\""
+      "      }"
+      "    ],"
+      "    \"headers\":["
+      "      {"
+      "        \"key\":\"key1\","
+      "        \"names\":["
+      "          \"key1_field1\","
+      "          \"key1_field2\""
+      "        ]"
+      "      }"
+      "    ]"
+      "  },"
+      "  {"
+      "    \"names\":["
+      "      {"
+      "        \"service\":\"test_service1\","
+      "        \"method\":\"test_method1\""
+      "      }"
+      "    ],"
+      "    \"headers\":["
+      "      {"
+      "        \"key\":\"key3\","
+      "        \"names\":["
+      "          \"key3_field1\","
+      "          \"key3_field2\""
+      "        ]"
+      "      }"
+      "    ]"
+      "  }"
+      "]",
+      &config_json);
   key_builder_map = RlsCreateKeyMapBuilderMap(config_json, &error);
   EXPECT_NE(error, GRPC_ERROR_NONE);
 
   // Configs with no service/method names.
-  BuildJson("["
-            "  {"
-            "    \"names\":["
-            "    ],"
-            "    \"headers\":["
-            "      {"
-            "        \"key\":\"key1\","
-            "        \"names\":["
-            "          \"key1_field1\","
-            "          \"key1_field2\""
-            "        ]"
-            "      }"
-            "    ]"
-            "  }"
-            "]", &config_json);
+  BuildJson(
+      "["
+      "  {"
+      "    \"names\":["
+      "    ],"
+      "    \"headers\":["
+      "      {"
+      "        \"key\":\"key1\","
+      "        \"names\":["
+      "          \"key1_field1\","
+      "          \"key1_field2\""
+      "        ]"
+      "      }"
+      "    ]"
+      "  }"
+      "]",
+      &config_json);
   key_builder_map = RlsCreateKeyMapBuilderMap(config_json, &error);
   EXPECT_NE(error, GRPC_ERROR_NONE);
 }
 
 TEST_F(RlsKeyBuilderTest, WildcardMatch) {
   Json config_json;
-  BuildJson("["
-            "  {"
-            "    \"names\":["
-            "      {"
-            "        \"service\":\"test_service1\","
-            "        \"method\":\"*\""
-            "      },"
-            "      {"
-            "        \"service\":\"test_service2\","
-            "        \"method\":\"test_method1\""
-            "      }"
-            "    ],"
-            "    \"headers\":["
-            "      {"
-            "        \"key\":\"key1\","
-            "        \"names\":["
-            "          \"key1_field1\","
-            "          \"key1_field2\""
-            "        ]"
-            "      }"
-            "    ]"
-            "  }"
-            "]", &config_json);
+  BuildJson(
+      "["
+      "  {"
+      "    \"names\":["
+      "      {"
+      "        \"service\":\"test_service1\","
+      "        \"method\":\"*\""
+      "      },"
+      "      {"
+      "        \"service\":\"test_service2\","
+      "        \"method\":\"test_method1\""
+      "      }"
+      "    ],"
+      "    \"headers\":["
+      "      {"
+      "        \"key\":\"key1\","
+      "        \"names\":["
+      "          \"key1_field1\","
+      "          \"key1_field2\""
+      "        ]"
+      "      }"
+      "    ]"
+      "  }"
+      "]",
+      &config_json);
 
   grpc_error* error;
   auto key_builder_map = RlsCreateKeyMapBuilderMap(config_json, &error);
@@ -237,7 +244,7 @@ TEST_F(RlsKeyBuilderTest, WildcardMatch) {
 
 TEST_F(RlsKeyBuilderTest, KeyExtraction) {
   Json config_json;
-  grpc_error *error;
+  grpc_error* error;
 
   BuildJson(default_build_map_config, &config_json);
   auto key_builder_map = RlsCreateKeyMapBuilderMap(config_json, &error);
@@ -285,7 +292,6 @@ TEST_F(RlsKeyBuilderTest, KeyExtraction) {
 }  // namespace testing
 
 }  // namespace grpc_core
-
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

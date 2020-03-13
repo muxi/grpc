@@ -124,7 +124,8 @@ constexpr char kGrpclb[] = "grpclb";
 
 class GrpcLbConfig : public LoadBalancingPolicy::Config {
  public:
-  GrpcLbConfig(RefCountedPtr<LoadBalancingPolicy::Config> child_policy, const std::string& target_name)
+  GrpcLbConfig(RefCountedPtr<LoadBalancingPolicy::Config> child_policy,
+               const std::string& target_name)
       : child_policy_(std::move(child_policy)), target_name_(target_name) {}
   const char* name() const override { return kGrpclb; }
 
@@ -132,9 +133,7 @@ class GrpcLbConfig : public LoadBalancingPolicy::Config {
     return child_policy_;
   }
 
-  const std::string& target_name() const {
-    return target_name_;
-  }
+  const std::string& target_name() const { return target_name_; }
 
  private:
   RefCountedPtr<LoadBalancingPolicy::Config> child_policy_;
@@ -366,7 +365,8 @@ class GrpcLb : public LoadBalancingPolicy {
 
   // Who the client is trying to communicate with.
   const char* server_name_ = nullptr;
-  // The target name from configuration; if set, it overrides server_name_ in the balancer requests.
+  // The target name from configuration; if set, it overrides server_name_ in
+  // the balancer requests.
   const char* target_name_ = nullptr;
 
   // Current channel args from the resolver.
@@ -756,8 +756,9 @@ GrpcLb::BalancerCallState::BalancerCallState(
       nullptr, deadline, nullptr);
   // Init the LB call request payload.
   upb::Arena arena;
-  grpc_slice request_payload_slice =
-      GrpcLbRequestCreate(grpclb_policy()->target_name_ ?: grpclb_policy()->server_name_, arena.ptr());
+  grpc_slice request_payload_slice = GrpcLbRequestCreate(
+      grpclb_policy()->target_name_ ?: grpclb_policy()->server_name_,
+      arena.ptr());
   send_message_payload_ =
       grpc_raw_byte_buffer_create(&request_payload_slice, 1);
   grpc_slice_unref_internal(request_payload_slice);
@@ -1734,7 +1735,8 @@ class GrpcLbFactory : public LoadBalancingPolicyFactory {
     if (it != json.object_value().end()) {
       const Json& target_name_json = it->second;
       if (target_name_json.type() != Json::Type::STRING) {
-        error_list.push_back(GRPC_ERROR_CREATE_FROM_STATIC_STRING("targetname filed is not string"));
+        error_list.push_back(GRPC_ERROR_CREATE_FROM_STATIC_STRING(
+            "targetname filed is not string"));
       } else {
         target_name_ptr = &target_name_json.string_value();
       }
@@ -1759,7 +1761,9 @@ class GrpcLbFactory : public LoadBalancingPolicyFactory {
           GRPC_ERROR_CREATE_FROM_VECTOR("field:childPolicy", &child_errors));
     }
     if (error_list.empty()) {
-      return MakeRefCounted<GrpcLbConfig>(std::move(child_policy_config), target_name_ptr == nullptr ? std::string() : *target_name_ptr);
+      return MakeRefCounted<GrpcLbConfig>(
+          std::move(child_policy_config),
+          target_name_ptr == nullptr ? std::string() : *target_name_ptr);
     } else {
       *error = GRPC_ERROR_CREATE_FROM_VECTOR("GrpcLb Parser", &error_list);
       return nullptr;

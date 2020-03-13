@@ -18,44 +18,44 @@
 
 #include <grpcpp/channel.h>
 #include <grpcpp/create_channel.h>
+#include <grpcpp/security/credentials.h>
 #include <grpcpp/server.h>
 #include <grpcpp/server_builder.h>
-#include <grpcpp/security/credentials.h>
 #include <grpcpp/support/channel_arguments.h>
 
+#include "absl/types/optional.h"
 #include "src/core/ext/filters/client_channel/backup_poller.h"
 #include "src/core/ext/filters/client_channel/parse_address.h"
 #include "src/core/ext/filters/client_channel/resolver/fake/fake_resolver.h"
+#include "src/core/lib/channel/channel_args.h"
 #include "src/core/lib/gprpp/host_port.h"
+#include "src/core/lib/iomgr/sockaddr.h"
 #include "src/core/lib/security/credentials/fake/fake_credentials.h"
 #include "src/core/lib/uri/uri_parser.h"
 #include "src/cpp/client/secure_credentials.h"
 #include "src/cpp/server/secure_server_credentials.h"
-#include "src/proto/grpc/testing/echo.grpc.pb.h"
-#include "src/proto/grpc/testing/lookup/rls.pb.h"
-#include "src/proto/grpc/testing/lookup/rls.grpc.pb.h"
-#include "src/proto/grpc/lb/v1/load_balancer.pb.h"
 #include "src/proto/grpc/lb/v1/load_balancer.grpc.pb.h"
-#include "src/core/lib/channel/channel_args.h"
+#include "src/proto/grpc/lb/v1/load_balancer.pb.h"
+#include "src/proto/grpc/testing/echo.grpc.pb.h"
+#include "src/proto/grpc/testing/lookup/rls.grpc.pb.h"
+#include "src/proto/grpc/testing/lookup/rls.pb.h"
 #include "test/core/util/port.h"
 #include "test/core/util/test_config.h"
 #include "test/cpp/end2end/test_service_impl.h"
-#include "absl/types/optional.h"
-#include "src/core/lib/iomgr/sockaddr.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include <thread>
-#include <map>
 #include <deque>
+#include <map>
+#include <thread>
 
 namespace grpc {
 namespace testing {
 namespace {
 
 #define SECONDS(x) (int(x))
-#define NANOSECONDS(x) (int(((x) - SECONDS(x)) * 1e9))
+#define NANOSECONDS(x) (int(((x)-SECONDS(x)) * 1e9))
 
 const grpc::string kTestKey = "testKey";
 const char* kTestUrl = "test.google.fr";
@@ -102,7 +102,8 @@ class CountedService : public ServiceType {
 };
 
 using BackendService = CountedService<TestServiceImpl>;
-using RlsService = CountedService<grpc::lookup::v1::RouteLookupService::Service>;
+using RlsService =
+    CountedService<grpc::lookup::v1::RouteLookupService::Service>;
 using BalancerService = CountedService<grpc::lb::v1::LoadBalancer::Service>;
 
 const char g_kCallCredsMdKey[] = "Balancer should not ...";
@@ -144,8 +145,10 @@ struct ClientStats {
 
 class BalancerServiceImpl : public BalancerService {
  public:
-  using Stream = ServerReaderWriter<grpc::lb::v1::LoadBalanceResponse, grpc::lb::v1::LoadBalanceRequest>;
-  using ResponseDelayPair = std::pair<std::unordered_map<std::string, grpc::lb::v1::LoadBalanceResponse>, int>;
+  using Stream = ServerReaderWriter<grpc::lb::v1::LoadBalanceResponse,
+                                    grpc::lb::v1::LoadBalanceRequest>;
+  using ResponseDelayPair = std::pair<
+      std::unordered_map<std::string, grpc::lb::v1::LoadBalanceResponse>, int>;
 
   explicit BalancerServiceImpl(int client_load_reporting_interval_seconds)
       : client_load_reporting_interval_seconds_(
@@ -188,8 +191,7 @@ class BalancerServiceImpl : public BalancerService {
       for (const auto& response_and_delay : responses_and_delays) {
         auto it = response_and_delay.first.find(name);
         if (it != response_and_delay.first.end()) {
-          SendResponse(stream, it->second,
-                       response_and_delay.second);
+          SendResponse(stream, it->second, response_and_delay.second);
         }
       }
       {
@@ -231,9 +233,13 @@ class BalancerServiceImpl : public BalancerService {
     return Status::OK;
   }
 
-  void add_response(std::unordered_map<std::string,grpc::lb::v1::LoadBalanceResponse> response_map, int send_after_ms) {
+  void add_response(
+      std::unordered_map<std::string, grpc::lb::v1::LoadBalanceResponse>
+          response_map,
+      int send_after_ms) {
     grpc::internal::MutexLock lock(&mu_);
-    responses_and_delays_.push_back(std::make_pair(response_map, send_after_ms));
+    responses_and_delays_.push_back(
+        std::make_pair(response_map, send_after_ms));
   }
 
   void Start() {
@@ -289,7 +295,8 @@ class BalancerServiceImpl : public BalancerService {
   }
 
  private:
-  void SendResponse(Stream* stream, const grpc::lb::v1::LoadBalanceResponse& response,
+  void SendResponse(Stream* stream,
+                    const grpc::lb::v1::LoadBalanceResponse& response,
                     int delay_ms) {
     gpr_log(GPR_INFO, "LB[%p]: sleeping for %d ms...", this, delay_ms);
     if (delay_ms > 0) {
@@ -329,7 +336,10 @@ class RlsServiceImpl : public RlsService {
     absl::optional<Request> request_match;
   };
 
-  ::grpc::Status RouteLookup(::grpc::ServerContext* context, const ::grpc::lookup::v1::RouteLookupRequest* request, ::grpc::lookup::v1::RouteLookupResponse* response) override {
+  ::grpc::Status RouteLookup(
+      ::grpc::ServerContext* context,
+      const ::grpc::lookup::v1::RouteLookupRequest* request,
+      ::grpc::lookup::v1::RouteLookupResponse* response) override {
     IncreaseRequestCount();
     Response res;
     {
@@ -342,13 +352,15 @@ class RlsServiceImpl : public RlsService {
       }
     }
     if (res.response_delay > 0) {
-      gpr_sleep_until(grpc_timeout_milliseconds_to_deadline(res.response_delay));
+      gpr_sleep_until(
+          grpc_timeout_milliseconds_to_deadline(res.response_delay));
     }
     bool make_response = true;
     if (res.request_match.has_value()) {
       auto& server = request->server();
       auto& path = request->path();
-      auto key_map = std::map<std::string, std::string>(request->key_map().begin(), request->key_map().end());
+      auto key_map = std::map<std::string, std::string>(
+          request->key_map().begin(), request->key_map().end());
       if (server != res.request_match->server ||
           path != res.request_match->path ||
           key_map != res.request_match->key_map) {
@@ -361,7 +373,8 @@ class RlsServiceImpl : public RlsService {
         *response = std::move(res.response);
         return {};
       } else {
-        return {StatusCode(res.status), std::string("predefined response error code")};
+        return {StatusCode(res.status),
+                std::string("predefined response error code")};
       }
     } else {
       return {UNIMPLEMENTED, std::string("unmatched request key")};
@@ -402,9 +415,7 @@ class MyTestServiceImpl : public BackendService {
     return rls_header_data_;
   }
 
-  void ResetRlsData() {
-    grpc::internal::MutexLock lock(&mu_);
-  }
+  void ResetRlsData() { grpc::internal::MutexLock lock(&mu_); }
 
   void Start() {}
 
@@ -444,21 +455,21 @@ class FakeResolverResponseGeneratorWrapper {
 
  private:
   static grpc_core::Resolver::Result BuildFakeResults(
-      int balancer_port,
-      const char* service_config_json = nullptr) {
+      int balancer_port, const char* service_config_json = nullptr) {
     grpc_core::Resolver::Result result;
     GPR_ASSERT(balancer_port != 0);
 
     grpc_arg arg = grpc_channel_arg_integer_create(
-          const_cast<char*>(GRPC_ARG_ADDRESS_IS_BALANCER), 1);
+        const_cast<char*>(GRPC_ARG_ADDRESS_IS_BALANCER), 1);
     grpc_resolved_address addr;
     sockaddr_in* addr_in = reinterpret_cast<sockaddr_in*>(&addr.addr);
     addr.len = sizeof(sockaddr_in);
     addr_in->sin_family = AF_INET;
     addr_in->sin_port = htons(balancer_port);
-    addr_in->sin_addr.s_addr = htonl(0x7F000001); // localhost
+    addr_in->sin_addr.s_addr = htonl(0x7F000001);  // localhost
 
-    result.addresses.emplace_back(addr, grpc_channel_args_copy_and_add(nullptr, &arg, 1));
+    result.addresses.emplace_back(
+        addr, grpc_channel_args_copy_and_add(nullptr, &arg, 1));
     if (service_config_json != nullptr) {
       result.service_config_error = GRPC_ERROR_NONE;
       result.service_config = grpc_core::ServiceConfig::Create(
@@ -475,7 +486,8 @@ class FakeResolverResponseGeneratorWrapper {
 
 class RlsPolicyEnd2endTest : public ::testing::Test {
  protected:
-  RlsPolicyEnd2endTest() : creds_(new SecureChannelCredentials(
+  RlsPolicyEnd2endTest()
+      : creds_(new SecureChannelCredentials(
             grpc_fake_transport_security_credentials_create())) {}
 
   static void SetUpTestCase() {
@@ -483,20 +495,20 @@ class RlsPolicyEnd2endTest : public ::testing::Test {
     grpc_init();
   }
 
-  static void TearDownTestCase() {
-    grpc_shutdown_blocking();
-  }
+  static void TearDownTestCase() { grpc_shutdown_blocking(); }
 
   void SetUp() override {
     rls_server_.reset(new ServerThread<RlsServiceImpl>("rls"));
     rls_server_->Start(kServerHost);
     balancer_.reset(new ServerThread<BalancerServiceImpl>("balancer", 0));
     balancer_->Start(kServerHost);
-    resolver_response_generator_.reset(new FakeResolverResponseGeneratorWrapper());
+    resolver_response_generator_.reset(
+        new FakeResolverResponseGeneratorWrapper());
     ChannelArguments args;
     args.SetPointer(GRPC_ARG_FAKE_RESOLVER_RESPONSE_GENERATOR,
                     resolver_response_generator_->Get());
-    channel_ = ::grpc::CreateCustomChannel(absl::StrCat("fake:///", kTestUrl).c_str(), creds_, args);
+    channel_ = ::grpc::CreateCustomChannel(
+        absl::StrCat("fake:///", kTestUrl).c_str(), creds_, args);
   }
 
   void TearDown() override {
@@ -514,7 +526,7 @@ class RlsPolicyEnd2endTest : public ::testing::Test {
   }
 
   void StartBackends(size_t num_servers,
-                    std::vector<int> ports = std::vector<int>()) {
+                     std::vector<int> ports = std::vector<int>()) {
     backends_.clear();
     for (size_t i = 0; i < num_servers; ++i) {
       backends_.emplace_back(new ServerThread<MyTestServiceImpl>("backend"));
@@ -541,7 +553,8 @@ class RlsPolicyEnd2endTest : public ::testing::Test {
   bool SendRpc(
       const std::unique_ptr<grpc::testing::EchoTestService::Stub>& stub,
       EchoResponse* response = nullptr, int timeout_ms = 1000,
-      Status* result = nullptr, bool wait_for_ready = false, const std::map<grpc::string, grpc::string>& initial_metadata = {}) {
+      Status* result = nullptr, bool wait_for_ready = false,
+      const std::map<grpc::string, grpc::string>& initial_metadata = {}) {
     const bool local_response = (response == nullptr);
     if (local_response) response = new EchoResponse;
     EchoRequest request;
@@ -560,11 +573,13 @@ class RlsPolicyEnd2endTest : public ::testing::Test {
 
   void CheckRpcSendOk(
       const std::unique_ptr<grpc::testing::EchoTestService::Stub>& stub,
-      const grpc_core::DebugLocation& location, bool wait_for_ready = false, int timeout_ms = 2000, const std::map<grpc::string, grpc::string>& initial_metadata = {}) {
+      const grpc_core::DebugLocation& location, bool wait_for_ready = false,
+      int timeout_ms = 2000,
+      const std::map<grpc::string, grpc::string>& initial_metadata = {}) {
     EchoResponse response;
     Status status;
-    const bool success =
-        SendRpc(stub, &response, timeout_ms, &status, wait_for_ready, initial_metadata);
+    const bool success = SendRpc(stub, &response, timeout_ms, &status,
+                                 wait_for_ready, initial_metadata);
     ASSERT_TRUE(success) << "From " << location.file() << ":" << location.line()
                          << "\n"
                          << "Error: " << status.error_message() << " "
@@ -580,12 +595,11 @@ class RlsPolicyEnd2endTest : public ::testing::Test {
     EXPECT_FALSE(success);
   }
 
-  std::string BuildServiceConfig(double max_age = 10,
-                                 double stale_age = 5,
-                                 const std::string& default_target = kDefaultTarget,
-                                 int request_processing_strategy = 0,
-                                 double lookup_service_timeout = 10,
-                                 int64_t cache_size_bytes = 10 * 1024 * 1024) {
+  std::string BuildServiceConfig(
+      double max_age = 10, double stale_age = 5,
+      const std::string& default_target = kDefaultTarget,
+      int request_processing_strategy = 0, double lookup_service_timeout = 10,
+      int64_t cache_size_bytes = 10 * 1024 * 1024) {
     int lookup_service_port = rls_server_->port_;
     std::stringstream service_config;
     service_config << "{";
@@ -594,7 +608,8 @@ class RlsPolicyEnd2endTest : public ::testing::Test {
     service_config << "      \"routeLookupConfig\":{";
     service_config << "        \"grpcKeybuilders\":[{";
     service_config << "          \"names\":[{";
-    service_config << "            \"service\":\"grpc.testing.EchoTestService\",";
+    service_config
+        << "            \"service\":\"grpc.testing.EchoTestService\",";
     service_config << "            \"method\":\"Echo\"";
     service_config << "          }],";
     service_config << "          \"headers\":[";
@@ -606,10 +621,13 @@ class RlsPolicyEnd2endTest : public ::testing::Test {
     service_config << "            }";
     service_config << "          ]";
     service_config << "        }],";
-    service_config << "        \"lookupService\":\"localhost:" << lookup_service_port << "\",";
+    service_config << "        \"lookupService\":\"localhost:"
+                   << lookup_service_port << "\",";
     service_config << "        \"lookupServiceTimeout\":{";
-    service_config << "          \"seconds\":" << SECONDS(lookup_service_timeout) << ",";
-    service_config << "          \"nanoseconds\":" << NANOSECONDS(lookup_service_timeout);
+    service_config << "          \"seconds\":"
+                   << SECONDS(lookup_service_timeout) << ",";
+    service_config << "          \"nanoseconds\":"
+                   << NANOSECONDS(lookup_service_timeout);
     service_config << "        },";
     service_config << "        \"maxAge\":{";
     service_config << "          \"seconds\":" << SECONDS(max_age) << ",";
@@ -621,13 +639,15 @@ class RlsPolicyEnd2endTest : public ::testing::Test {
     service_config << "        },";
     service_config << "        \"cacheSizeBytes\":" << cache_size_bytes << ",";
     service_config << "        \"defaultTarget\":\"" << default_target << "\",";
-    service_config << "        \"requestProcessingStrategy\":" << request_processing_strategy;
+    service_config << "        \"requestProcessingStrategy\":"
+                   << request_processing_strategy;
     service_config << "      },";
     service_config << "      \"childPolicy\":[{";
     service_config << "        \"grpclb\":{";
     service_config << "        }";
     service_config << "      }],";
-    service_config << "      \"childPolicyConfigTargetFieldName\":\"targetName\"";
+    service_config
+        << "      \"childPolicyConfigTargetFieldName\":\"targetName\"";
     service_config << "    }";
     service_config << "  }]";
     service_config << "}";
@@ -637,8 +657,9 @@ class RlsPolicyEnd2endTest : public ::testing::Test {
 
   // TODO: remove
   /*
-  grpc::lookup::v1::RouteLookupResponse BuildLookupResponse(int port, grpc::string header_data = {}) {
-    grpc::lookup::v1::RouteLookupResponse response;
+  grpc::lookup::v1::RouteLookupResponse BuildLookupResponse(int port,
+  grpc::string header_data = {}) { grpc::lookup::v1::RouteLookupResponse
+  response;
 
     response.set_target(absl::StrCat(kServerHost, port));
     response.set_header_data(header_data);
@@ -647,11 +668,15 @@ class RlsPolicyEnd2endTest : public ::testing::Test {
   }*/
 
   void SetNextResolution(const char* service_config_json = nullptr) {
-    resolver_response_generator_->SetNextResolution(balancer_->port_, service_config_json);
+    resolver_response_generator_->SetNextResolution(balancer_->port_,
+                                                    service_config_json);
   }
 
-  void SetNextRlsResponse(grpc_status_code status, const char* header_data = nullptr, grpc_millis response_delay = 0,
-                          absl::optional<RlsServiceImpl::Request> request_match = {}, const std::string& target = kTarget) {
+  void SetNextRlsResponse(
+      grpc_status_code status, const char* header_data = nullptr,
+      grpc_millis response_delay = 0,
+      absl::optional<RlsServiceImpl::Request> request_match = {},
+      const std::string& target = kTarget) {
     RlsServiceImpl::Response response;
     response.status = status;
     response.response_delay = response_delay;
@@ -664,7 +689,8 @@ class RlsPolicyEnd2endTest : public ::testing::Test {
   }
 
   void SetNextLbResponse(std::vector<std::pair<std::string, int>> responses) {
-    std::unordered_map<std::string, grpc::lb::v1::LoadBalanceResponse> response_map;
+    std::unordered_map<std::string, grpc::lb::v1::LoadBalanceResponse>
+        response_map;
     for (auto& item : responses) {
       grpc::lb::v1::LoadBalanceResponse res;
       auto server_list = res.mutable_server_list();
@@ -741,7 +767,8 @@ class RlsPolicyEnd2endTest : public ::testing::Test {
   std::vector<std::unique_ptr<ServerThread<MyTestServiceImpl>>> backends_;
   std::unique_ptr<ServerThread<RlsServiceImpl>> rls_server_;
   std::unique_ptr<ServerThread<BalancerServiceImpl>> balancer_;
-  std::unique_ptr<FakeResolverResponseGeneratorWrapper> resolver_response_generator_;
+  std::unique_ptr<FakeResolverResponseGeneratorWrapper>
+      resolver_response_generator_;
   std::shared_ptr<Channel> channel_;
 };
 
@@ -778,7 +805,10 @@ TEST_F(RlsPolicyEnd2endTest, RlsGrpcLbWithoutKeyMapMatch) {
   StartBackends(2);
   auto service_config = BuildServiceConfig();
   SetNextResolution(service_config.c_str());
-  SetNextRlsResponse(GRPC_STATUS_OK, "", 0, RlsServiceImpl::Request{kTestUrl, kTestRequestPath, {{"testKey", "testValue"}}});
+  SetNextRlsResponse(
+      GRPC_STATUS_OK, "", 0,
+      RlsServiceImpl::Request{
+          kTestUrl, kTestRequestPath, {{"testKey", "testValue"}}});
   SetNextLbResponse({{kTarget, 0}, {kDefaultTarget, 1}});
 
   auto stub = BuildStub();
@@ -791,7 +821,10 @@ TEST_F(RlsPolicyEnd2endTest, RlsGrpcLbWithKeyMapMatch) {
   StartBackends(2);
   auto service_config = BuildServiceConfig();
   SetNextResolution(service_config.c_str());
-  SetNextRlsResponse(GRPC_STATUS_OK, "", 0, RlsServiceImpl::Request{kTestUrl, kTestRequestPath, {{kTestKey, "testValue"}}});
+  SetNextRlsResponse(
+      GRPC_STATUS_OK, "", 0,
+      RlsServiceImpl::Request{
+          kTestUrl, kTestRequestPath, {{kTestKey, "testValue"}}});
   SetNextLbResponse({{kTarget, 0}, {kDefaultTarget, 1}});
 
   auto stub = BuildStub();
@@ -823,7 +856,7 @@ TEST_F(RlsPolicyEnd2endTest, UpdateRlsConfig) {
 
 TEST_F(RlsPolicyEnd2endTest, FailedRlsRequestError) {
   StartBackends(2);
-  auto service_config = BuildServiceConfig(10,5, kDefaultTarget, 1);
+  auto service_config = BuildServiceConfig(10, 5, kDefaultTarget, 1);
   SetNextResolution(service_config.c_str());
   SetNextRlsResponse(GRPC_STATUS_INTERNAL);
   SetNextLbResponse({{kTarget, 0}, {kDefaultTarget, 1}});
@@ -887,7 +920,8 @@ TEST_F(RlsPolicyEnd2endTest, StaleRlsResponse) {
   auto service_config = BuildServiceConfig(10, 1);
   SetNextResolution(service_config.c_str());
   SetNextRlsResponse(GRPC_STATUS_OK);
-  SetNextLbResponse({{kTarget, 0}, {kAlternativeTarget, 1}, {kDefaultTarget, 2}});
+  SetNextLbResponse(
+      {{kTarget, 0}, {kAlternativeTarget, 1}, {kDefaultTarget, 2}});
 
   auto stub = BuildStub();
   CheckRpcSendOk(stub, DEBUG_LOCATION);
@@ -908,7 +942,8 @@ TEST_F(RlsPolicyEnd2endTest, ExpiredRlsResponse) {
   auto service_config = BuildServiceConfig(1, 1);
   SetNextResolution(service_config.c_str());
   SetNextRlsResponse(GRPC_STATUS_OK);
-  SetNextLbResponse({{kTarget, 0}, {kAlternativeTarget, 1}, {kDefaultTarget, 2}});
+  SetNextLbResponse(
+      {{kTarget, 0}, {kAlternativeTarget, 1}, {kDefaultTarget, 2}});
 
   auto stub = BuildStub();
   CheckRpcSendOk(stub, DEBUG_LOCATION);
@@ -928,7 +963,8 @@ TEST_F(RlsPolicyEnd2endTest, CacheEviction) {
   auto service_config = BuildServiceConfig(10, 5, kDefaultTarget, 0, 10, 1);
   SetNextResolution(service_config.c_str());
   SetNextRlsResponse(GRPC_STATUS_OK);
-  SetNextLbResponse({{kTarget, 0}, {kAlternativeTarget, 1}, {kDefaultTarget, 2}});
+  SetNextLbResponse(
+      {{kTarget, 0}, {kAlternativeTarget, 1}, {kDefaultTarget, 2}});
 
   auto stub = BuildStub();
   CheckRpcSendOk(stub, DEBUG_LOCATION, false, 2000, {{"key3", "testValue1"}});

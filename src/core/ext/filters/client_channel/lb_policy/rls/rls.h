@@ -27,18 +27,18 @@
 
 #include <grpc/support/port_platform.h>
 
-#include <unordered_map>
-#include <list>
 #include <deque>
+#include <list>
 #include <mutex>
+#include <unordered_map>
 
 #include "src/core/ext/filters/client_channel/lb_policy.h"
-#include "src/core/ext/filters/client_channel/lb_policy_factory.h"
-#include "src/core/lib/gprpp/ref_counted.h"
-#include "src/core/lib/gprpp/orphanable.h"
-#include "src/core/lib/backoff/backoff.h"
-#include "src/core/lib/iomgr/timer.h"
 #include "src/core/ext/filters/client_channel/lb_policy/child_policy_handler.h"
+#include "src/core/ext/filters/client_channel/lb_policy_factory.h"
+#include "src/core/lib/backoff/backoff.h"
+#include "src/core/lib/gprpp/orphanable.h"
+#include "src/core/lib/gprpp/ref_counted.h"
+#include "src/core/lib/iomgr/timer.h"
 
 namespace grpc_core {
 
@@ -56,7 +56,8 @@ class RlsLb : public LoadBalancingPolicy {
     KeyMap BuildKeyMap(const MetadataInterface* initial_metadata) const;
 
    private:
-    std::unordered_map<std::string,std::vector<std::pair<std::string, int>>> pattern_;
+    std::unordered_map<std::string, std::vector<std::pair<std::string, int>>>
+        pattern_;
   };
 
   using KeyMapBuilderMap = std::unordered_map<std::string, KeyMapBuilder>;
@@ -111,7 +112,7 @@ class RlsLb : public LoadBalancingPolicy {
   };
 
   using RequestMap =
-    std::unordered_map<Key, OrphanablePtr<RequestMapEntry>, KeyHasher>;
+      std::unordered_map<Key, OrphanablePtr<RequestMapEntry>, KeyHasher>;
 
   struct ResponseInfo {
     grpc_error* error;
@@ -147,9 +148,8 @@ class RlsLb : public LoadBalancingPolicy {
       OrphanablePtr<ChildPolicyWrapper> child_;
     };
 
-    ChildPolicyWrapper(
-        RefCountedPtr<RlsLb> lb_policy, std::string target) :
-      lb_policy_(std::move(lb_policy)), target_(std::move(target)) { }
+    ChildPolicyWrapper(RefCountedPtr<RlsLb> lb_policy, std::string target)
+        : lb_policy_(std::move(lb_policy)), target_(std::move(target)) {}
 
     /// Pick subchannel for call. If the picker is not reported by the child
     /// policy (i.e. picker_ == nullptr), the pick will be failed.
@@ -159,13 +159,15 @@ class RlsLb : public LoadBalancingPolicy {
     /// picker is not nullptr).
     bool IsReady() const;
 
-    /// Validate the configuration of the child policy with the extra target name field. If the
-    /// child policy configuration does not validate, a TRANSIENT_FAILURE picker
-    /// is returned. Otherwise, the child policy is updated with the new
-    /// configuration.
+    /// Validate the configuration of the child policy with the extra target
+    /// name field. If the child policy configuration does not validate, a
+    /// TRANSIENT_FAILURE picker is returned. Otherwise, the child policy is
+    /// updated with the new configuration.
     ///
     /// Does not transfer ownership of channel_args
-    void UpdateLocked(const Json& child_policy_config, ServerAddressList addresses, const grpc_channel_args* channel_args);
+    void UpdateLocked(const Json& child_policy_config,
+                      ServerAddressList addresses,
+                      const grpc_channel_args* channel_args);
 
     /// The method is directly forwarded to ExitIdleLocked() method of the child
     /// policy
@@ -180,13 +182,12 @@ class RlsLb : public LoadBalancingPolicy {
     const std::string& target() const { return target_; }
 
    private:
-
     /// ChannelControlHelper object that allows the child policy to update state
     /// with the wrapper.
     class ChildPolicyHelper : public LoadBalancingPolicy::ChannelControlHelper {
      public:
-      explicit ChildPolicyHelper(RefCountedPtr<ChildPolicyWrapper> wrapper) :
-          wrapper_(wrapper) { }
+      explicit ChildPolicyHelper(RefCountedPtr<ChildPolicyWrapper> wrapper)
+          : wrapper_(wrapper) {}
 
       // Implementation of ChannelControlHelper interface.
 
@@ -242,7 +243,6 @@ class RlsLb : public LoadBalancingPolicy {
       void OnRlsResponseLocked(ResponseInfo response,
                                std::unique_ptr<BackOff> backoff_state);
 
-
       /// Set the iterator to the lru_list element of the cache corresponding to
       /// this entry.
       void set_iterator(Cache::Iterator iterator);
@@ -273,7 +273,8 @@ class RlsLb : public LoadBalancingPolicy {
 
       // RLS response states
 
-      RefCountedPtr<ChildPolicyWrapper::RefHandler> child_policy_wrapper_ = nullptr;
+      RefCountedPtr<ChildPolicyWrapper::RefHandler> child_policy_wrapper_ =
+          nullptr;
       std::string header_data_;
       grpc_millis data_expiration_time_ = GRPC_MILLIS_INF_PAST;
       grpc_millis stale_time_ = GRPC_MILLIS_INF_PAST;
@@ -292,9 +293,9 @@ class RlsLb : public LoadBalancingPolicy {
     /// method is a no-op.
     void Add(Key key, OrphanablePtr<Entry> entry);
 
-    /// Resize the cache. If the new cache size is greater than the current size of
-    /// the cache, do nothing. Otherwise, evict the oldest entries that exceed the
-    /// new size limit of the cache.
+    /// Resize the cache. If the new cache size is greater than the current size
+    /// of the cache, do nothing. Otherwise, evict the oldest entries that
+    /// exceed the new size limit of the cache.
     void Resize(int64_t bytes);
 
     /// Resets backoff of all the cache entries.
@@ -316,7 +317,8 @@ class RlsLb : public LoadBalancingPolicy {
     grpc_timer cleanup_timer_;
     grpc_closure timer_callback_;
 
-    const int kCacheEntrySize = (2 * sizeof(Key) + sizeof(Entry) + sizeof(OrphanablePtr<Entry>));
+    const int kCacheEntrySize =
+        (2 * sizeof(Key) + sizeof(Entry) + sizeof(OrphanablePtr<Entry>));
   };
 
   class ControlChannel : public InternallyRefCounted<ControlChannel> {
@@ -369,7 +371,8 @@ class RlsLb : public LoadBalancingPolicy {
       explicit StateWatcher(RefCountedPtr<ControlChannel> channel);
 
      private:
-      void OnConnectivityStateChange(grpc_connectivity_state new_state) override;
+      void OnConnectivityStateChange(
+          grpc_connectivity_state new_state) override;
 
       static void OnReadyLocked(void* arg, grpc_error* error);
 
@@ -394,11 +397,13 @@ class RlsLb : public LoadBalancingPolicy {
     /// Creates the entry. Make a call on channel with the fields of the request
     /// coming from key.
     RequestMapEntry(RefCountedPtr<RlsLb> lb_policy, RlsLb::Key key,
-                    RefCountedPtr<ControlChannel> channel, std::unique_ptr<BackOff> backoff_state);
+                    RefCountedPtr<ControlChannel> channel,
+                    std::unique_ptr<BackOff> backoff_state);
     ~RequestMapEntry();
 
     /// Shutdown the entry. Cancel the RLS call on the fly if applicable. After
-    /// shutdown, further call responses are no longer reported to the lb policy.
+    /// shutdown, further call responses are no longer reported to the lb
+    /// policy.
     void Orphan() override;
 
    private:
@@ -418,7 +423,8 @@ class RlsLb : public LoadBalancingPolicy {
 
     void MakeRequestProto();
 
-    grpc_error* ParseResponseProto(std::string* target, std::string* header_data);
+    grpc_error* ParseResponseProto(std::string* target,
+                                   std::string* header_data);
 
     RefCountedPtr<RlsLb> lb_policy_;
     RlsLb::Key key_;
@@ -440,7 +446,8 @@ class RlsLb : public LoadBalancingPolicy {
     grpc_slice status_details_recv_;
   };
 
-  using ChildPolicyMap = std::unordered_map<std::string, ChildPolicyWrapper::RefHandler*>;
+  using ChildPolicyMap =
+      std::unordered_map<std::string, ChildPolicyWrapper::RefHandler*>;
 
   void ShutdownLocked() override;
 
@@ -455,7 +462,8 @@ class RlsLb : public LoadBalancingPolicy {
   ///
   /// The method returns false if a new RLS call is throttled; otherwise it
   /// returns true.
-  bool MaybeMakeRlsCall(const Key& key, std::unique_ptr<BackOff>* backoff_state = nullptr);
+  bool MaybeMakeRlsCall(const Key& key,
+                        std::unique_ptr<BackOff>* backoff_state = nullptr);
 
   /// Update picker with the channel to trigger reprocessing of pending picks.
   /// The method must be invoked on the control plane combiner.
@@ -483,7 +491,9 @@ class RlsLbConfig : public LoadBalancingPolicy::Config {
  public:
   const char* name() const override;
 
-  const RlsLb::KeyMapBuilderMap& key_map_builder_map() const { return key_map_builder_map_; }
+  const RlsLb::KeyMapBuilderMap& key_map_builder_map() const {
+    return key_map_builder_map_;
+  }
 
   const std::string& lookup_service() const { return lookup_service_; }
 
@@ -497,13 +507,20 @@ class RlsLbConfig : public LoadBalancingPolicy::Config {
 
   const std::string& default_target() const { return default_target_; }
 
-  RlsLb::RequestProcessingStrategy request_processing_strategy() const { return request_processing_strategy_; }
+  RlsLb::RequestProcessingStrategy request_processing_strategy() const {
+    return request_processing_strategy_;
+  }
 
   const Json& child_policy_config() const { return child_policy_config_; }
 
-  RefCountedPtr<LoadBalancingPolicy::Config> default_child_policy_parsed_config() const { return default_child_policy_parsed_config_; }
+  RefCountedPtr<LoadBalancingPolicy::Config>
+  default_child_policy_parsed_config() const {
+    return default_child_policy_parsed_config_;
+  }
 
-  const std::string& child_policy_config_target_field_name() const { return child_policy_config_target_field_name_; }
+  const std::string& child_policy_config_target_field_name() const {
+    return child_policy_config_target_field_name_;
+  }
 
  private:
   RlsLb::KeyMapBuilderMap key_map_builder_map_;
@@ -524,7 +541,8 @@ class RlsLbConfig : public LoadBalancingPolicy::Config {
 
   Json child_policy_config_;
 
-  RefCountedPtr<LoadBalancingPolicy::Config> default_child_policy_parsed_config_;
+  RefCountedPtr<LoadBalancingPolicy::Config>
+      default_child_policy_parsed_config_;
 
   std::string child_policy_config_target_field_name_;
 
@@ -543,7 +561,8 @@ class RlsLbFactory : public LoadBalancingPolicyFactory {
 };
 
 /// Build a key map builder map from RLS configuration.
-RlsLb::KeyMapBuilderMap RlsCreateKeyMapBuilderMap(const Json& config, grpc_error** error);
+RlsLb::KeyMapBuilderMap RlsCreateKeyMapBuilderMap(const Json& config,
+                                                  grpc_error** error);
 
 /// Find key builder map corresponding to a path in key_map_builder_map. The
 /// function will lookup for both exact match and wildcard match. If the
@@ -553,10 +572,9 @@ const RlsLb::KeyMapBuilder* RlsFindKeyMapBuilder(
     const std::string& path);
 
 /// Extract path of the call from metadata.
-std::string RlsFindPathFromMetadata(LoadBalancingPolicy::MetadataInterface* metadata);
+std::string RlsFindPathFromMetadata(
+    LoadBalancingPolicy::MetadataInterface* metadata);
 
 }  // namespace grpc_core
 
-
-#endif // GRPC_CORE_EXT_FILTERS_CLIENT_CHANNEL_LB_POLICY_RLS_RLS_H
-
+#endif  // GRPC_CORE_EXT_FILTERS_CLIENT_CHANNEL_LB_POLICY_RLS_RLS_H
