@@ -735,7 +735,6 @@ void RlsLb::Cache::Entry::OnRlsResponseLocked(
     backoff_time_ = GRPC_MILLIS_INF_PAST;
     backoff_expiration_time_ = GRPC_MILLIS_INF_PAST;
   } else {
-    // failed response
     status_ = GRPC_ERROR_REF(response.error);
     if (backoff_state != nullptr) {
       backoff_state_ = std::move(backoff_state);
@@ -1096,7 +1095,6 @@ void RlsLb::RequestMapEntry::MakeRequestProto() {
       req, upb_strview_make(key_.path.c_str(), key_.path.length()));
   grpc_lookup_v1_RouteLookupRequest_set_target_type(
       req, upb_strview_make(kGrpc, strlen(kGrpc)));
-  // req.key_map
   for (auto& kv : key_.key_map) {
     grpc_lookup_v1_RouteLookupRequest_KeyMapEntry* key_map =
         grpc_lookup_v1_RouteLookupRequest_add_key_map(req, arena.ptr());
@@ -1406,8 +1404,6 @@ RlsLb::ChildPolicyWrapper::ChildPolicyHelper::CreateSubchannel(
   return wrapper_->lb_policy_->channel_control_helper()->CreateSubchannel(args);
 }
 
-// Child policy reports updated state. The picker and the state is stored in
-// this helper, and a new RLS policy picker is reported to the channel.
 void RlsLb::ChildPolicyWrapper::ChildPolicyHelper::UpdateState(
     grpc_connectivity_state state, std::unique_ptr<SubchannelPicker> picker) {
   if (GRPC_TRACE_FLAG_ENABLED(grpc_lb_rls_trace)) {
@@ -1431,7 +1427,6 @@ void RlsLb::ChildPolicyWrapper::ChildPolicyHelper::UpdateState(
   wrapper_->lb_policy_->UpdatePickerLocked();
 }
 
-// Child policy requests re-resolution. Forwarded directly to the channel.
 void RlsLb::ChildPolicyWrapper::ChildPolicyHelper::RequestReresolution() {
   if (GRPC_TRACE_FLAG_ENABLED(grpc_lb_rls_trace)) {
     gpr_log(GPR_DEBUG,
@@ -1445,7 +1440,6 @@ void RlsLb::ChildPolicyWrapper::ChildPolicyHelper::RequestReresolution() {
   wrapper_->lb_policy_->channel_control_helper()->RequestReresolution();
 }
 
-// Forwarded directly to the channel.
 void RlsLb::ChildPolicyWrapper::ChildPolicyHelper::AddTraceEvent(
     TraceSeverity severity, StringView message) {
   std::lock_guard<std::recursive_mutex> lock(wrapper_->lb_policy_->mu_);
@@ -1483,7 +1477,6 @@ void RlsLb::UpdateLocked(UpdateArgs args) {
     current_channel_args_ = grpc_channel_args_copy(args.args);
   }
 
-  // update server_uri
   const grpc_arg* arg = grpc_channel_args_find(args.args, GRPC_ARG_SERVER_URI);
   const char* server_uri_str = grpc_channel_arg_get_string(arg);
   GPR_ASSERT(server_uri_str != nullptr);
