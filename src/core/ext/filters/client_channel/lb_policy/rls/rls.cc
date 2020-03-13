@@ -244,7 +244,7 @@ RlsLb::KeyMapBuilderMap RlsCreateKeyMapBuilderMap(const Json& config, grpc_error
             if (internal_error != GRPC_ERROR_NONE) {
               error_list.push_back(internal_error);
             } else {
-              RlsLb::KeyMapBuilder builder = RlsLb::KeyMapBuilder(headers_json_ptr, &internal_error);
+              RlsLb::KeyMapBuilder builder = RlsLb::KeyMapBuilder(headers_json_ptr == nullptr ? Json() : *headers_json_ptr, &internal_error);
               if (internal_error) {
                 error_list.push_back(internal_error);
               } else {
@@ -1348,13 +1348,9 @@ void RlsLb::UpdatePickerLocked() {
   channel_control_helper()->UpdateState(GRPC_CHANNEL_READY, std::unique_ptr<Picker>(new Picker(Ref())));
 }
 
-RlsLb::KeyMapBuilder::KeyMapBuilder(const Json* config_ptr, grpc_error** error) {
+RlsLb::KeyMapBuilder::KeyMapBuilder(const Json& config, grpc_error** error) {
   *error = GRPC_ERROR_NONE;
-  if (config_ptr == nullptr) {
-    *error = GRPC_ERROR_NONE;
-    return;
-  }
-  auto& config = *config_ptr;
+  if (config.type() == Json::Type::JSON_NULL) return;
   if (config.type() != Json::Type::ARRAY) {
     *error = GRPC_ERROR_CREATE_FROM_STATIC_STRING("\"headers\" field is not an array");
     return;

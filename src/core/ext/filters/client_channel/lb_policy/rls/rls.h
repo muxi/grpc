@@ -51,7 +51,7 @@ class RlsLb : public LoadBalancingPolicy {
 
   class KeyMapBuilder {
    public:
-    KeyMapBuilder(const Json* config, grpc_error** error);
+    KeyMapBuilder(const Json& config, grpc_error** error);
 
     KeyMap BuildKeyMap(const MetadataInterface* initial_metadata) const;
 
