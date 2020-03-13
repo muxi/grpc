@@ -976,6 +976,7 @@ void RlsLb::ControlChannel::Orphan() {
   if (GRPC_TRACE_FLAG_ENABLED(grpc_lb_rls_trace)) {
     gpr_log(GPR_DEBUG, "[RlsLb %p] ControlChannel=%p, channel=%p: control channel shutdown", lb_policy_.get(), this, channel_);
   }
+  is_shutdown_ = true;
   if (channel_ == nullptr) {
     if (watcher_ != nullptr) {
       grpc_client_channel_stop_connectivity_watch(
@@ -1058,7 +1059,7 @@ void RlsLb::ControlChannel::StateWatcher::OnReadyLocked(void* arg, grpc_error* e
     gpr_log(GPR_DEBUG, "[RlsLb %p] ControlChannel=%p, StateWatcher=%p: channel transits to READY", watcher->channel_->lb_policy_.get(), watcher->channel_.get(), watcher.get());
   }
   std::lock_guard<std::recursive_mutex> lock(watcher->channel_->lb_policy_->mu_);
-  if (watcher->channel_->lb_policy_->is_shutdown_) return;
+  if (watcher->channel_->is_shutdown_) return;
   watcher->channel_->lb_policy_->cache_.ResetAllBackoff();
   if (watcher->channel_->lb_policy_->current_config_->request_processing_strategy() == RequestProcessingStrategy::SYNC_LOOKUP_CLIENT_SEES_ERROR) {
     watcher->channel_->lb_policy_->UpdatePickerLocked();
@@ -1324,7 +1325,7 @@ void RlsLb::ShutdownLocked() {
   default_child_policy_.reset();
 }
 
-const RlsLb::KeyMapBuilder* RlsLb::FindKeyMapBuilder(const std::string& path) {
+const RlsLb::KeyMapBuilder* RlsLb::FindKeyMapBuilder(const std::string& path) const {
   return RlsFindKeyMapBuilder(current_config_->key_map_builder_map(), path);
 }
 
@@ -1343,6 +1344,7 @@ void RlsLb::UpdatePickerLocked() {
   if (GRPC_TRACE_FLAG_ENABLED(grpc_lb_rls_trace)) {
     gpr_log(GPR_DEBUG, "[RlsLb %p] update picker", this);
   }
+  // TODO(mxyan): more sophisticated channel state inference?
   channel_control_helper()->UpdateState(GRPC_CHANNEL_READY, std::unique_ptr<Picker>(new Picker(Ref())));
 }
 
