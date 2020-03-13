@@ -584,7 +584,8 @@ class RlsPolicyEnd2endTest : public ::testing::Test {
                                  double stale_age = 5,
                                  const std::string& default_target = kDefaultTarget,
                                  int request_processing_strategy = 0,
-                                 double lookup_service_timeout = 10) {
+                                 double lookup_service_timeout = 10,
+                                 int64_t cache_size_bytes = 10 * 1024 * 1024) {
     int lookup_service_port = rls_server_->port_;
     std::stringstream service_config;
     service_config << "{";
@@ -618,6 +619,7 @@ class RlsPolicyEnd2endTest : public ::testing::Test {
     service_config << "          \"seconds\":" << SECONDS(stale_age) << ",";
     service_config << "          \"nanoseconds\":" << NANOSECONDS(stale_age);
     service_config << "        },";
+    service_config << "        \"cacheSizeBytes\":" << cache_size_bytes << ",";
     service_config << "        \"defaultTarget\":\"" << default_target << "\",";
     service_config << "        \"requestProcessingStrategy\":" << request_processing_strategy;
     service_config << "      },";
@@ -917,6 +919,31 @@ TEST_F(RlsPolicyEnd2endTest, ExpiredRlsResponse) {
   EXPECT_EQ(backends_[1]->service_.request_count(), 1);
   EXPECT_EQ(backends_[2]->service_.request_count(), 0);
   EXPECT_EQ(rls_server_->service_.request_count(), 2);
+}
+
+TEST_F(RlsPolicyEnd2endTest, CacheEviction) {
+  const std::string kAlternativeTarget = "test_target_2";
+  StartBackends(3);
+  // set cache bytes to 1 byte
+  auto service_config = BuildServiceConfig(10, 5, kDefaultTarget, 0, 10, 1);
+  SetNextResolution(service_config.c_str());
+  SetNextRlsResponse(GRPC_STATUS_OK);
+  SetNextLbResponse({{kTarget, 0}, {kAlternativeTarget, 1}, {kDefaultTarget, 2}});
+
+  auto stub = BuildStub();
+  CheckRpcSendOk(stub, DEBUG_LOCATION, false, 2000, {{"key3", "testValue1"}});
+
+  SetNextRlsResponse(GRPC_STATUS_OK, nullptr, 0, {}, kAlternativeTarget);
+  CheckRpcSendOk(stub, DEBUG_LOCATION, false, 2000, {{"key3", "testValue2"}});
+
+  // expect the cache entry for the first call is already evicted
+  SetNextRlsResponse(GRPC_STATUS_OK);
+  CheckRpcSendOk(stub, DEBUG_LOCATION, false, 2000, {{"key3", "testValue1"}});
+
+  EXPECT_EQ(backends_[0]->service_.request_count(), 2);
+  EXPECT_EQ(backends_[1]->service_.request_count(), 1);
+  EXPECT_EQ(backends_[2]->service_.request_count(), 0);
+  EXPECT_EQ(rls_server_->service_.request_count(), 3);
 }
 
 }  // namespace

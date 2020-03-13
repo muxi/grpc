@@ -429,7 +429,7 @@ LoadBalancingPolicy::PickResult RlsLb::Cache::Entry::Pick(PickArgs args) {
 
   grpc_millis now = ExecCtx::Get()->Now();
   if (stale_time_ < now && backoff_time_ < now) {
-    bool call_throttled = !lb_policy_->MaybeMakeRlsCall(*lru_iterator_, std::move(backoff_state_));
+    bool call_throttled = !lb_policy_->MaybeMakeRlsCall(*lru_iterator_, &backoff_state_);
     if (call_throttled && data_expiration_time_ < now) {
       switch (lb_policy_->current_config_->request_processing_strategy()) {
         case RequestProcessingStrategy::SYNC_LOOKUP_DEFAULT_TARGET_ON_ERROR:
@@ -736,7 +736,8 @@ void RlsLb::Cache::Resize(int64_t bytes) {
   if (GRPC_TRACE_FLAG_ENABLED(grpc_lb_rls_trace)) {
     gpr_log(GPR_DEBUG, "[rlslb %p] bytes=%" PRId64 ": cache resized", lb_policy_, bytes);
   }
-  element_size_ = bytes / kCacheEntrySize;
+  // take ceiling if the result is a fraction
+  element_size_ = (bytes + kCacheEntrySize - 1) / kCacheEntrySize;
   size_bytes_ = bytes;
   if (element_size_  >= static_cast<int>(map_.size())) return;
   int to_drop_size = map_.size() - element_size_ ;
@@ -1340,13 +1341,13 @@ const RlsLb::KeyMapBuilder* RlsLb::FindKeyMapBuilder(const std::string& path) {
   return RlsFindKeyMapBuilder(current_config_->key_map_builder_map(), path);
 }
 
-bool RlsLb::MaybeMakeRlsCall(const Key& key, std::unique_ptr<BackOff> backoff_state) {
+bool RlsLb::MaybeMakeRlsCall(const Key& key, std::unique_ptr<BackOff>* backoff_state) {
   auto it = request_map_.find(key);
   if (it == request_map_.end()) {
     if (channel_->ShouldThrottle()) {
       return false;
     }
-    request_map_.emplace(key, MakeOrphanable<RequestMapEntry>(Ref(), key, channel_, std::move(backoff_state)));
+    request_map_.emplace(key, MakeOrphanable<RequestMapEntry>(Ref(), key, channel_, backoff_state == nullptr ? nullptr : std::move(*backoff_state)));
   }
   return true;
 }

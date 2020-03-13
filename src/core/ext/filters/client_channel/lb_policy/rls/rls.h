@@ -434,7 +434,7 @@ class RlsLb : public LoadBalancingPolicy {
   const KeyMapBuilder* FindKeyMapBuilder(const std::string& path);
 
   // returns false if the attempt fails (an entry not found, but request throttled).
-  bool MaybeMakeRlsCall(const Key& key, std::unique_ptr<BackOff> backoff_state = nullptr);
+  bool MaybeMakeRlsCall(const Key& key, std::unique_ptr<BackOff>* backoff_state = nullptr);
 
   void UpdatePickerLocked();
 
