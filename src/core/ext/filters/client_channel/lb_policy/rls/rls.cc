@@ -93,12 +93,6 @@ inline static const Json* ParseFieldJsonFromJsonObject(const Json::Object& objec
   }
 }
 
-/* TODO
-inline static Json* ParseFieldJsonFromJsonObject(Json::Object& object, const std::string& field, grpc_error** error, bool optional = false) {
-  return const_cast<Json*>(ParseFieldJsonFromJsonObject(const_cast<const Json::Object&>(object), field, error, optional));
-}
-*/
-
 static const Json::Object* ParseObjectFieldFromJsonObject(const Json::Object& object, const std::string& field, grpc_error** error, bool optional = false) {
   *error = GRPC_ERROR_NONE;
   const Json* child_json = ParseFieldJsonFromJsonObject(object, field, error, optional);
@@ -195,12 +189,6 @@ static grpc_error* InsertOrUpdateChildPolicyField(Json* config, const std::strin
   grpc_error* result = GRPC_ERROR_CREATE_FROM_VECTOR(absl::StrCat("errors when inserting field \"", field, "\" for child policy").c_str(), &error_list);
   return result;
 }
-
-/* TODO 
-static std::string ParseChildPolicyName(const Json& config) {
-  return config.array_value()[0].object_value().begin()->first;
-}
-*/
 
 RlsLb::KeyMapBuilderMap RlsCreateKeyMapBuilderMap(const Json& config, grpc_error** error) {
   *error = GRPC_ERROR_NONE;
@@ -814,7 +802,6 @@ RlsLb::RequestMapEntry::~RequestMapEntry() {
   if (call_ != nullptr) {
     GRPC_CALL_INTERNAL_UNREF(call_, "request map destroyed");
   }
-  // TODO: what's the internal version of grpc_byte_buffer_destroy?
   grpc_byte_buffer_destroy(message_send_);
   grpc_byte_buffer_destroy(message_recv_);
   grpc_metadata_array_destroy(&initial_metadata_recv_);
@@ -1356,7 +1343,6 @@ void RlsLb::UpdatePickerLocked() {
   if (GRPC_TRACE_FLAG_ENABLED(grpc_lb_rls_trace)) {
     gpr_log(GPR_DEBUG, "[RlsLb %p] update picker", this);
   }
-  // TODO: what is the connectivity state?
   channel_control_helper()->UpdateState(GRPC_CHANNEL_READY, std::unique_ptr<Picker>(new Picker(Ref())));
 }
 
