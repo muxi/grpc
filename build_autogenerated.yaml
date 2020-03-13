@@ -6838,13 +6838,13 @@ targets:
   - test/core/util/test_lb_policies.h
   - test/cpp/end2end/test_service_impl.h
   src:
+  - src/proto/grpc/lb/v1/load_balancer.proto
   - src/proto/grpc/testing/duplicate/echo_duplicate.proto
   - src/proto/grpc/testing/echo.proto
   - src/proto/grpc/testing/echo_messages.proto
   - src/proto/grpc/testing/lookup/rls.proto
   - src/proto/grpc/testing/lookup/rls_config.proto
   - src/proto/grpc/testing/simple_messages.proto
-  - src/proto/grpc/testing/xds/orca_load_report_for_test.proto
   - test/core/util/test_lb_policies.cc
   - test/cpp/end2end/rls_end2end_test.cc
   - test/cpp/end2end/test_service_impl.cc
@@ -6856,6 +6856,7 @@ targets:
   - gpr
   - address_sorting
   - upb
+  - absl/types:optional
   platforms:
   - linux
   - posix
