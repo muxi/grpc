@@ -71,7 +71,6 @@ UNIX_LIBUV_SOURCES = [
     "src/unix/random-devurandom.c",
     "src/unix/random-getentropy.c",
     "src/unix/random-getrandom.c",
-    "src/unix/random-sysctl-linux.c",
 ]
 
 LINUX_LIBUV_SOURCES = [
@@ -81,6 +80,7 @@ LINUX_LIBUV_SOURCES = [
     "src/unix/linux-syscalls.h",
     "src/unix/procfs-exepath.c",
     "src/unix/proctitle.c",
+    "src/unix/random-sysctl-linux.c",
     "src/unix/sysinfo-loadavg.c",
 ]
 

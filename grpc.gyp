@@ -1938,7 +1938,6 @@
         'third_party/libuv/src/unix/random-devurandom.c',
         'third_party/libuv/src/unix/random-getentropy.c',
         'third_party/libuv/src/unix/random-getrandom.c',
-        'third_party/libuv/src/unix/random-sysctl-linux.c',
         'third_party/libuv/src/unix/signal.c',
         'third_party/libuv/src/unix/spinlock.h',
         'third_party/libuv/src/unix/stream.c',

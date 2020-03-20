@@ -48,7 +48,6 @@ unix_uv_srcs = [
     "third_party/libuv/src/unix/random-devurandom.c",
     "third_party/libuv/src/unix/random-getentropy.c",
     "third_party/libuv/src/unix/random-getrandom.c",
-    "third_party/libuv/src/unix/random-sysctl-linux.c",
 ]
 
 linux_uv_srcs = [
@@ -58,6 +57,7 @@ linux_uv_srcs = [
     "third_party/libuv/src/unix/linux-syscalls.h",
     "third_party/libuv/src/unix/procfs-exepath.c",
     "third_party/libuv/src/unix/proctitle.c",
+    "third_party/libuv/src/unix/random-sysctl-linux.c",
     "third_party/libuv/src/unix/sysinfo-loadavg.c",
 ]
 
