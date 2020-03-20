@@ -3660,41 +3660,32 @@ if(gRPC_BUILD_TESTS)
 
 add_library(uv_linux
   third_party/libuv/src/fs-poll.c
-  third_party/libuv/src/heap-inl.h
   third_party/libuv/src/idna.c
-  third_party/libuv/src/idna.h
   third_party/libuv/src/inet.c
-  third_party/libuv/src/queue.h
   third_party/libuv/src/random.c
   third_party/libuv/src/strscpy.c
-  third_party/libuv/src/strscpy.h
   third_party/libuv/src/threadpool.c
   third_party/libuv/src/timer.c
   third_party/libuv/src/unix/async.c
-  third_party/libuv/src/unix/atomic-ops.h
   third_party/libuv/src/unix/core.c
   third_party/libuv/src/unix/dl.c
   third_party/libuv/src/unix/fs.c
   third_party/libuv/src/unix/getaddrinfo.c
   third_party/libuv/src/unix/getnameinfo.c
-  third_party/libuv/src/unix/internal.h
   third_party/libuv/src/unix/linux-core.c
   third_party/libuv/src/unix/linux-inotify.c
   third_party/libuv/src/unix/linux-syscalls.c
-  third_party/libuv/src/unix/linux-syscalls.h
   third_party/libuv/src/unix/loop-watcher.c
   third_party/libuv/src/unix/loop.c
   third_party/libuv/src/unix/pipe.c
   third_party/libuv/src/unix/poll.c
   third_party/libuv/src/unix/process.c
-  third_party/libuv/src/unix/procfs-exepath.c
   third_party/libuv/src/unix/proctitle.c
   third_party/libuv/src/unix/random-devurandom.c
   third_party/libuv/src/unix/random-getentropy.c
   third_party/libuv/src/unix/random-getrandom.c
   third_party/libuv/src/unix/random-sysctl-linux.c
   third_party/libuv/src/unix/signal.c
-  third_party/libuv/src/unix/spinlock.h
   third_party/libuv/src/unix/stream.c
   third_party/libuv/src/unix/sysinfo-loadavg.c
   third_party/libuv/src/unix/tcp.c
@@ -3702,7 +3693,6 @@ add_library(uv_linux
   third_party/libuv/src/unix/tty.c
   third_party/libuv/src/unix/udp.c
   third_party/libuv/src/uv-common.c
-  third_party/libuv/src/uv-common.h
   third_party/libuv/src/uv-data-getter-setters.c
   third_party/libuv/src/version.c
 )
@@ -3745,18 +3735,13 @@ if(gRPC_BUILD_TESTS)
 
 add_library(uv_darwin
   third_party/libuv/src/fs-poll.c
-  third_party/libuv/src/heap-inl.h
   third_party/libuv/src/idna.c
-  third_party/libuv/src/idna.h
   third_party/libuv/src/inet.c
-  third_party/libuv/src/queue.h
   third_party/libuv/src/random.c
   third_party/libuv/src/strscpy.c
-  third_party/libuv/src/strscpy.h
   third_party/libuv/src/threadpool.c
   third_party/libuv/src/timer.c
   third_party/libuv/src/unix/async.c
-  third_party/libuv/src/unix/atomic-ops.h
   third_party/libuv/src/unix/bsd-ifaddrs.c
   third_party/libuv/src/unix/core.c
   third_party/libuv/src/unix/darwin-proctitle.c
@@ -3766,7 +3751,6 @@ add_library(uv_darwin
   third_party/libuv/src/unix/fsevents.c
   third_party/libuv/src/unix/getaddrinfo.c
   third_party/libuv/src/unix/getnameinfo.c
-  third_party/libuv/src/unix/internal.h
   third_party/libuv/src/unix/kqueue.c
   third_party/libuv/src/unix/loop-watcher.c
   third_party/libuv/src/unix/loop.c
@@ -3778,14 +3762,12 @@ add_library(uv_darwin
   third_party/libuv/src/unix/random-getentropy.c
   third_party/libuv/src/unix/random-getrandom.c
   third_party/libuv/src/unix/signal.c
-  third_party/libuv/src/unix/spinlock.h
   third_party/libuv/src/unix/stream.c
   third_party/libuv/src/unix/tcp.c
   third_party/libuv/src/unix/thread.c
   third_party/libuv/src/unix/tty.c
   third_party/libuv/src/unix/udp.c
   third_party/libuv/src/uv-common.c
-  third_party/libuv/src/uv-common.h
   third_party/libuv/src/uv-data-getter-setters.c
   third_party/libuv/src/version.c
 )
@@ -3828,43 +3810,32 @@ if(gRPC_BUILD_TESTS)
 
 add_library(uv_win
   third_party/libuv/src/fs-poll.c
-  third_party/libuv/src/heap-inl.h
   third_party/libuv/src/idna.c
-  third_party/libuv/src/idna.h
   third_party/libuv/src/inet.c
-  third_party/libuv/src/queue.h
   third_party/libuv/src/random.c
   third_party/libuv/src/strscpy.c
-  third_party/libuv/src/strscpy.h
   third_party/libuv/src/threadpool.c
   third_party/libuv/src/timer.c
   third_party/libuv/src/uv-common.c
-  third_party/libuv/src/uv-common.h
   third_party/libuv/src/uv-data-getter-setters.c
   third_party/libuv/src/version.c
   third_party/libuv/src/win/async.c
-  third_party/libuv/src/win/atomicops-inl.h
   third_party/libuv/src/win/core.c
   third_party/libuv/src/win/detect-wakeup.c
   third_party/libuv/src/win/dl.c
   third_party/libuv/src/win/error.c
   third_party/libuv/src/win/fs-event.c
-  third_party/libuv/src/win/fs-fd-hash-inl.h
   third_party/libuv/src/win/fs.c
   third_party/libuv/src/win/getaddrinfo.c
   third_party/libuv/src/win/getnameinfo.c
-  third_party/libuv/src/win/handle-inl.h
   third_party/libuv/src/win/handle.c
-  third_party/libuv/src/win/internal.h
   third_party/libuv/src/win/loop-watcher.c
   third_party/libuv/src/win/pipe.c
   third_party/libuv/src/win/poll.c
   third_party/libuv/src/win/process-stdio.c
   third_party/libuv/src/win/process.c
-  third_party/libuv/src/win/req-inl.h
   third_party/libuv/src/win/signal.c
   third_party/libuv/src/win/snprintf.c
-  third_party/libuv/src/win/stream-inl.h
   third_party/libuv/src/win/stream.c
   third_party/libuv/src/win/tcp.c
   third_party/libuv/src/win/thread.c
@@ -3872,9 +3843,7 @@ add_library(uv_win
   third_party/libuv/src/win/udp.c
   third_party/libuv/src/win/util.c
   third_party/libuv/src/win/winapi.c
-  third_party/libuv/src/win/winapi.h
   third_party/libuv/src/win/winsock.c
-  third_party/libuv/src/win/winsock.h
 )
 
 set_target_properties(uv_win PROPERTIES
@@ -3921,37 +3890,7 @@ elseif(_gRPC_PLATFORM_WINDOWS)
   add_library(uv ALIAS uv_win)
 endif()
 
-set_target_properties(uv PROPERTIES
-  VERSION ${gRPC_CORE_VERSION}
-  SOVERSION ${gRPC_CORE_SOVERSION}
-)
 
-if(WIN32 AND MSVC)
-  set_target_properties(uv PROPERTIES COMPILE_PDB_NAME "uv"
-    COMPILE_PDB_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
-  )
-  if(gRPC_INSTALL)
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/uv_win.pdb
-      DESTINATION ${gRPC_INSTALL_LIBDIR} OPTIONAL
-    )
-  endif()
-endif()
-
-target_include_directories(uv
-  PUBLIC $<INSTALL_INTERFACE:${gRPC_INSTALL_INCLUDEDIR}> $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${_gRPC_ADDRESS_SORTING_INCLUDE_DIR}
-    ${_gRPC_LIBUV_INCLUDE_DIR}
-    ${_gRPC_SSL_INCLUDE_DIR}
-    ${_gRPC_UPB_GENERATED_DIR}
-    ${_gRPC_UPB_GRPC_GENERATED_DIR}
-    ${_gRPC_UPB_INCLUDE_DIR}
-    ${_gRPC_ZLIB_INCLUDE_DIR}
-)
-target_link_libraries(uv
-  ${_gRPC_ALLTARGETS_LIBRARIES}
-)
 endif()
 
 

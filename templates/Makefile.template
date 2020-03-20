@@ -1610,21 +1610,12 @@
   % endfor
   % endif
 
-  % if lib.name not in ['uv_linux', 'uv_darwin', 'uv_win']:
   LIB${lib.name.upper()}_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(LIB${lib.name.upper()}_SRC))))
-  % else:
-  LIB${lib.name.upper()}_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, ${lib.name}))
-  % endif
 
   % if lib.get('defaults', None):
   %  for name, value in defaults.get(lib.defaults).iteritems():
   $(LIB${lib.name.upper()}_OBJS): ${name} += ${value}
   %  endfor
-  % endif
-
-  % if lib.name in ['uv_linux', 'uv_darwin', 'uv_win']:
-  $(LIB${lib.name.upper()}_OBJS): $(LIB${lib.name.upper()}_SRC)
-  	$(CC) $(CPPFLAGS) $(CFLAGS) -c $(LIB${lib.name.upper()}_SRC) -o $(LIB${lib.name.upper()}_OBJS)
   % endif
 
   ## If the library requires OpenSSL, let's add some restrictions.

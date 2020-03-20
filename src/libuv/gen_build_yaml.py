@@ -21,25 +21,21 @@ import glob
 
 out = {}
 
-common_uv_srcs = glob.glob("third_party/libuv/src/*.c") + \
-                 glob.glob("third_party/libuv/src/*.h")
+common_uv_srcs = glob.glob("third_party/libuv/src/*.c")
 
 unix_uv_srcs = [
     "third_party/libuv/src/unix/async.c",
-    "third_party/libuv/src/unix/atomic-ops.h",
     "third_party/libuv/src/unix/core.c",
     "third_party/libuv/src/unix/dl.c",
     "third_party/libuv/src/unix/fs.c",
     "third_party/libuv/src/unix/getaddrinfo.c",
     "third_party/libuv/src/unix/getnameinfo.c",
-    "third_party/libuv/src/unix/internal.h",
     "third_party/libuv/src/unix/loop.c",
     "third_party/libuv/src/unix/loop-watcher.c",
     "third_party/libuv/src/unix/pipe.c",
     "third_party/libuv/src/unix/poll.c",
     "third_party/libuv/src/unix/process.c",
     "third_party/libuv/src/unix/signal.c",
-    "third_party/libuv/src/unix/spinlock.h",
     "third_party/libuv/src/unix/stream.c",
     "third_party/libuv/src/unix/tcp.c",
     "third_party/libuv/src/unix/thread.c",
@@ -54,8 +50,6 @@ linux_uv_srcs = [
     "third_party/libuv/src/unix/linux-core.c",
     "third_party/libuv/src/unix/linux-inotify.c",
     "third_party/libuv/src/unix/linux-syscalls.c",
-    "third_party/libuv/src/unix/linux-syscalls.h",
-    "third_party/libuv/src/unix/procfs-exepath.c",
     "third_party/libuv/src/unix/proctitle.c",
     "third_party/libuv/src/unix/random-sysctl-linux.c",
     "third_party/libuv/src/unix/sysinfo-loadavg.c",
@@ -70,8 +64,7 @@ darwin_uv_srcs = [
     "third_party/libuv/src/unix/proctitle.c",
 ]
 
-win_uv_srcs = glob.glob("third_party/libuv/src/win/*.c") + \
-              glob.glob("third_party/libuv/src/win/*.h")
+win_uv_srcs = glob.glob("third_party/libuv/src/win/*.c")
 
 common_uv_hdrs = [
     "third_party/libuv/include/uv.h",
