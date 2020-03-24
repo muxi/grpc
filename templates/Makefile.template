@@ -1068,11 +1068,12 @@
   privatelibs_c: \
   % for lib in libs:
   % if 'Makefile' in lib.get('build_system', ['Makefile']):
-  % if lib.build == 'private' and lib.language == 'c' and not lib.get('external_deps', None) and not lib.boringssl:
+  % if lib.build == 'private' and lib.language == 'c' and not lib.get('external_deps', None) and not lib.boringssl and lib.name not in ['uv_linux', 'uv_darwin', 'uv_win']:
    $(LIBDIR)/$(CONFIG)/lib${lib.name}.a\
   % endif
   % endif
   % endfor
+   $(LIBDIR)/$(CONFIG)/libuv.a\
 
   pc_c: $(LIBDIR)/$(CONFIG)/pkgconfig/grpc.pc $(LIBDIR)/$(CONFIG)/pkgconfig/gpr.pc
 
@@ -1589,6 +1590,17 @@
   % endfor
 
   <%def name="makelib(lib)">
+  % if lib.name == 'uv_linux':
+  ifeq ($(SYSTEM),Linux)
+  % else:
+  % if lib.name == 'uv_darwin':
+  ifeq ($(SYSTEM),Darwin)
+  % else:
+  % if lib.name == 'uv_win':
+  ifeq ($(SYSTEM),MINGW32)
+  % endif
+  % endif
+  % endif
   LIB${lib.name.upper()}_SRC = \\
 
   % for src in lib.src:
@@ -1823,6 +1835,10 @@
   $(OBJDIR)/$(CONFIG)/${os.path.splitext(src)[0]}.o: ${' '.join(proto_to_cc(src2) for src2 in lib.src if proto_re.match(src2))}
   % endif
   % endfor
+  % if lib.name in ['uv_linux', 'uv_darwin', 'uv_win']:
+  ## The endif here corresponds to the ifeq ($(SYSTEM),) at the beginning.
+  endif
+  % endif
   </%def>
 
   <%def name="maketarget(tgt)"><% has_no_sources = not tgt.src %>

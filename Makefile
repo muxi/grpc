@@ -1426,7 +1426,7 @@ plugins: $(PROTOC_PLUGINS)
 
 privatelibs: privatelibs_c privatelibs_cxx
 
-privatelibs_c:  $(LIBDIR)/$(CONFIG)/libend2end_nosec_tests.a $(LIBDIR)/$(CONFIG)/libend2end_tests.a $(LIBDIR)/$(CONFIG)/libgrpc_test_util.a $(LIBDIR)/$(CONFIG)/libgrpc_test_util_unsecure.a $(LIBDIR)/$(CONFIG)/libz.a $(LIBDIR)/$(CONFIG)/libares.a $(LIBDIR)/$(CONFIG)/libuv_linux.a $(LIBDIR)/$(CONFIG)/libuv_darwin.a $(LIBDIR)/$(CONFIG)/libuv_win.a
+privatelibs_c:  $(LIBDIR)/$(CONFIG)/libend2end_nosec_tests.a $(LIBDIR)/$(CONFIG)/libend2end_tests.a $(LIBDIR)/$(CONFIG)/libgrpc_test_util.a $(LIBDIR)/$(CONFIG)/libgrpc_test_util_unsecure.a $(LIBDIR)/$(CONFIG)/libz.a $(LIBDIR)/$(CONFIG)/libares.a $(LIBDIR)/$(CONFIG)/libuv.a
 pc_c: $(LIBDIR)/$(CONFIG)/pkgconfig/grpc.pc $(LIBDIR)/$(CONFIG)/pkgconfig/gpr.pc
 
 pc_c_unsecure: $(LIBDIR)/$(CONFIG)/pkgconfig/grpc_unsecure.pc $(LIBDIR)/$(CONFIG)/pkgconfig/gpr.pc
@@ -6430,6 +6430,7 @@ ifneq ($(NO_DEPS),true)
 endif
 
 
+ifeq ($(SYSTEM),Linux)
 LIBUV_LINUX_SRC = \
     third_party/libuv/src/fs-poll.c \
     third_party/libuv/src/idna.c \
@@ -6489,8 +6490,10 @@ endif
 ifneq ($(NO_DEPS),true)
 -include $(LIBUV_LINUX_OBJS:.o=.dep)
 endif
+endif
 
 
+ifeq ($(SYSTEM),Darwin)
 LIBUV_DARWIN_SRC = \
     third_party/libuv/src/fs-poll.c \
     third_party/libuv/src/idna.c \
@@ -6550,8 +6553,10 @@ endif
 ifneq ($(NO_DEPS),true)
 -include $(LIBUV_DARWIN_OBJS:.o=.dep)
 endif
+endif
 
 
+ifeq ($(SYSTEM),MINGW32)
 LIBUV_WIN_SRC = \
     third_party/libuv/src/fs-poll.c \
     third_party/libuv/src/idna.c \
@@ -6609,6 +6614,7 @@ endif
 
 ifneq ($(NO_DEPS),true)
 -include $(LIBUV_WIN_OBJS:.o=.dep)
+endif
 endif
 
 
