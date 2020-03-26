@@ -121,8 +121,6 @@ cc_library(
         "-pthread",
         "--std=gnu89",
         "-pedantic",
-        "-Wno-strict-aliasing",
-        "-Wstrict-aliasing",
         "-O2",
         "-Wno-implicit-function-declaration",
         "-Wno-unused-function",
