@@ -121,7 +121,6 @@ cc_library(
         "-pthread",
         "--std=gnu89",
         "-pedantic",
-        "-Wno-error",
         "-Wno-strict-aliasing",
         "-Wstrict-aliasing",
         "-O2",
