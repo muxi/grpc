@@ -122,7 +122,6 @@ cc_library(
         "--std=gnu89",
         "-pedantic",
         "-O2",
-        "-Wno-implicit-function-declaration",
         "-Wno-unused-function",
         "-Wno-unused-variable",
     ] + select({

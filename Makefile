@@ -6473,7 +6473,7 @@ PUBLIC_HEADERS_C += \
 
 LIBUV_LINUX_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(LIBUV_LINUX_SRC))))
 
-$(LIBUV_LINUX_OBJS): CPPFLAGS += -g -Ithird_party/libuv/include -Ithird_party/libuv/src -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -pthread --std=gnu89 -pedantic -O2 -Wno-implicit-function-declaration -Wno-unused-function -Wno-unused-variable -Ithird_party/libuv/src/unix -Wno-tree-vrp -Wno-omit-frame-pointer -D_DARWIN_USE_64_BIT_INODE=1 -D_DARWIN_UNLIMITED_SELECT=1
+$(LIBUV_LINUX_OBJS): CPPFLAGS += -g -Ithird_party/libuv/include -Ithird_party/libuv/src -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -pthread --std=gnu89 -pedantic -O2 -Wno-unused-function -Wno-unused-variable -Ithird_party/libuv/src/unix -Wno-tree-vrp -Wno-omit-frame-pointer -D_DARWIN_USE_64_BIT_INODE=1 -D_DARWIN_UNLIMITED_SELECT=1
 
 $(LIBDIR)/$(CONFIG)/libuv_linux.a:  $(LIBUV_LINUX_OBJS) 
 	$(E) "[AR]      Creating $@"
@@ -6536,7 +6536,7 @@ PUBLIC_HEADERS_C += \
 
 LIBUV_DARWIN_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(LIBUV_DARWIN_SRC))))
 
-$(LIBUV_DARWIN_OBJS): CPPFLAGS += -g -Ithird_party/libuv/include -Ithird_party/libuv/src -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -pthread --std=gnu89 -pedantic -O2 -Wno-implicit-function-declaration -Wno-unused-function -Wno-unused-variable
+$(LIBUV_DARWIN_OBJS): CPPFLAGS += -g -Ithird_party/libuv/include -Ithird_party/libuv/src -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -pthread --std=gnu89 -pedantic -O2 -Wno-unused-function -Wno-unused-variable
 
 $(LIBDIR)/$(CONFIG)/libuv_darwin.a:  $(LIBUV_DARWIN_OBJS) 
 	$(E) "[AR]      Creating $@"
@@ -6598,7 +6598,7 @@ PUBLIC_HEADERS_C += \
 
 LIBUV_WIN_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(LIBUV_WIN_SRC))))
 
-$(LIBUV_WIN_OBJS): CPPFLAGS += -g -Ithird_party/libuv/include -Ithird_party/libuv/src -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -pthread --std=gnu89 -pedantic -O2 -Wno-implicit-function-declaration -Wno-unused-function -Wno-unused-variable -Ithird_party/libuv/src/win -DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0600 -Wl,Psapi.lib -Wl,User32.lib -Wl,Userenv.lib
+$(LIBUV_WIN_OBJS): CPPFLAGS += -g -Ithird_party/libuv/include -Ithird_party/libuv/src -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -pthread --std=gnu89 -pedantic -O2 -Wno-unused-function -Wno-unused-variable -Ithird_party/libuv/src/win -DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0600 -Wl,Psapi.lib -Wl,User32.lib -Wl,Userenv.lib
 
 $(LIBDIR)/$(CONFIG)/libuv_win.a:  $(LIBUV_WIN_OBJS) 
 	$(E) "[AR]      Creating $@"
