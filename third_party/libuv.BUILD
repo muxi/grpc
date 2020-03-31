@@ -122,8 +122,6 @@ cc_library(
         "--std=gnu89",
         "-pedantic",
         "-O2",
-        "-Wno-unused-function",
-        "-Wno-unused-variable",
     ] + select({
         ":apple": [],
         ":windows": [
