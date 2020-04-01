@@ -275,9 +275,9 @@ def grpc_deps():
         http_archive(
             name = "com_github_libuv_libuv",
             build_file = "@com_github_grpc_grpc//third_party:libuv.BUILD",
-            sha256 = "dfb4fe1ff0b47340978490a14bf253475159ecfcbad46ab2a350c78f9ce3360f",
-            strip_prefix = "libuv-15ae750151ac9341e5945eb38f8982d59fb99201",
-            url = "https://github.com/libuv/libuv/archive/15ae750151ac9341e5945eb38f8982d59fb99201.tar.gz",
+            sha256 = "47dd6df502d09f6bffd6b12ce776d5f0033fc41de02c32f85ae96ea7f74ff560",
+            strip_prefix = "libuv-e45f1ec38db882f8dc17b51f51a6684027034609",
+            url = "https://github.com/libuv/libuv/archive/e45f1ec38db882f8dc17b51f51a6684027034609.tar.gz",
         )
 
     grpc_python_deps()

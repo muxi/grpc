@@ -35,7 +35,7 @@ cat << EOF | awk '{ print $1 }' | sort > "$want_submodules"
  28f50e0fed19872e0fd50dd23ce2ee8cd759338e third_party/gflags (v2.2.0-5-g30dbc81)
  80ed4d0bbf65d57cc267dfc63bd2584557f11f9b third_party/googleapis (common-protos-1_3_1-915-g80ed4d0bb)
  c9ccac7cb7345901884aabf5d1a786cfa6e2f397 third_party/googletest (6e2f397)
- 15ae750151ac9341e5945eb38f8982d59fb99201 third_party/libuv (v1.34.0)
+ e45f1ec38db882f8dc17b51f51a6684027034609 third_party/libuv (v1.35.0)
  fe1790ca0df67173702f70d5646b82f48f412b99 protobuf (v3.7.0-rc.2-756-gfe1790ca0)
  c0a080f4bea50bc087cdd8551143ee538cf3459e third_party/protoc-gen-validate (v0.0.10)
  db4b343e48c1264bb4d9ff491b059300701dc7c7 third_party/udpa (heads/master)
