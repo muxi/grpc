@@ -42,7 +42,6 @@ unix_uv_srcs = [
     "third_party/libuv/src/unix/tty.c",
     "third_party/libuv/src/unix/udp.c",
     "third_party/libuv/src/unix/random-devurandom.c",
-    "third_party/libuv/src/unix/random-getentropy.c",
     "third_party/libuv/src/unix/random-getrandom.c",
 ]
 
@@ -58,10 +57,11 @@ linux_uv_srcs = [
 darwin_uv_srcs = [
     "third_party/libuv/src/unix/bsd-ifaddrs.c",
     "third_party/libuv/src/unix/darwin.c",
+    "third_party/libuv/src/unix/darwin-proctitle.c",
     "third_party/libuv/src/unix/fsevents.c",
     "third_party/libuv/src/unix/kqueue.c",
-    "third_party/libuv/src/unix/darwin-proctitle.c",
     "third_party/libuv/src/unix/proctitle.c",
+    "third_party/libuv/src/unix/random-getentropy.c",
 ]
 
 win_uv_srcs = glob.glob("third_party/libuv/src/win/*.c")

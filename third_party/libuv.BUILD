@@ -69,7 +69,6 @@ UNIX_LIBUV_SOURCES = [
     "src/unix/tty.c",
     "src/unix/udp.c",
     "src/unix/random-devurandom.c",
-    "src/unix/random-getentropy.c",
     "src/unix/random-getrandom.c",
 ]
 
@@ -92,10 +91,11 @@ ANDROID_LIBUV_SOURCES = [
 DARWIN_LIBUV_SOURCES = [
     "src/unix/bsd-ifaddrs.c",
     "src/unix/darwin.c",
+    "src/unix/darwin-proctitle.c",
     "src/unix/fsevents.c",
     "src/unix/kqueue.c",
-    "src/unix/darwin-proctitle.c",
     "src/unix/proctitle.c",
+    "src/unix/random-getentropy.c",
 ]
 
 WINDOWS_LIBUV_SOURCES = glob(["src/win/*.c"]) + glob(["src/win/*.h"])
