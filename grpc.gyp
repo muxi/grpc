@@ -1876,7 +1876,6 @@
         'third_party/libuv/src/unix/process.c',
         'third_party/libuv/src/unix/proctitle.c',
         'third_party/libuv/src/unix/random-devurandom.c',
-        'third_party/libuv/src/unix/random-getentropy.c',
         'third_party/libuv/src/unix/random-getrandom.c',
         'third_party/libuv/src/unix/random-sysctl-linux.c',
         'third_party/libuv/src/unix/signal.c',
