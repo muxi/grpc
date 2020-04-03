@@ -139,17 +139,16 @@ cc_library(
         "include",
         "src",
     ],
-    linkopts = [
-        "-ldl",
-    ] + select({
+    linkopts = select({
         ":windows": [
-            "-Xcrosstool-compilation-mode=$(COMPILATION_MODE)",
-            "-Wl,Iphlpapi.lib",
-            "-Wl,Psapi.lib",
-            "-Wl,User32.lib",
-            "-Wl,Userenv.lib",
+            "Iphlpapi.lib",
+            "Psapi.lib",
+            "User32.lib",
+            "Userenv.lib",
         ],
-        "//conditions:default": [],
+        "//conditions:default": [
+	    "-ldl",
+	],
     }),
     visibility = [
         "//visibility:public",
