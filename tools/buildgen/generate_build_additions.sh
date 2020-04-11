@@ -24,7 +24,7 @@ gen_build_yaml_dirs="  \
   src/zlib             \
   src/c-ares           \
   src/libuv            \
-  test/core/end2end     \
+  test/core/end2end    \
   test/cpp/naming      \
   tools/run_tests/lb_interop_tests"
 
