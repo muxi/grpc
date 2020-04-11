@@ -226,17 +226,20 @@ CORE_C_FILES = tuple(grpc_core_dependencies.CORE_SOURCE_FILES)
 if "linux" in sys.platform:
   CORE_C_FILES = filter(lambda x: 'third_party/libuv/src/win' not in x, CORE_C_FILES)
   # This list must keep synchronous with darwin_uv_srcs in
-  # src/libuv/gen_build_yaml.py
+  # src/libuv/gen_build_yaml.py, except src/unix/proctitle.c which exists in
+  # both darwin_uv_srcs and linux_uv_srcs.
   CORE_C_FILES = filter(lambda x: 'third_party/libuv/src/unix/bsd-ifaddrs.c' not in x, CORE_C_FILES)
   CORE_C_FILES = filter(lambda x: 'third_party/libuv/src/unix/darwin.c' not in x, CORE_C_FILES)
+  CORE_C_FILES = filter(lambda x: 'third_party/libuv/src/unix/darwin-proctitle.c' not in x, CORE_C_FILES)
   CORE_C_FILES = filter(lambda x: 'third_party/libuv/src/unix/fsevents.c' not in x, CORE_C_FILES)
   CORE_C_FILES = filter(lambda x: 'third_party/libuv/src/unix/kqueue.c' not in x, CORE_C_FILES)
-  CORE_C_FILES = filter(lambda x: 'third_party/libuv/src/unix/darwin-proctitle.c' not in x, CORE_C_FILES)
+  CORE_C_FILES = filter(lambda x: 'third_party/libuv/src/unix/random-getentropy.c' not in x, CORE_C_FILES)
 
 if "darwin" in sys.platform:
   CORE_C_FILES = filter(lambda x: 'third_party/libuv/src/win' not in x, CORE_C_FILES)
   # This list must keep synchronous with linux_uv_srcs in
-  # src/libuv/gen_build_yaml.py
+  # src/libuv/gen_build_yaml.py, except src/unix/proctitle.c which exists in
+  # both darwin_uv_srcs and linux_uv_srcs.
   CORE_C_FILES = filter(lambda x: 'third_party/libuv/src/unix/linux-core.c' not in x, CORE_C_FILES)
   CORE_C_FILES = filter(lambda x: 'third_party/libuv/src/unix/linux-inotify.c' not in x, CORE_C_FILES)
   CORE_C_FILES = filter(lambda x: 'third_party/libuv/src/unix/linux-syscalls.c' not in x, CORE_C_FILES)
