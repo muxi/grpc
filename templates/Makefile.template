@@ -740,7 +740,7 @@
   else
   ifeq ($(SYSTEM),MINGW32)
   CPPFLAGS += -Ithird_party/libuv/src/win -DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0600
-  LDFLAGS += -ldl -Xcrosstool-compilation-mode=$(COMPILATION_MODE) -Wl,Iphlpapi.lib -Wl,Psapi.lib -Wl,User32.lib -Wl,Userenv.lib
+  LDFLAGS += -ldl -Wl,Iphlpapi.lib -Wl,Psapi.lib -Wl,User32.lib -Wl,Userenv.lib
   endif
   endif
   endif

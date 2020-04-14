@@ -180,6 +180,7 @@ EXTRA_ENV_LINK_ARGS = os.environ.get('GRPC_PYTHON_LDFLAGS', None)
 if EXTRA_ENV_COMPILE_ARGS is None:
   EXTRA_ENV_COMPILE_ARGS = ' -std=c++11'
   if 'win32' in sys.platform:
+    EXTRA_ENV_COMPILE_ARGS += ' -DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0600'
     if sys.version_info < (3, 5):
       EXTRA_ENV_COMPILE_ARGS += ' -D_hypot=hypot'
       # We use define flags here and don't directly add to DEFINE_MACROS below to
@@ -200,16 +201,20 @@ if EXTRA_ENV_COMPILE_ARGS is None:
     EXTRA_ENV_COMPILE_ARGS += ' -stdlib=libc++ -fvisibility=hidden -fno-wrapv -fno-exceptions'
 
 if EXTRA_ENV_LINK_ARGS is None:
-  EXTRA_ENV_LINK_ARGS = ''
+  EXTRA_ENV_LINK_ARGS = ' -ldl'
   if "linux" in sys.platform or "darwin" in sys.platform:
     EXTRA_ENV_LINK_ARGS += ' -lpthread'
     if check_linker_need_libatomic():
       EXTRA_ENV_LINK_ARGS += ' -latomic'
-  elif "win32" in sys.platform and sys.version_info < (3, 5):
-    msvcr = cygwinccompiler.get_msvcr()[0]
+  elif "win32" in sys.platform:
     EXTRA_ENV_LINK_ARGS += (
-        ' -static-libgcc -static-libstdc++ -mcrtdll={msvcr}'
-        ' -static -lshlwapi'.format(msvcr=msvcr))
+        ' -Wl,Iphlpapi.lib -Wl,Psapi.lib'
+        ' -Wl,User32.lib -Wl,Userenv.lib')
+    if sys.version_info < (3, 5):
+      msvcr = cygwinccompiler.get_msvcr()[0]
+      EXTRA_ENV_LINK_ARGS += (
+          ' -static-libgcc -static-libstdc++ -mcrtdll={msvcr}'
+          ' -static -lshlwapi'.format(msvcr=msvcr))
   if "linux" in sys.platform:
     EXTRA_ENV_LINK_ARGS += ' -Wl,-wrap,memcpy -static-libgcc'
 
@@ -265,7 +270,7 @@ if BUILD_WITH_SYSTEM_CARES:
 
 if BUILD_WITH_SYSTEM_LIBUV:
   CORE_C_FILES = filter(lambda x: 'third_party/libuv' not in x, CORE_C_FILES)
-  CARES_INCLUDE = (os.path.join('/usr', 'include'),)
+  LIBUV_INCLUDE = (os.path.join('/usr', 'include'),)
 
 EXTENSION_INCLUDE_DIRECTORIES = (
     (PYTHON_STEM,) +
