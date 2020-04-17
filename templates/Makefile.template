@@ -732,15 +732,12 @@
   CPPFLAGS += -Ithird_party/libuv/include -Ithird_party/libuv/src
   ifeq ($(SYSTEM), Linux)
   CPPFLAGS += -Ithird_party/libuv/src/unix
-  LDFLAGS += -ldl
   else
   ifeq ($(SYSTEM),Darwin)
   CPPFLAGS += -Ithird_party/libuv/src/unix
-  LDFLAGS += -ldl
   else
   ifeq ($(SYSTEM),MINGW32)
-  CPPFLAGS += -Ithird_party/libuv/src/win -DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0600
-  LDFLAGS += -ldl -Wl,Iphlpapi.lib -Wl,Psapi.lib -Wl,User32.lib -Wl,Userenv.lib
+  CPPFLAGS += -Ithird_party/libuv/src/win
   endif
   endif
   endif

@@ -180,7 +180,6 @@ EXTRA_ENV_LINK_ARGS = os.environ.get('GRPC_PYTHON_LDFLAGS', None)
 if EXTRA_ENV_COMPILE_ARGS is None:
   EXTRA_ENV_COMPILE_ARGS = ' -std=c++11'
   if 'win32' in sys.platform:
-    EXTRA_ENV_COMPILE_ARGS += ' -DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0600'
     if sys.version_info < (3, 5):
       EXTRA_ENV_COMPILE_ARGS += ' -D_hypot=hypot'
       # We use define flags here and don't directly add to DEFINE_MACROS below to
@@ -201,16 +200,12 @@ if EXTRA_ENV_COMPILE_ARGS is None:
     EXTRA_ENV_COMPILE_ARGS += ' -stdlib=libc++ -fvisibility=hidden -fno-wrapv -fno-exceptions'
 
 if EXTRA_ENV_LINK_ARGS is None:
-  EXTRA_ENV_LINK_ARGS = ' -ldl'
+  EXTRA_ENV_LINK_ARGS = ''
   if "linux" in sys.platform or "darwin" in sys.platform:
-    EXTRA_ENV_LINK_ARGS += ' -lpthread'
+    EXTRA_ENV_LINK_ARGS += ' -ldl -lpthread'
     if check_linker_need_libatomic():
       EXTRA_ENV_LINK_ARGS += ' -latomic'
-  elif "win32" in sys.platform:
-    EXTRA_ENV_LINK_ARGS += (
-        ' -Wl,Iphlpapi.lib -Wl,Psapi.lib'
-        ' -Wl,User32.lib -Wl,Userenv.lib')
-    if sys.version_info < (3, 5):
+  elif "win32" in sys.platform and sys.version_info < (3, 5):
       msvcr = cygwinccompiler.get_msvcr()[0]
       EXTRA_ENV_LINK_ARGS += (
           ' -static-libgcc -static-libstdc++ -mcrtdll={msvcr}'
@@ -290,7 +285,7 @@ if "linux" in sys.platform:
 if not "win32" in sys.platform:
   EXTENSION_LIBRARIES += ('m',)
 if "win32" in sys.platform:
-  EXTENSION_LIBRARIES += ('advapi32', 'ws2_32', 'dbghelp',)
+  EXTENSION_LIBRARIES += ('advapi32', 'ws2_32', 'dbghelp', 'Iphlpapi', 'Psapi', 'User32', 'Userenv')
 if BUILD_WITH_SYSTEM_OPENSSL:
   EXTENSION_LIBRARIES += ('ssl', 'crypto',)
 if BUILD_WITH_SYSTEM_ZLIB:
