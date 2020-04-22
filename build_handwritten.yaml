@@ -237,6 +237,9 @@ php_config_m4:
   - address_sorting
   - boringssl
   - z
+  - uv_linux
+  - uv_darwin
+  - uv_win
   headers:
   - src/php/ext/grpc/byte_buffer.h
   - src/php/ext/grpc/call.h
@@ -278,3 +281,6 @@ ruby_gem:
   - ares
   - boringssl
   - z
+  - uv_linux
+  - uv_darwin
+  - uv_win
