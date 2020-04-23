@@ -292,7 +292,7 @@ if "win32" in sys.platform:
         'Iphlpapi',
         'Psapi',
         'User32',
-        'Userenvi',
+        'Userenv',
     )
 if BUILD_WITH_SYSTEM_OPENSSL:
     EXTENSION_LIBRARIES += (
