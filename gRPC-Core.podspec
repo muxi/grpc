@@ -99,6 +99,76 @@ Pod::Spec.new do |s|
   s.compiler_flags = '-DGRPC_ARES=0 -Wno-comma'
   s.libraries = 'c++'
 
+  s.subspec 'Libuv-Interface' do |ss|
+    ss.header_mappings_dir = 'third_party/libuv/include'
+    ss.source_files = 'third_party/libuv/include/uv.h'
+  end
+
+  s.subspec 'Libuv-Implementation' do |ss|
+    ss.header_mappings_dir = 'third_party/libuv/src'
+    ss.dependency "#{s.name}/Libuv-Interface", version
+    ss.libraries = 'dl'
+    ss.compiler_flags = '-D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -pthread --std=gnu89 -pedantic -O2 -Wno-tree-vrp -Wno-omit-frame-pointer -D_DARWIN_USE_64_BIT_INODE=1 -D_DARWIN_UNLIMITED_SELECT=1'
+
+    ss.source_files = 'third_party/libuv/include/uv.h',
+                      'third_party/libuv/include/uv/errno.h',
+                      'third_party/libuv/include/uv/linux.h',
+                      'third_party/libuv/include/uv/threadpool.h',
+                      'third_party/libuv/include/uv/tree.h',
+                      'third_party/libuv/include/uv/unix.h',
+                      'third_party/libuv/include/uv/version.h',
+                      'third_party/libuv/src/fs-poll.c',
+                      'third_party/libuv/src/idna.c',
+                      'third_party/libuv/src/inet.c',
+                      'third_party/libuv/src/random.c',
+                      'third_party/libuv/src/strscpy.c',
+                      'third_party/libuv/src/threadpool.c',
+                      'third_party/libuv/src/timer.c',
+                      'third_party/libuv/src/unix/async.c',
+                      'third_party/libuv/src/unix/atomic-ops.h',
+                      'third_party/libuv/src/unix/core.c',
+                      'third_party/libuv/src/unix/dl.c',
+                      'third_party/libuv/src/unix/fs.c',
+                      'third_party/libuv/src/unix/getaddrinfo.c',
+                      'third_party/libuv/src/unix/getnameinfo.c',
+                      'third_party/libuv/src/unix/internal.h',
+                      'third_party/libuv/src/unix/linux-core.c',
+                      'third_party/libuv/src/unix/linux-inotify.c',
+                      'third_party/libuv/src/unix/linux-syscalls.c',
+                      'third_party/libuv/src/unix/linux-syscalls.h',
+                      'third_party/libuv/src/unix/loop-watcher.c',
+                      'third_party/libuv/src/unix/loop.c',
+                      'third_party/libuv/src/unix/pipe.c',
+                      'third_party/libuv/src/unix/poll.c',
+                      'third_party/libuv/src/unix/process.c',
+                      'third_party/libuv/src/unix/proctitle.c',
+                      'third_party/libuv/src/unix/random-devurandom.c',
+                      'third_party/libuv/src/unix/random-getrandom.c',
+                      'third_party/libuv/src/unix/random-sysctl-linux.c',
+                      'third_party/libuv/src/unix/signal.c',
+                      'third_party/libuv/src/unix/spinlock.h',
+                      'third_party/libuv/src/unix/stream.c',
+                      'third_party/libuv/src/unix/sysinfo-loadavg.c',
+                      'third_party/libuv/src/unix/tcp.c',
+                      'third_party/libuv/src/unix/thread.c',
+                      'third_party/libuv/src/unix/tty.c',
+                      'third_party/libuv/src/unix/udp.c',
+                      'third_party/libuv/src/uv-common.c',
+                      'third_party/libuv/src/uv-data-getter-setters.c',
+                      'third_party/libuv/src/version.c'
+    ss.private_header_files = 'third_party/libuv/include/uv.h',
+                              'third_party/libuv/include/uv/errno.h',
+                              'third_party/libuv/include/uv/linux.h',
+                              'third_party/libuv/include/uv/threadpool.h',
+                              'third_party/libuv/include/uv/tree.h',
+                              'third_party/libuv/include/uv/unix.h',
+                              'third_party/libuv/include/uv/version.h',
+                              'third_party/libuv/src/unix/atomic-ops.h',
+                              'third_party/libuv/src/unix/internal.h',
+                              'third_party/libuv/src/unix/linux-syscalls.h',
+                              'third_party/libuv/src/unix/spinlock.h'
+  end
+
   # Like many other C libraries, gRPC-Core has its public headers under `include/<libname>/` and its
   # sources and private headers in other directories outside `include/`. Cocoapods' linter doesn't
   # allow any header to be listed outside the `header_mappings_dir` (even though doing so works in
@@ -180,6 +250,8 @@ Pod::Spec.new do |s|
     ss.dependency 'abseil/strings/strings', abseil_version
     ss.dependency 'abseil/time/time', abseil_version
     ss.dependency 'abseil/types/optional', abseil_version
+    ss.dependency "#{s.name}/Libuv-Interface", version
+    ss.dependency "#{s.name}/Libuv-Implementation", version
     ss.compiler_flags = '-DBORINGSSL_PREFIX=GRPC'
 
     ss.source_files = 'src/core/ext/filters/census/grpc_context.cc',
@@ -1013,52 +1085,6 @@ Pod::Spec.new do |s|
                       'src/core/tsi/transport_security_grpc.cc',
                       'src/core/tsi/transport_security_grpc.h',
                       'src/core/tsi/transport_security_interface.h',
-                      'third_party/libuv/include/uv.h',
-                      'third_party/libuv/include/uv/errno.h',
-                      'third_party/libuv/include/uv/linux.h',
-                      'third_party/libuv/include/uv/threadpool.h',
-                      'third_party/libuv/include/uv/tree.h',
-                      'third_party/libuv/include/uv/unix.h',
-                      'third_party/libuv/include/uv/version.h',
-                      'third_party/libuv/src/fs-poll.c',
-                      'third_party/libuv/src/idna.c',
-                      'third_party/libuv/src/inet.c',
-                      'third_party/libuv/src/random.c',
-                      'third_party/libuv/src/strscpy.c',
-                      'third_party/libuv/src/threadpool.c',
-                      'third_party/libuv/src/timer.c',
-                      'third_party/libuv/src/unix/async.c',
-                      'third_party/libuv/src/unix/atomic-ops.h',
-                      'third_party/libuv/src/unix/core.c',
-                      'third_party/libuv/src/unix/dl.c',
-                      'third_party/libuv/src/unix/fs.c',
-                      'third_party/libuv/src/unix/getaddrinfo.c',
-                      'third_party/libuv/src/unix/getnameinfo.c',
-                      'third_party/libuv/src/unix/internal.h',
-                      'third_party/libuv/src/unix/linux-core.c',
-                      'third_party/libuv/src/unix/linux-inotify.c',
-                      'third_party/libuv/src/unix/linux-syscalls.c',
-                      'third_party/libuv/src/unix/linux-syscalls.h',
-                      'third_party/libuv/src/unix/loop-watcher.c',
-                      'third_party/libuv/src/unix/loop.c',
-                      'third_party/libuv/src/unix/pipe.c',
-                      'third_party/libuv/src/unix/poll.c',
-                      'third_party/libuv/src/unix/process.c',
-                      'third_party/libuv/src/unix/proctitle.c',
-                      'third_party/libuv/src/unix/random-devurandom.c',
-                      'third_party/libuv/src/unix/random-getrandom.c',
-                      'third_party/libuv/src/unix/random-sysctl-linux.c',
-                      'third_party/libuv/src/unix/signal.c',
-                      'third_party/libuv/src/unix/spinlock.h',
-                      'third_party/libuv/src/unix/stream.c',
-                      'third_party/libuv/src/unix/sysinfo-loadavg.c',
-                      'third_party/libuv/src/unix/tcp.c',
-                      'third_party/libuv/src/unix/thread.c',
-                      'third_party/libuv/src/unix/tty.c',
-                      'third_party/libuv/src/unix/udp.c',
-                      'third_party/libuv/src/uv-common.c',
-                      'third_party/libuv/src/uv-data-getter-setters.c',
-                      'third_party/libuv/src/version.c',
                       'third_party/upb/upb/decode.c',
                       'third_party/upb/upb/decode.h',
                       'third_party/upb/upb/encode.c',
@@ -1456,17 +1482,6 @@ Pod::Spec.new do |s|
                               'src/core/tsi/transport_security.h',
                               'src/core/tsi/transport_security_grpc.h',
                               'src/core/tsi/transport_security_interface.h',
-                              'third_party/libuv/include/uv.h',
-                              'third_party/libuv/include/uv/errno.h',
-                              'third_party/libuv/include/uv/linux.h',
-                              'third_party/libuv/include/uv/threadpool.h',
-                              'third_party/libuv/include/uv/tree.h',
-                              'third_party/libuv/include/uv/unix.h',
-                              'third_party/libuv/include/uv/version.h',
-                              'third_party/libuv/src/unix/atomic-ops.h',
-                              'third_party/libuv/src/unix/internal.h',
-                              'third_party/libuv/src/unix/linux-syscalls.h',
-                              'third_party/libuv/src/unix/spinlock.h',
                               'third_party/upb/upb/decode.h',
                               'third_party/upb/upb/encode.h',
                               'third_party/upb/upb/generated_util.h',
