@@ -63,13 +63,14 @@ UPB_GRPC_GENERATED_INCLUDE = (os.path.join('src', 'core', 'ext',
 ZLIB_INCLUDE = (os.path.join('third_party', 'zlib'),)
 LIBUV_INCLUDE = (
     os.path.join('third_party', 'libuv', 'include'),
-    os.path.join('third_party', 'libuv', 'src'),)
+    os.path.join('third_party', 'libuv', 'src'),
+)
 if 'linux' in sys.platform:
-  LIBUV_INCLUDE += (os.path.join('third_party', 'libuv', 'src', 'unix'),)
+    LIBUV_INCLUDE += (os.path.join('third_party', 'libuv', 'src', 'unix'),)
 if 'darwin' in sys.platform:
-  LIBUV_INCLUDE += (os.path.join('third_party', 'libuv', 'src', 'unix'),)
+    LIBUV_INCLUDE += (os.path.join('third_party', 'libuv', 'src', 'unix'),)
 if 'win32' in sys.platform:
-  LIBUV_INCLUDE += (os.path.join('third_party', 'libuv', 'src', 'win'),)
+    LIBUV_INCLUDE += (os.path.join('third_party', 'libuv', 'src', 'win'),)
 README = os.path.join(PYTHON_STEM, 'README.rst')
 
 # Ensure we're in the proper directory whether or not we're being used by pip.
@@ -229,31 +230,54 @@ CYTHON_HELPER_C_FILES = ()
 
 CORE_C_FILES = tuple(grpc_core_dependencies.CORE_SOURCE_FILES)
 if "linux" in sys.platform:
-  CORE_C_FILES = filter(lambda x: 'third_party/libuv/src/win' not in x, CORE_C_FILES)
-  # This list must keep synchronous with darwin_uv_srcs in
-  # src/libuv/gen_build_yaml.py, except src/unix/proctitle.c which exists in
-  # both darwin_uv_srcs and linux_uv_srcs.
-  CORE_C_FILES = filter(lambda x: 'third_party/libuv/src/unix/bsd-ifaddrs.c' not in x, CORE_C_FILES)
-  CORE_C_FILES = filter(lambda x: 'third_party/libuv/src/unix/darwin.c' not in x, CORE_C_FILES)
-  CORE_C_FILES = filter(lambda x: 'third_party/libuv/src/unix/darwin-proctitle.c' not in x, CORE_C_FILES)
-  CORE_C_FILES = filter(lambda x: 'third_party/libuv/src/unix/fsevents.c' not in x, CORE_C_FILES)
-  CORE_C_FILES = filter(lambda x: 'third_party/libuv/src/unix/kqueue.c' not in x, CORE_C_FILES)
-  CORE_C_FILES = filter(lambda x: 'third_party/libuv/src/unix/random-getentropy.c' not in x, CORE_C_FILES)
+    CORE_C_FILES = filter(lambda x: 'third_party/libuv/src/win' not in x,
+                          CORE_C_FILES)
+    # This list must keep synchronous with darwin_uv_srcs in
+    # src/libuv/gen_build_yaml.py, except src/unix/proctitle.c which exists in
+    # both darwin_uv_srcs and linux_uv_srcs.
+    CORE_C_FILES = filter(
+        lambda x: 'third_party/libuv/src/unix/bsd-ifaddrs.c' not in x,
+        CORE_C_FILES)
+    CORE_C_FILES = filter(
+        lambda x: 'third_party/libuv/src/unix/darwin.c' not in x, CORE_C_FILES)
+    CORE_C_FILES = filter(
+        lambda x: 'third_party/libuv/src/unix/darwin-proctitle.c' not in x,
+        CORE_C_FILES)
+    CORE_C_FILES = filter(
+        lambda x: 'third_party/libuv/src/unix/fsevents.c' not in x,
+        CORE_C_FILES)
+    CORE_C_FILES = filter(
+        lambda x: 'third_party/libuv/src/unix/kqueue.c' not in x, CORE_C_FILES)
+    CORE_C_FILES = filter(
+        lambda x: 'third_party/libuv/src/unix/random-getentropy.c' not in x,
+        CORE_C_FILES)
 
 if "darwin" in sys.platform:
-  CORE_C_FILES = filter(lambda x: 'third_party/libuv/src/win' not in x, CORE_C_FILES)
-  # This list must keep synchronous with linux_uv_srcs in
-  # src/libuv/gen_build_yaml.py, except src/unix/proctitle.c which exists in
-  # both darwin_uv_srcs and linux_uv_srcs.
-  CORE_C_FILES = filter(lambda x: 'third_party/libuv/src/unix/linux-core.c' not in x, CORE_C_FILES)
-  CORE_C_FILES = filter(lambda x: 'third_party/libuv/src/unix/linux-inotify.c' not in x, CORE_C_FILES)
-  CORE_C_FILES = filter(lambda x: 'third_party/libuv/src/unix/linux-syscalls.c' not in x, CORE_C_FILES)
-  CORE_C_FILES = filter(lambda x: 'third_party/libuv/src/unix/random-sysctl-linux.c' not in x, CORE_C_FILES)
-  CORE_C_FILES = filter(lambda x: 'third_party/libuv/src/unix/sysinfo-loadavg.c' not in x, CORE_C_FILES)
+    CORE_C_FILES = filter(lambda x: 'third_party/libuv/src/win' not in x,
+                          CORE_C_FILES)
+    # This list must keep synchronous with linux_uv_srcs in
+    # src/libuv/gen_build_yaml.py, except src/unix/proctitle.c which exists in
+    # both darwin_uv_srcs and linux_uv_srcs.
+    CORE_C_FILES = filter(
+        lambda x: 'third_party/libuv/src/unix/linux-core.c' not in x,
+        CORE_C_FILES)
+    CORE_C_FILES = filter(
+        lambda x: 'third_party/libuv/src/unix/linux-inotify.c' not in x,
+        CORE_C_FILES)
+    CORE_C_FILES = filter(
+        lambda x: 'third_party/libuv/src/unix/linux-syscalls.c' not in x,
+        CORE_C_FILES)
+    CORE_C_FILES = filter(
+        lambda x: 'third_party/libuv/src/unix/random-sysctl-linux.c' not in x,
+        CORE_C_FILES)
+    CORE_C_FILES = filter(
+        lambda x: 'third_party/libuv/src/unix/sysinfo-loadavg.c' not in x,
+        CORE_C_FILES)
 
 if "win32" in sys.platform:
     CORE_C_FILES = filter(lambda x: 'third_party/cares' not in x, CORE_C_FILES)
-    CORE_C_FILES = filter(lambda x: 'third_party/libuv/src/unix' not in x, CORE_C_FILES)
+    CORE_C_FILES = filter(lambda x: 'third_party/libuv/src/unix' not in x,
+                          CORE_C_FILES)
 
 if BUILD_WITH_SYSTEM_OPENSSL:
     CORE_C_FILES = filter(lambda x: 'third_party/boringssl' not in x,
