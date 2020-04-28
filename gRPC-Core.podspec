@@ -118,10 +118,14 @@ Pod::Spec.new do |s|
                       'third_party/libuv/include/uv/unix.h',
                       'third_party/libuv/include/uv/version.h',
                       'third_party/libuv/src/fs-poll.c',
+                      'third_party/libuv/src/heap-inl.h',
                       'third_party/libuv/src/idna.c',
+                      'third_party/libuv/src/idna.h',
                       'third_party/libuv/src/inet.c',
+                      'third_party/libuv/src/queue.h',
                       'third_party/libuv/src/random.c',
                       'third_party/libuv/src/strscpy.c',
+                      'third_party/libuv/src/strscpy.h',
                       'third_party/libuv/src/threadpool.c',
                       'third_party/libuv/src/timer.c',
                       'third_party/libuv/src/unix/async.c',
@@ -141,6 +145,7 @@ Pod::Spec.new do |s|
                       'third_party/libuv/src/unix/pipe.c',
                       'third_party/libuv/src/unix/poll.c',
                       'third_party/libuv/src/unix/process.c',
+                      'third_party/libuv/src/unix/procfs-exepath.c',
                       'third_party/libuv/src/unix/proctitle.c',
                       'third_party/libuv/src/unix/random-devurandom.c',
                       'third_party/libuv/src/unix/random-getrandom.c',
@@ -154,6 +159,7 @@ Pod::Spec.new do |s|
                       'third_party/libuv/src/unix/tty.c',
                       'third_party/libuv/src/unix/udp.c',
                       'third_party/libuv/src/uv-common.c',
+                      'third_party/libuv/src/uv-common.h',
                       'third_party/libuv/src/uv-data-getter-setters.c',
                       'third_party/libuv/src/version.c'
     ss.private_header_files = 'third_party/libuv/include/uv.h',
@@ -163,10 +169,15 @@ Pod::Spec.new do |s|
                               'third_party/libuv/include/uv/tree.h',
                               'third_party/libuv/include/uv/unix.h',
                               'third_party/libuv/include/uv/version.h',
+                              'third_party/libuv/src/heap-inl.h',
+                              'third_party/libuv/src/idna.h',
+                              'third_party/libuv/src/queue.h',
+                              'third_party/libuv/src/strscpy.h',
                               'third_party/libuv/src/unix/atomic-ops.h',
                               'third_party/libuv/src/unix/internal.h',
                               'third_party/libuv/src/unix/linux-syscalls.h',
-                              'third_party/libuv/src/unix/spinlock.h'
+                              'third_party/libuv/src/unix/spinlock.h',
+                              'third_party/libuv/src/uv-common.h'
   end
 
   # Like many other C libraries, gRPC-Core has its public headers under `include/<libname>/` and its

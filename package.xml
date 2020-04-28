@@ -1558,10 +1558,14 @@
     <file baseinstalldir="/" name="third_party/libuv/include/uv/version.h" role="src" />
     <file baseinstalldir="/" name="third_party/libuv/include/uv/win.h" role="src" />
     <file baseinstalldir="/" name="third_party/libuv/src/fs-poll.c" role="src" />
+    <file baseinstalldir="/" name="third_party/libuv/src/heap-inl.h" role="src" />
     <file baseinstalldir="/" name="third_party/libuv/src/idna.c" role="src" />
+    <file baseinstalldir="/" name="third_party/libuv/src/idna.h" role="src" />
     <file baseinstalldir="/" name="third_party/libuv/src/inet.c" role="src" />
+    <file baseinstalldir="/" name="third_party/libuv/src/queue.h" role="src" />
     <file baseinstalldir="/" name="third_party/libuv/src/random.c" role="src" />
     <file baseinstalldir="/" name="third_party/libuv/src/strscpy.c" role="src" />
+    <file baseinstalldir="/" name="third_party/libuv/src/strscpy.h" role="src" />
     <file baseinstalldir="/" name="third_party/libuv/src/threadpool.c" role="src" />
     <file baseinstalldir="/" name="third_party/libuv/src/timer.c" role="src" />
     <file baseinstalldir="/" name="third_party/libuv/src/unix/async.c" role="src" />
@@ -1586,6 +1590,7 @@
     <file baseinstalldir="/" name="third_party/libuv/src/unix/pipe.c" role="src" />
     <file baseinstalldir="/" name="third_party/libuv/src/unix/poll.c" role="src" />
     <file baseinstalldir="/" name="third_party/libuv/src/unix/process.c" role="src" />
+    <file baseinstalldir="/" name="third_party/libuv/src/unix/procfs-exepath.c" role="src" />
     <file baseinstalldir="/" name="third_party/libuv/src/unix/proctitle.c" role="src" />
     <file baseinstalldir="/" name="third_party/libuv/src/unix/random-devurandom.c" role="src" />
     <file baseinstalldir="/" name="third_party/libuv/src/unix/random-getentropy.c" role="src" />
@@ -1600,6 +1605,7 @@
     <file baseinstalldir="/" name="third_party/libuv/src/unix/tty.c" role="src" />
     <file baseinstalldir="/" name="third_party/libuv/src/unix/udp.c" role="src" />
     <file baseinstalldir="/" name="third_party/libuv/src/uv-common.c" role="src" />
+    <file baseinstalldir="/" name="third_party/libuv/src/uv-common.h" role="src" />
     <file baseinstalldir="/" name="third_party/libuv/src/uv-data-getter-setters.c" role="src" />
     <file baseinstalldir="/" name="third_party/libuv/src/version.c" role="src" />
     <file baseinstalldir="/" name="third_party/libuv/src/win/async.c" role="src" />

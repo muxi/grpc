@@ -49,6 +49,7 @@ linux_uv_srcs = [
     "third_party/libuv/src/unix/linux-core.c",
     "third_party/libuv/src/unix/linux-inotify.c",
     "third_party/libuv/src/unix/linux-syscalls.c",
+    "third_party/libuv/src/unix/procfs-exepath.c",
     "third_party/libuv/src/unix/proctitle.c",
     "third_party/libuv/src/unix/random-sysctl-linux.c",
     "third_party/libuv/src/unix/sysinfo-loadavg.c",
@@ -72,7 +73,7 @@ common_uv_hdrs = [
     "third_party/libuv/include/uv/threadpool.h",
     "third_party/libuv/include/uv/version.h",
     "third_party/libuv/include/uv/tree.h",
-]
+] + glob.glob("third_party/libuv/src/*.h")
 
 unix_uv_hdrs = [
     "third_party/libuv/include/uv/unix.h",

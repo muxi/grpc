@@ -6452,6 +6452,7 @@ LIBUV_LINUX_SRC = \
     third_party/libuv/src/unix/pipe.c \
     third_party/libuv/src/unix/poll.c \
     third_party/libuv/src/unix/process.c \
+    third_party/libuv/src/unix/procfs-exepath.c \
     third_party/libuv/src/unix/proctitle.c \
     third_party/libuv/src/unix/random-devurandom.c \
     third_party/libuv/src/unix/random-getrandom.c \
