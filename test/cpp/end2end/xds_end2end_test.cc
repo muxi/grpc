@@ -17,7 +17,6 @@
  */
 
 #include <deque>
-#include <map>
 #include <memory>
 #include <mutex>
 #include <numeric>
@@ -48,6 +47,7 @@
 #include "src/core/ext/filters/client_channel/xds/xds_api.h"
 #include "src/core/lib/gpr/env.h"
 #include "src/core/lib/gpr/tmpfile.h"
+#include "src/core/lib/gprpp/map.h"
 #include "src/core/lib/gprpp/ref_counted_ptr.h"
 #include "src/core/lib/gprpp/sync.h"
 #include "src/core/lib/iomgr/sockaddr.h"
@@ -2576,6 +2576,9 @@ TEST_P(LdsTest, XdsRoutingPathMatching) {
   auto* route2 = new_route_config.mutable_virtual_hosts(0)->add_routes();
   route2->mutable_match()->set_path("/grpc.testing.EchoTest2Service/Echo2");
   route2->mutable_route()->set_cluster(kNewCluster2Name);
+  auto* route3 = new_route_config.mutable_virtual_hosts(0)->add_routes();
+  route3->mutable_match()->set_path("/grpc.testing.EchoTest3Service/Echo3");
+  route3->mutable_route()->set_cluster(kDefaultResourceName);
   auto* default_route = new_route_config.mutable_virtual_hosts(0)->add_routes();
   default_route->mutable_match()->set_prefix("");
   default_route->mutable_route()->set_cluster(kDefaultResourceName);
@@ -3956,7 +3959,7 @@ class ClientLoadReportingWithDropTest : public XdsEnd2endTest {
 TEST_P(ClientLoadReportingWithDropTest, Vanilla) {
   SetNextResolution({});
   SetNextResolutionForLbChannelAllBalancers();
-  const size_t kNumRpcs = 5000;
+  const size_t kNumRpcs = 3000;
   const uint32_t kDropPerMillionForLb = 100000;
   const uint32_t kDropPerMillionForThrottle = 200000;
   const double kDropRateForLb = kDropPerMillionForLb / 1000000.0;
