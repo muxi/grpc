@@ -104,10 +104,18 @@ Pod::Spec.new do |s|
     ss.header_mappings_dir = 'third_party/libuv/include'
     ss.source_files = 'third_party/libuv/include/uv.h',
                       'third_party/libuv/include/uv/darwin.h',
-                      'third_party/libuv/include/uv/unix.h'
+                      'third_party/libuv/include/uv/errno.h',
+                      'third_party/libuv/include/uv/threadpool.h',
+                      'third_party/libuv/include/uv/tree.h',
+                      'third_party/libuv/include/uv/unix.h',
+                      'third_party/libuv/include/uv/version.h'
     ss.private_header_files = 'third_party/libuv/include/uv.h',
                               'third_party/libuv/include/uv/darwin.h',
-                              'third_party/libuv/include/uv/unix.h'
+                              'third_party/libuv/include/uv/errno.h',
+                              'third_party/libuv/include/uv/threadpool.h',
+                              'third_party/libuv/include/uv/tree.h',
+                              'third_party/libuv/include/uv/unix.h',
+                              'third_party/libuv/include/uv/version.h'
   end
 
   s.subspec 'Libuv-Implementation' do |ss|

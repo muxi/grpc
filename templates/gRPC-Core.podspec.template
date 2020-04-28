@@ -64,6 +64,10 @@
 
   libuv_extra_public_headers = [
       'third_party/libuv/include/uv.h',
+      'third_party/libuv/include/uv/errno.h',
+      'third_party/libuv/include/uv/threadpool.h',
+      'third_party/libuv/include/uv/version.h',
+      'third_party/libuv/include/uv/tree.h',
       'third_party/libuv/include/uv/unix.h',
       'third_party/libuv/include/uv/darwin.h',
   ]
