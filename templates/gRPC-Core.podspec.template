@@ -62,15 +62,19 @@
   # ObjectiveC doesn't use c-ares so we don't need address_sorting files at all
   address_sorting_unwanted_files = list_lib_files("address_sorting", ("public_headers", "headers", "src"))
 
-  libuv_extra_public_headers = ['third_party/libuv/include/uv.h']
+  libuv_extra_public_headers = [
+      'third_party/libuv/include/uv.h',
+      'third_party/libuv/include/uv/unix.h',
+      'third_party/libuv/include/uv/darwin.h',
+  ]
 
   grpc_private_files = list(sorted(set(list_lib_files("grpc", ("headers", "src"))) - set(address_sorting_unwanted_files)))
   grpc_public_headers = list(sorted(set(list_lib_files("grpc", ("public_headers",))) - set(address_sorting_unwanted_files)))
   grpc_private_headers = list(sorted(set(list_lib_files("grpc", ("headers",))) - set(address_sorting_unwanted_files)))
   grpc_abseil_specs = list_abseil_specs("grpc")
-  libuv_private_files = list_lib_files("uv_linux", ("headers", "src"))
+  libuv_private_files = list_lib_files("uv_darwin", ("headers", "src"))
   libuv_public_headers = list(sorted(libuv_extra_public_headers))
-  libuv_private_headers = list_lib_files("uv_linux", ("headers",))
+  libuv_private_headers = list_lib_files("uv_darwin", ("headers",))
 
 
   # TODO(jtattermusch): build.yaml is now generated from bazel build
@@ -179,15 +183,18 @@
     s.libraries = 'c++'
 
     s.subspec 'Libuv-Interface' do |ss|
+      ss.header_dir = ''
       ss.header_mappings_dir = 'third_party/libuv/include'
       ss.source_files = ${ruby_multiline_list(libuv_public_headers, 22)}
+      ss.private_header_files = ${ruby_multiline_list(libuv_public_headers, 30)}
     end
 
     s.subspec 'Libuv-Implementation' do |ss|
+      ss.header_dir = ''
       ss.header_mappings_dir = 'third_party/libuv/src'
       ss.dependency "#{s.name}/Libuv-Interface", version
       ss.libraries = 'dl'
-      ss.compiler_flags = '-D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -pthread --std=gnu89 -pedantic -O2 -Wno-tree-vrp -Wno-omit-frame-pointer -D_DARWIN_USE_64_BIT_INODE=1 -D_DARWIN_UNLIMITED_SELECT=1'
+      ss.compiler_flags = '-D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -pthread --std=gnu89 -pedantic -O2'
 
       ss.source_files = ${ruby_multiline_list(libuv_private_files, 22)}
       ss.private_header_files = ${ruby_multiline_list(libuv_private_headers, 30)}
