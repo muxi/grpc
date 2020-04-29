@@ -268,6 +268,9 @@ if "darwin" in sys.platform:
         lambda x: 'third_party/libuv/src/unix/linux-syscalls.c' not in x,
         CORE_C_FILES)
     CORE_C_FILES = filter(
+        lambda x: 'third_party/libuv/src/unix/procfs-exepath.c' not in x,
+        CORE_C_FILES)
+    CORE_C_FILES = filter(
         lambda x: 'third_party/libuv/src/unix/random-sysctl-linux.c' not in x,
         CORE_C_FILES)
     CORE_C_FILES = filter(
