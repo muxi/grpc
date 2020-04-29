@@ -123,7 +123,7 @@ Pod::Spec.new do |s|
     ss.header_mappings_dir = 'third_party/libuv/src'
     ss.dependency "#{s.name}/Libuv-Interface", version
     ss.libraries = 'dl'
-    ss.compiler_flags = '-D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -pthread --std=gnu89 -pedantic -O2 -Wno-error=shorten-64-to-32 -Wno-error=conditional-uninitialized'
+    ss.compiler_flags = '-D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -pthread --std=gnu89 -pedantic -O2 -Wno-error'
 
     ss.source_files = 'third_party/libuv/include/uv.h',
                       'third_party/libuv/include/uv/darwin.h',
