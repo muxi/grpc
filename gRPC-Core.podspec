@@ -84,8 +84,8 @@ Pod::Spec.new do |s|
   src_root = '$(PODS_ROOT)/gRPC-Core'
   s.pod_target_xcconfig = {
     'GRPC_SRC_ROOT' => src_root,
-    'HEADER_SEARCH_PATHS' => '"$(inherited)" "$(GRPC_SRC_ROOT)/include"',
-    'USER_HEADER_SEARCH_PATHS' => '"$(GRPC_SRC_ROOT)"',
+    'HEADER_SEARCH_PATHS' => '"$(inherited)" "$(GRPC_SRC_ROOT)/include" "$(GRPC_SRC_ROOT)/third_party/libuv/include"',
+    'USER_HEADER_SEARCH_PATHS' => '"$(GRPC_SRC_ROOT)" "$(GRPC_SRC_ROOT)/third_party/libuv/src"',
     # If we don't set these two settings, `include/grpc/support/time.h` and
     # `src/core/lib/gpr/string.h` shadow the system `<time.h>` and `<string.h>`, breaking the
     # build.
